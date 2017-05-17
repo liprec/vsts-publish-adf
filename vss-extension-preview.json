@@ -1,0 +1,103 @@
+{
+    "manifestVersion": 1,
+    "id": "vsts-publish-adf-preview",
+    "version": "0.1.0",
+    "name": "Azure Data Factory",
+    "publisher": "liprec",
+    "public": false,
+    "description": "This extension adds release tasks related to Azure Data Factory: publishing JSON, suspend/resume pipelines",
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services.Cloud"
+        }
+    ],
+    "icons": {
+        "default": "images/logo.png",
+        "large": "images/logolarge.png"
+    },
+    "screenshots": [
+        { "path": "images/screenshot-1.png" }
+    ],
+    "categories": [
+        "Build and release"
+    ],
+    "tags": [
+        "azure",
+        "deployment",
+        "adf",
+        "data factory"
+    ],
+    "scopes": [
+        "vso.release"
+    ],
+    "branding": {
+        "color": "rgb(87, 32, 31)",
+        "theme": "dark"
+    },
+    "content": {
+        "details": {
+            "path": "README.md"
+        },
+        "license": {
+            "path": "LICENSE"
+        }
+    },
+    "links": {
+        "getstarted": {
+            "uri": "https://github.com/liprec/vsts-publish-adf"
+        },
+        "support": {
+            "uri": "https://github.com/liprec/vsts-publish-adf/issues"
+        }
+    },
+    "repository": {
+        "type": "git",
+        "uri": "https://github.com/liprec/vsts-publish-adf"
+    },
+    "contributions": [
+        {
+            "id": "deploy-adf-json",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "deploy-adf-json"
+            }
+        },
+        {
+            "id": "suspend-adf-pipeline",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "suspend-adf-pipeline"
+            }
+        }
+    ],
+    "files": [
+        {
+            "path": "deploy-adf-json"
+        },
+        {
+            "path": "suspend-adf-pipeline"
+        },
+        {
+            "path": "images/logo.png",
+            "addressable": true
+        },
+        {
+            "path": "images/logolarge.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-2.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-3.png",
+            "addressable": true
+        }
+    ]
+}
