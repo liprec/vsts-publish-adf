@@ -20,7 +20,7 @@ if($overwrite -eq "true"){
 $adf = Get-AzureRmDataFactory -ResourceGroupName $resourceGroupName -Name $adfname
 
 if (!$adf) {
-    Write-Host "##vso[task.logissue type=error;] Azure Data Factory '$adfname' could not be found in Resourse Group '$resourceGroupName'"
+    Write-VstsTaskError -Message "Azure Data Factory '$adfname' could not be found in Resourse Group '$resourceGroupName'"
     throw "Azure Data Factory '$adfname' could not be found in Resourse Group '$resourceGroupName'"
 } 
 
@@ -29,7 +29,8 @@ if (!$pathToServices) {
     $jsonFiles = Get-ChildItem $pathToServices -Filter *.json
     $jsonFilesCount = $jsonFiles.Length
 
-    Write-Host "##vso[task.setprogress value=25;] Deploying $jsonFilesCount linked services files"
+    Write-VstsSetProgress -Percent 25
+    Write-VstsTaskVerbose -Message "Deploying $jsonFilesCount linked services files"
     foreach($json in $jsonFiles) {
         try {
             if ($overwrite) {
@@ -38,7 +39,7 @@ if (!$pathToServices) {
                 New-AzureRmDataFactoryLinkedService -DataFactory $adf -File $json
             }
         } catch {
-            Write-Host "##vso[task.logissue type=error;] Error deploying linked service file: '$json'"
+            Write-VstsTaskError -Message "Error deploying linked service file: '$json'"
             throw " Error deploying linked service file: '$json'"
         }
     }
@@ -49,7 +50,8 @@ if (!$pathToDataSets ) {
     $jsonFiles = Get-ChildItem $pathToDataSets -Filter *.json
     $jsonFilesCount = $jsonFiles.Length
 
-    Write-Host "##vso[task.setprogress value=50;] Deploying $jsonFilesCount input dataset files"
+    Write-VstsSetProgress -Percent 50
+    Write-VstsTaskVerbose -Message "Deploying $jsonFilesCount input dataset files"
     foreach($json in $jsonFiles) {
         try {
             if ($overwrite) {
@@ -58,7 +60,7 @@ if (!$pathToDataSets ) {
                 New-AzureRmDataFactoryDataset -DataFactory $adf -File $json
             }
         } catch {
-            Write-Host "##vso[task.logissue type=error;] Error deploying dataset: '$json'"
+            Write-VstsTaskError -Message "Error deploying dataset: '$json'"
             throw " Error deploying dataset: '$json'"
         }
     }
@@ -69,7 +71,8 @@ if (!$pathToPipelines) {
     $jsonFiles = Get-ChildItem $pathToPipelines -Filter *.json
     $jsonFilesCount = $jsonFiles.Length
 
-    Write-Host "##vso[task.setprogress value=75;] Deploying $jsonFilesCount pipeline files"
+    Write-VstsSetProgress -Percent 75
+    Write-VstsTaskVerbose -Message "Deploying $jsonFilesCount pipeline files"
     foreach($json in $jsonFiles) {
         try {
             if ($overwrite) {
@@ -78,10 +81,11 @@ if (!$pathToPipelines) {
                 New-AzureRmDataFactoryPipeline -DataFactory $adf -File $json
             }
         } catch {
-            Write-Host "##vso[task.logissue type=error;] Error deploying pipeline: '$json'"
+            Write-VstsTaskError -Message "Error deploying pipeline: '$json'"
             throw " Error deploying pipeline: '$json'"
         }
     }
 }
 
-Write-Host "##vso[task.setprogress value=100;] Deploying complete"
+Write-VstsSetProgress -Percent 100
+Write-VstsTaskVerbose -Message "Deploying complete"

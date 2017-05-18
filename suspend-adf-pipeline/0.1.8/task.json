@@ -15,8 +15,8 @@
     ],
     "version": {
         "Major": "0",
-        "Minor": "0",
-        "Patch": "1"
+        "Minor": "1",
+        "Patch": "8"
     },
     "minimumAgentVersion": "1.95.0",
     "groups": [
@@ -94,7 +94,7 @@
     "instanceNameFormat": "Set pipelines to '$(pipelineStatus)' in $(adfname)",
     "execution": {
         "PowerShell3": {
-            "target": "$(currentDirectory)\\deploy-adf-json.ps1",
+            "target": "$(currentDirectory)\\suspend-adf-pipeline.ps1",
             "workingDirectory": "$(currentDirectory)"
         }
     }
