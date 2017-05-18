@@ -215,4 +215,4 @@ ModelManifest.xml
 .powerbirc
 
 # Visual Studio Addins
-.vsix
+*.vsix
