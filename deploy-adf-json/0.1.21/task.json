@@ -3,7 +3,7 @@
     "name": "deploy-adf-json",
     "friendlyName": "Azure Data Factory Deployment",
     "description": "Deploy Azure Data Factory Datasets, Pipelines and/or Linked Services using JSON files",
-    "author": "liprec",
+    "author": "Jan Pieter Posthuma",
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
     "visibility": [
@@ -16,7 +16,7 @@
     "version": {
         "Major": "0",
         "Minor": "1",
-        "Patch": "8"
+        "Patch": "21"
     },
     "minimumAgentVersion": "1.95.0",
     "groups": [
@@ -103,6 +103,15 @@
             "defaultValue": "true",
             "required": false,
             "helpMarkDown": "Overwrites the existing definitions",
+            "groupName": "advanced"
+        },
+        {
+            "name": "continue",
+            "type": "boolean",
+            "label": "Continue on error",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Continue on deployment failures",
             "groupName": "advanced"
         }
     ],

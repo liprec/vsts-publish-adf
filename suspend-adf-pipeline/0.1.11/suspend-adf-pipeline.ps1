@@ -1,16 +1,19 @@
-Write-Verbose 'Entering script deploy-json.ps1'
+[CmdletBinding()]
+param()
+
+Trace-VstsEnteringInvocation $MyInvocation
 
 Import-Module $PSScriptRoot\ps_modules\VstsAzureHelpers_
 Initialize-Azure
 
-$resourceGroupName = Get-VstsInput -Name resourceGroupName -Require
-$adfname = Get-VstsInput -Name adfname -Require
-$pipelineStatus = Get-VstsInput -Name pipelineStatus -Require
+$resourceGroupName = Get-VstsInput -Name "resourceGroupName" -Require
+$adfname = Get-VstsInput -Name "adfname" -Require
+$pipelineStatus = Get-VstsInput -Name "pipelineStatus" -Require
 
 $adf = Get-AzureRmDataFactory -ResourceGroupName $resourceGroupName -Name $adfname
 
 if (!$adf) {
-    Write-VstsTaskError "Azure Data Factory '$adfname' could not be found in Resourse Group '$resourceGroupName'"
+    throw "Azure Data Factory '$adfname' could not be found in Resourse Group '$resourceGroupName'"
 } 
 
 $pipelines = Get-AzureRmDataFactoryPipeline -ResourceGroupName $resourceGroupName -DataFactoryName $adfname
@@ -21,7 +24,8 @@ $prg = 0
 foreach($pipeline in $pipelines) {
 
     # Some progress information
-    Write-VstsSetProgress -Percent $prg
+    # Write-VstsSetProgress -Percent $prg
+    Write-Host "."
     $prg+=$step
 
     switch ($pipelineStatus) {
@@ -38,5 +42,4 @@ foreach($pipeline in $pipelines) {
     }
 }
 
-Write-VstsProgress -Percent 100 
-Write-VstsTaskVerbose -Message "Set pipelines to '$pipelineStatus' complete"
+Write-Host "Set pipelines to '$pipelineStatus' complete"

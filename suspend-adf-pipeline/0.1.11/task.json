@@ -3,7 +3,7 @@
     "name": "suspend-adf-pipeline",
     "friendlyName": "Azure Data Factory Pipelines Manage",
     "description": "Set status of the Azure Data Factory Pipelines to Susped or Running",
-    "author": "liprec",
+    "author": "Jan Pieter Posthuma",
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
     "visibility": [
@@ -16,7 +16,7 @@
     "version": {
         "Major": "0",
         "Minor": "1",
-        "Patch": "8"
+        "Patch": "11"
     },
     "minimumAgentVersion": "1.95.0",
     "groups": [
