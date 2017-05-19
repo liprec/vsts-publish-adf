@@ -16,7 +16,7 @@
     "version": {
         "Major": "0",
         "Minor": "1",
-        "Patch": "11"
+        "Patch": "12"
     },
     "minimumAgentVersion": "1.95.0",
     "groups": [
@@ -29,6 +29,11 @@
             "name": "adf",
             "displayName": "Data Factory Details",
             "isExpanded": true
+        },
+        {
+            "name": "advanced",
+            "displayName": "Advanced",
+            "isExpanded": false
         }
     ],
     "inputs": [
@@ -82,6 +87,15 @@
                 "suspend": "Suspend",
                 "resume": "Resume"
             }
+        },
+        {
+            "name": "parallel",
+            "type": "string",
+            "label": "Parallel tasks",
+            "defaultValue": "5",
+            "required": false,
+            "helpMarkDown": "Number of parallel task",
+            "groupName": "advanced"
         }
     ],
     "dataSourceBindings": [

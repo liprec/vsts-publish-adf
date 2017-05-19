@@ -2,21 +2,28 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "0.1.0",
-    "command": "tfx",
     "isShellCommand": true,
     "showOutput": "always",
     "tasks": [
         {
             "taskName": "release",
-            "args": ["extension", "create", "--manifest-globs", "${workspaceRoot}/vss-extension.json"],
+            "command": "powershell",
+            "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "-File", "./.vscode/build.ps1", "vss-extension.json" ],
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "preview",
+            "command": "powershell",
+            "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "-File", "./.vscode/build.ps1", "vss-extension-preview.json" ],
             "suppressTaskName": true,
             "isBuildCommand": true
         },
         {
-            "taskName": "preview",
-            "args": ["extension", "create", "--manifest-globs", "${workspaceRoot}/vss-extension-preview.json"],
+            "taskName": "test-preview",
+            "command": "powershell",
+            "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "Invoke-Pester", "-Script @{ Path = './tests/*' }" ],
             "suppressTaskName": true,
-            "isBuildCommand": true
+            "isTestCommand": true
         }
     ]
 }
