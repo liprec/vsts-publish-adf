@@ -87,32 +87,48 @@ Parameter description
 .PARAMETER DeployType
 Parameter description
 
+.PARAMETER Path
+Parameter description
+
 .EXAMPLE
 An example
 #>
-function clearExisting($DataFactory, [int]$DeployType) {    
-    switch ($DeployType) {
-        0 { #linkedservice
-            $linkedServices = Get-AzureRmDataFactoryLinkedService -DataFactory $DataFactory
-            foreach($linkedService in $linkedServices) {
-                $result = Remove-AzureRmDataFactoryLinkedService -DataFactory $DataFactory -Name $linkedService.LinkedServiceName -Force
+function clearExisting($DataFactory, [int]$DeployType, [string]$Path) {
+    # Check if the $Path parameter is filled with a value related to artifacts 
+    if ([string]::IsNullOrWhitespace($Path) -eq $false `
+                -and $Path -ne $env:SYSTEM_DEFAULTWORKINGDIRECTORY `
+                -and $Path -ne [String]::Concat($env:SYSTEM_DEFAULTWORKINGDIRECTORY, "\")) {
+        
+        $friendlyName = getFriendlyName($DeployType)
+
+        switch ($DeployType) {
+            0 { #linkedservice
+                $linkedServices = Get-AzureRmDataFactoryLinkedService -DataFactory $DataFactory
+                foreach($linkedService in $linkedServices) {
+                    $result = Remove-AzureRmDataFactoryLinkedService -DataFactory $DataFactory -Name $linkedService.LinkedServiceName -Force
+                }
+                $return = $linkedServices.Count
             }
-            return $linkedServices.Count
-        }
-        1 { #dataset
-            $dataSets = Get-AzureRmDataFactoryDataset -DataFactory $DataFactory
-            foreach($dataSet in $dataSets) {
-                $result = Remove-AzureRmDataFactoryDataset -DataFactory $DataFactory -Name $dataSet.DatasetName -Force
+            1 { #dataset
+                $dataSets = Get-AzureRmDataFactoryDataset -DataFactory $DataFactory
+                foreach($dataSet in $dataSets) {
+                    $result = Remove-AzureRmDataFactoryDataset -DataFactory $DataFactory -Name $dataSet.DatasetName -Force
+                }
+                $return = $dataSets.Count
             }
-            return $dataSets.Count
-        }
-        2 { #pipeline
-            $pipeLines = Get-AzureRmDataFactoryPipeline -DataFactory $DataFactory
-            foreach($pipeLine in $pipeLines) {
-                $result = Remove-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $pipeLine.PipelineName -Force
+            2 { #pipeline
+                $pipeLines = Get-AzureRmDataFactoryPipeline -DataFactory $DataFactory
+                foreach($pipeLine in $pipeLines) {
+                    $result = Remove-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $pipeLine.PipelineName -Force
+                }
+                $return = $pipeLines.Count
             }
-            return $pipeLines.Count
         }
+
+        Write-Host "Cleared all existing $friendlyName"
+        return $return
+    } else {
+        return -1
     }
 }
 
@@ -141,7 +157,7 @@ Parameter description
 .EXAMPLE
 An example
 #>
-function deploy($DataFactory, [int]$DeployType, [string]$Path, [boolean]$Overwrite, [boolean]$Continue, [boolean]$Clear, [int]$Parallel) {
+function deploy($DataFactory, [int]$DeployType, [string]$Path, [boolean]$Overwrite, [boolean]$Continue, [int]$Parallel) {
     # Check if the $Path parameter is filled with a value related to artifacts 
     if ([string]::IsNullOrWhitespace($Path) -eq $false `
                 -and $Path -ne $env:SYSTEM_DEFAULTWORKINGDIRECTORY `
@@ -150,10 +166,6 @@ function deploy($DataFactory, [int]$DeployType, [string]$Path, [boolean]$Overwri
         $friendlyName = getFriendlyName($DeployType)
 
         Write-Host "Start deploying $friendlyName"
-        if ($Clear) {
-            $result = clearExisting -DataFactory $DataFactory -DeployType $DeployType
-            Write-Host "Cleared all existing $friendlyName"
-        }
 
         $jsonFiles = Get-ChildItem -Path $Path -Filter '*.json'
         $jsonFilesCount = $jsonFiles.Length

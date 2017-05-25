@@ -1,10 +1,10 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "name": "Azure Data Factory",
     "publisher": "liprec",
-    "public": false,
+    "public": true,
     "description": "This extension adds release tasks related to Azure Data Factory: publishing JSON, suspend/resume pipelines",
     "targets": [
         {

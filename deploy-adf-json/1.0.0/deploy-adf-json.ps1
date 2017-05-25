@@ -44,14 +44,26 @@ $parallel = checkParallel -Value $parallel
 
 $adf = getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $adfname
 
+# Clear old definitions
+if ($clear) {
+    $deployType = 2 #pipeline
+    $result = clearExisting -DataFactory $adf -DeployType $deployType -Path $pathToPipelines
+
+    $deployType = 1 #dataset
+    $result = clearExisting -DataFactory $adf -DeployType $deployType -Path $pathToDataSets
+
+    $deployType = 0 #linkedservice
+    $result = clearExisting -DataFactory $adf -DeployType $deployType -Path $pathToServices
+}
+
 # Deployment new definitions
 $deployType = 0 #linkedservice
-$result = deploy -DataFactory $adf -DeployType $deployType -Path $pathToServices -Overwrite $overwrite -Continue $continue -Clear $clear -Parallel $parallel
+$result = deploy -DataFactory $adf -DeployType $deployType -Path $pathToServices -Overwrite $overwrite -Continue $continue -Parallel $parallel
 
 $deployType = 1 #dataset
-$result = deploy -DataFactory $adf -DeployType $deployType -Path $pathToDataSets -Overwrite $overwrite -Continue $continue -Clear $clear -Parallel $parallel
+$result = deploy -DataFactory $adf -DeployType $deployType -Path $pathToDataSets -Overwrite $overwrite -Continue $continue -Parallel $parallel
 
 $deployType = 2 #pipeline
-$result = deploy -DataFactory $adf -DeployType $deployType -Path $pathToPipelines -Overwrite $overwrite -Continue $continue -Clear $clear -Parallel $parallel
+$result = deploy -DataFactory $adf -DeployType $deployType -Path $pathToPipelines -Overwrite $overwrite -Continue $continue -Parallel $parallel
 
 Write-Host "Deploy JSON files to $adfname complete"

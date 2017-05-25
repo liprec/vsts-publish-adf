@@ -1,5 +1,5 @@
 # Set the $version to the 'to be tested' version
-$version = '0.3.0'
+$version = '1.0.0'
 
 # Dynamic set the $testModule to the module file linked to the current test file
 $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.Tests.ps1', '')
@@ -86,7 +86,7 @@ Describe "Module: $linkedModule" {
         }
     }
 
-    Context "function clearExisting" {
+    Context "function: clearExisting" {
         InModuleScope $linkedModule {
             Mock Get-AzureRmDataFactoryLinkedService { return @( @{ LinkedServiceName = 'linkedservice1' }, @{ LinkedServiceName = 'linkedservice2' }, @{ LinkedServiceName = 'linkedservice3' } ) }
             Mock Get-AzureRmDataFactoryDataset { return @( @{ DatasetName = 'dataset1' }, @{ DatasetName = 'dataset2' }, @{ DatasetName = 'dataset3' } ) }
@@ -96,15 +96,18 @@ Describe "Module: $linkedModule" {
             Mock Remove-AzureRmDataFactoryDataset { return $true }
             Mock Remove-AzureRmDataFactoryPipeline { return $true }
 
+            Mock Write-Host {}
+
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
             $dataFactory.DataFactoryName = 'dataFactory'
+            $path = "c:\\temp"
 
             Context "clear existing Linked Service" {
                 $deployType = 0 #linkedservice
 
                 It "correct return value" {
-                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType
+                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
                     $return | Should Be 3
                 }
 
@@ -116,6 +119,8 @@ Describe "Module: $linkedModule" {
                     Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 1
                     Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 0
                     Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 0
+
+                    Assert-MockCalled Write-Host -Times 1
                 }
             }
 
@@ -123,7 +128,7 @@ Describe "Module: $linkedModule" {
                 $deployType = 1 #Dataset
 
                 It "correct return value" {
-                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType
+                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
                     $return | Should Be 3
                 }
 
@@ -135,6 +140,8 @@ Describe "Module: $linkedModule" {
                     Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 0
                     Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 1
                     Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 0
+
+                    Assert-MockCalled Write-Host -Times 1
                 }
             }
 
@@ -142,7 +149,7 @@ Describe "Module: $linkedModule" {
                 $deployType = 2 #pipeline
 
                 It "correct return value" {
-                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType
+                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
                     $return | Should Be 3
                 }
 
@@ -154,6 +161,39 @@ Describe "Module: $linkedModule" {
                     Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 0
                     Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 0
                     Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 1
+
+                    Assert-MockCalled Write-Host -Times 1
+                }
+            }
+
+            Context "path incorrect parameter" {
+                $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
+                $dataFactory.ResourceGroupName = 'resourceGroupName'
+                $dataFactory.DataFactoryName = 'dataFactory'
+                $deployType = 0 #linkedservice
+                
+                It "check path equal to a empty string" {
+                    $path = ""
+                    $result = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
+                    $result | Should Be -1
+                }
+
+                It "check path equal to space" {
+                    $path = " "
+                    $result = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
+                    $result | Should Be -1
+                }
+
+                It "check path equal to the working directory" {
+                    $path = $env:SYSTEM_DEFAULTWORKINGDIRECTORY
+                    $result = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
+                    $result | Should Be -1
+                }
+
+                It "check path equal to the working directory + '\'" {
+                    $path = [String]::Concat($env:SYSTEM_DEFAULTWORKINGDIRECTORY, "\")
+                    $result = deploy -DataFactory $dataFactory -DeployType $deployType -Path $path
+                    $result | Should Be -1
                 }
             }
         }
@@ -485,7 +525,6 @@ Describe "Module: $linkedModule" {
     Context "function: deploy" {
         InModuleScope $linkedModule {
             Mock getFriendlyName { return "Linked Service" }
-            Mock clearExisting {return 0 }
             Mock Get-ChildItem { @( "linkedservice1.json", "linkedservice2.json", "linkedservice3.json" ) }
             Mock deployJson { return 0 }
             Mock Write-Host {}
@@ -499,7 +538,6 @@ Describe "Module: $linkedModule" {
             $continue = $true
 
             Context "correct parameters with overwrite" {
-                $clear = $true
                 $result = deploy -DataFactory $dataFactory -DeployType $deployType -Path $path -Overwrite $overwrite -Continue $continue -Clear $clear
 
                 It "correct deployment" {
@@ -508,15 +546,13 @@ Describe "Module: $linkedModule" {
 
                 It "correct function calls" {
                     Assert-MockCalled getFriendlyName -Times 1
-                    Assert-MockCalled clearExisting -Times 1
                     Assert-MockCalled Get-ChildItem -Times 1
                     Assert-MockCalled deployJson -Times 3
-                    Assert-MockCalled Write-Host -Times 6
+                    Assert-MockCalled Write-Host -Times 5
                 }
             }
 
             Context "correct parameters with no overwrite" {
-                $clear = $false
                 $result = deploy -DataFactory $dataFactory -DeployType $deployType -Path $path -Overwrite $overwrite -Continue $continue -Clear $clear
 
                 It "correct deployment" {
@@ -525,7 +561,6 @@ Describe "Module: $linkedModule" {
 
                 It "correct function calls" {
                     Assert-MockCalled getFriendlyName -Times 1
-                    Assert-MockCalled clearExisting -Times 0
                     Assert-MockCalled Get-ChildItem -Times 1
                     Assert-MockCalled deployJson -Times 3
                     Assert-MockCalled Write-Host -Times 5
@@ -540,7 +575,6 @@ Describe "Module: $linkedModule" {
                 $deployType = 0 #linkedservice
                 $overwrite = $true
                 $continue = $true
-                $clear = $false
 
                 It "check path equal to a empty string" {
                     $path = ""
