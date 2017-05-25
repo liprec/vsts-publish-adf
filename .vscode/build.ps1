@@ -18,7 +18,7 @@ Write-Output "Total tests skipped: $skippedCount"
 
 # No test errors, so we can build
 if ($result.FailedCount -eq 0) {
-    tfx extension --manifest-globs $manifestFile
+    tfx extension create --manifest-globs $manifestFile
     Write-Output ""
     Write-Output "Build complete"
 } else {

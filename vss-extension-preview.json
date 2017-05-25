@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": false,
@@ -66,6 +66,16 @@
             }
         },
         {
+            "id": "schedule-adf-pipeline",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "schedule-adf-pipeline"
+            }
+        },
+        {
             "id": "suspend-adf-pipeline",
             "type": "ms.vss-distributed-task.task",
             "targets": [
@@ -79,6 +89,9 @@
     "files": [
         {
             "path": "deploy-adf-json"
+        },
+        {
+            "path": "schedule-adf-pipeline"
         },
         {
             "path": "suspend-adf-pipeline"

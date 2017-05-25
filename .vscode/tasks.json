@@ -3,24 +3,24 @@
     // for the documentation about the tasks.json format
     "version": "0.1.0",
     "isShellCommand": true,
+    "windows" : {
+        "command"  : "C:\\WINDOWS\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe"
+    },
     "showOutput": "always",
     "tasks": [
         {
             "taskName": "release",
-            "command": "powershell",
             "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "-File", "./.vscode/build.ps1", "vss-extension.json" ],
             "suppressTaskName": true
         },
         {
             "taskName": "preview",
-            "command": "powershell",
             "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "-File", "./.vscode/build.ps1", "vss-extension-preview.json" ],
             "suppressTaskName": true,
             "isBuildCommand": true
         },
         {
             "taskName": "test-preview",
-            "command": "powershell",
             "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "Invoke-Pester", "-Script @{ Path = './tests/*' }" ],
             "suppressTaskName": true,
             "isTestCommand": true

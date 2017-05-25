@@ -1,8 +1,8 @@
 {
-    "id": "af5a2bc1-ecfc-4929-ba5e-a3decfcbeb85",
-    "name": "deploy-adf-json",
-    "friendlyName": "Azure Data Factory Deployment",
-    "description": "Deploy Azure Data Factory Datasets, Pipelines and/or Linked Services using JSON files",
+    "id": "2eed6fe6-d190-4086-ba5b-f3d59b274881",
+    "name": "suspend-adf-pipeline",
+    "friendlyName": "Azure Data Factory Pipelines Manage",
+    "description": "Set status of the Azure Data Factory Pipelines to Susped or Running",
     "author": "Jan Pieter Posthuma",
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
@@ -15,8 +15,8 @@
     ],
     "version": {
         "Major": "0",
-        "Minor": "1",
-        "Patch": "21"
+        "Minor": "3",
+        "Patch": "0"
     },
     "minimumAgentVersion": "1.95.0",
     "groups": [
@@ -79,39 +79,22 @@
             "groupname": "azure"
         },
         {
-            "name": "pathToServices",
-            "type": "filePath",
-            "label": "Path to Linked Services",
-            "groupname": "adf"
+            "name": "pipelineStatus",
+            "type": "pickList",
+            "label": "Set Pipelines Status",
+            "groupname": "adf",
+            "options": {
+                "suspend": "Suspend",
+                "resume": "Resume"
+            }
         },
         {
-            "name": "pathToDatasets",
-            "type": "filePath",
-            "label": "Path to Datasets",
-            "groupname": "adf"
-        },
-        {
-            "name": "pathToPipelines",
-            "type": "filePath",
-            "label": "Path to Pipelines",
-            "groupname": "adf"
-        },
-        {
-            "name": "overwrite",
-            "type": "boolean",
-            "label": "Overwrite",
-            "defaultValue": "true",
+            "name": "parallel",
+            "type": "string",
+            "label": "Parallel tasks",
+            "defaultValue": "10",
             "required": false,
-            "helpMarkDown": "Overwrites the existing definitions",
-            "groupName": "advanced"
-        },
-        {
-            "name": "continue",
-            "type": "boolean",
-            "label": "Continue on error",
-            "defaultValue": "false",
-            "required": false,
-            "helpMarkDown": "Continue on deployment failures",
+            "helpMarkDown": "Number of parallel task",
             "groupName": "advanced"
         }
     ],
@@ -122,10 +105,10 @@
             "dataSourceName": "AzureResourceGroups"
         }
     ],
-    "instanceNameFormat": "Deploy JSON files to $(adfname)",
+    "instanceNameFormat": "Set pipelines to '$(pipelineStatus)' in $(adfname)",
     "execution": {
         "PowerShell3": {
-            "target": "$(currentDirectory)\\deploy-adf-json.ps1",
+            "target": "$(currentDirectory)\\suspend-adf-pipeline.ps1",
             "workingDirectory": "$(currentDirectory)"
         }
     }

@@ -48,6 +48,53 @@ function getAzureDataFactory([string]$ResourceGroupName, [string]$DataFactoryNam
 
 <#
 .SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER DataFactory
+Parameter description
+
+.PARAMETER Pipeline
+Parameter description
+
+.PARAMETER PipelineStatus
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+function setStatus($DataFactory, $Pipeline, $PipelineStatus){
+    if ($DataFactory) {
+        switch -CaseSensitive ($PipelineStatus) {
+            "suspend" { 
+                try {
+                    Suspend-AzureRmDataFactoryPipeline -ResourceGroupName $DataFactory.ResourceGroupName -DataFactoryName $DataFactory.DataFactoryName -Name $pipeline 
+                } catch {
+                    return -1
+                }
+            }
+            "resume" {
+                try {
+                    Resume-AzureRmDataFactoryPipeline -ResourceGroupName $DataFactory.ResourceGroupName -DataFactoryName $DataFactory.DataFactoryName -Name $pipeline
+                } catch {
+                    return -1
+                }
+            }
+        }
+
+        return 1
+    } else {
+        return -1
+    }
+}
+
+<#
+.SYNOPSIS
 Sets all the Azure Data Factory pipelines to the given status
 
 .DESCRIPTION
@@ -68,31 +115,11 @@ $adf = getAzureDataFactory -ResourceGroupName 'resourceGroup' -DataFactoryName '
 setPipelineStatus -DataFactory $adf -PipelineStatus 'suspend' -Parallel 5
 #>
 function setPipelineStatus($DataFactory, [string]$PipelineStatus, [int]$Parallel) {
-    
     $pipelines = Get-AzureRmDataFactoryPipeline -DataFactory $DataFactory
-
     $step = [Math]::Floor(100.0 / $pipelines.Count)
-    $prg = 0
 
-    foreach($pipeline in $pipelines) {
-
-        # Some progress information
-        # Write-VstsSetProgress -Percent $prg
-        $prg+=$step
-        Write-Host "$prg"
-        
-        switch ($PipelineStatus) {
-            "suspend" { 
-                try {
-                    Suspend-AzureRmDataFactoryPipeline -ResourceGroupName $DataFactory.ResourceGroupName -DataFactoryName $DataFactory.DataFactoryName -Name $pipeline 
-                } catch {}
-            }
-            "resume" {
-                try {
-                    Resume-AzureRmDataFactoryPipeline -ResourceGroupName $DataFactory.ResourceGroupName -DataFactoryName $DataFactory.DataFactoryName -Name $pipeline
-                } catch {Write-Host $_}
-            }
-        }
+    foreach ($pipeline in $pipelines) {
+        $status = setStatus -DataFactory $DataFactory -Pipeline $pipeline -PipelineStatus $PipelineStatus
     }
 
     return $pipelines.Count

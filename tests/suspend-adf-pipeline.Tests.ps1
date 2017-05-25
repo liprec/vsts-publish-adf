@@ -1,14 +1,13 @@
 # Set the $version to the 'to be tested' version
-$version = '0.1.12'
+$version = '0.3.0'
 
 # Dynamic set the $testModule to the module file linked to the current test file
 $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.Tests.ps1', '')
-
 # Import the logic of the linked module
-Import-Module $PSScriptRoot\..\suspend-adf-pipeline\$version\$linkedModule.psm1 -Force
+Import-Module $PSScriptRoot\..\$linkedModule\$version\$linkedModule.psm1 -Force
 
-Describe "Module: suspend-adf-pipeline" {
-    Context "checkParallel" {
+Describe "Module: $linkedModule" {
+    Context "function: checkParallel" {
         It "check if it works for a integer value" {
             $p = 5
             $i = checkParallel($p)
@@ -30,7 +29,7 @@ Describe "Module: suspend-adf-pipeline" {
         }
     }
 
-    Context "getAzureDataFactory" {
+    Context "function: getAzureDataFactory" {
         InModuleScope $linkedModule {
             # Standard mock function for Azure 'Get-AzureRmDataFactory' call
             Mock Get-AzureRmDataFactory { return $DataFactoryName }
@@ -68,64 +67,103 @@ Describe "Module: suspend-adf-pipeline" {
         }
     }
 
-    Context "setPipelineStatus" {
+    Context "function: setStatus" {
         InModuleScope $linkedModule {
-            # Standard mock function for Azure 'Get-AzureRmDataFactoryPipeline' call
-            Mock Get-AzureRmDataFactoryPipeline { return @( 'pipeline1', 'pipeline2', 'pipeline3' ) }
-            # Override mock function for Azure 'Get-AzureRmDataFactory' call with -DataFactory $null
-            Mock Get-AzureRmDataFactoryPipeline { return $null } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryEmpty' }
             # Standard mock function for Azure 'Suspend-​Azure​Rm​Data​Factory​Pipeline' call
             Mock Suspend-AzureRmDataFactoryPipeline { return }
             # Standard mock function for Azure 'Resume-​Azure​Rm​Data​Factory​Pipelin' call
             Mock Resume-AzureRmDataFactoryPipeline { return }
             # Overwrite Write-Host to suppress progress information
-            Mock Write-Host {}
 
+            Context "Check empty DataFactory" {
+                $dataFactory = $null
+
+                $pipeline = 'pipeline1'
+                $pipelineStatus = 'suspend'                
+
+                $status = setStatus -DataFactory $DataFactory -Pipeline $pipeline -PipelineStatus $pipelineStatus
+
+                It "empty DataFactory" {
+                    $status | Should Be -1
+                }
+            }
+
+            Context "Check suspend logic" {
+                $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
+                $dataFactory.ResourceGroupName = 'resourceGroupName'
+                $dataFactory.DataFactoryName = 'dataFactory'    
+
+                $pipeline = 'pipeline1'
+                $pipelineStatus = 'suspend'                
+
+                $status = setStatus -DataFactory $dataFactory -Pipeline $pipeline -PipelineStatus $pipelineStatus
+
+                It "mock Suspend-AzureRmDataFactoryPipeline correct -> called 1 times" {
+                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 1
+                }
+
+                It "correct switch path with suspend" {
+                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 1
+                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 0
+                }
+                
+                It "correct return" {
+                    $status | Should Be 1
+                }
+            }
+
+            Context "Check resume logic" {
+                $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
+                $dataFactory.ResourceGroupName = 'resourceGroupName'
+                $dataFactory.DataFactoryName = 'dataFactory'    
+
+                $pipeline = 'pipeline1'
+                $pipelineStatus = 'resume'                
+
+                $status = setStatus -DataFactory $dataFactory -Pipeline $pipeline -PipelineStatus $pipelineStatus
+
+                It "mock Suspend-AzureRmDataFactoryPipeline correct -> called 1 times" {
+                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 1
+                }
+
+                It "correct switch path with suspend" {
+                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 0
+                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 1
+                }
+                
+                It "correct return" {
+                    $status | Should Be 1
+                }
+            }
+        }
+    }
+
+    Context "function: setPipelineStatus" {
+        InModuleScope $linkedModule {
+            # Standard mock function for Azure 'Get-AzureRmDataFactoryPipeline' call
+            Mock Get-AzureRmDataFactoryPipeline { return @( 'pipeline1', 'pipeline2', 'pipeline3' ) }
+            # Override mock function for Azure 'Get-AzureRmDataFactory' call with -DataFactory $null
+            Mock Get-AzureRmDataFactoryPipeline { return $null } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryEmpty' }
+            
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
             $dataFactory.DataFactoryName = 'dataFactory'
             $p = 5
 
-            Context "Check suspend logic" {
+            Context "Check parameters for parallel Process" {
                 $pipelineStatus = 'suspend'
                 $pipelineCount = setPipelineStatus -DataFactory $dataFactory -PipelineStatus $pipelineStatus -Parallel $p
 
                 It "mock Get-AzureRmDataFactoryPipeline correct" {
                     Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 1
                 }
-
-                It "mock Suspend-AzureRmDataFactoryPipeline correct -> called 3 times" {
-                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 3
-                }
-
-                It "correct switch path with suspend" {
-                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 3
-                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 0
-                }
-                
-                It "suspend 3 pipelines" {
-                    $pipelineCount | Should Be 3
-                }
             }
 
-            Context "Check resume logic" {
-                $pipelineStatus = 'resume'
+            Context "Number of pipelines" {
+                $pipelineStatus = 'suspend'
                 $pipelineCount = setPipelineStatus -DataFactory $dataFactory -PipelineStatus $pipelineStatus -Parallel $p
 
-                It "mock Get-AzureRmDataFactoryPipeline correct" {
-                    Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 1
-                }
-
-                It "mock Resume-AzureRmDataFactoryPipeline correct -> called 3 times" {
-                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 3
-                }
-
-                It "correct switch path with resume" {
-                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 0
-                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 3
-                }
-
-                It "resume 3 pipelines" {
+                It "return 3 pipelines" {
                     $pipelineCount | Should Be 3
                 }
             }
@@ -136,17 +174,17 @@ Describe "Module: suspend-adf-pipeline" {
                 $dataFactory.DataFactoryName = 'dataFactoryEmpty'
                 $pipelineCount = setPipelineStatus -DataFactory $dataFactory -PipelineStatus $pipelineStatus -Parallel $p
 
-                It "no resume/suspend calls" {
-                    Assert-MockCalled Suspend-AzureRmDataFactoryPipeline -Times 0
-                    Assert-MockCalled Resume-AzureRmDataFactoryPipeline -Times 0
-                }
-
                 It "resume non pipelines" {
                     $pipelineCount | Should Be 0
+                }
+
+                It "mock Get-AzureRmDataFactoryPipeline correct" {
+                    Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 1 -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryEmpty' }
                 }
             }
         }
     }
 }
+
 
 

@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "0.1.22",
+    "version": "0.3.0",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": false,
@@ -44,7 +44,7 @@
     },
     "links": {
         "getstarted": {
-            "uri": "https://github.com/liprec/vsts-publish-adf"
+            "uri": "https://github.com/liprec/vsts-publish-adf/README.md"
         },
         "support": {
             "uri": "https://github.com/liprec/vsts-publish-adf/issues"

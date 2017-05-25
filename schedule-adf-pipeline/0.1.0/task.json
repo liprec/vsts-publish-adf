@@ -1,0 +1,158 @@
+{
+    "id" : "2eed6fe6-d190-4086-ba5b-f3d59b274881",
+    "name" : "schedule-adf-pipeline",
+    "friendlyName" : "Azure Data Factory Pipelines Scheduler",
+    "description" : "Schedules all Azure Data Factory Pipelines to the given date and time",
+    "author" : "Jan Pieter Posthuma",
+    "helpMarkDown" : "[More Information](https://github.com/liprec/vsts-publish-adf)",
+    "category" : "Deploy",
+    "visibility" : [
+        "Build",
+        "Release"
+    ],
+    "demands" : [
+        "azureps"
+    ],
+    "version" : {
+        "Major" : "0",
+        "Minor" : "1",
+        "Patch" : "0"
+    },
+    "minimumAgentVersion" : "1.95.0",
+    "groups" : [
+        {
+            "name" : "azure",
+            "displayName" : "Azure Details",
+            "isExpanded" : true
+        },
+        {
+            "name" : "adf",
+            "displayName" : "Data Factory Details",
+            "isExpanded" : true
+        },
+        {
+            "name" : "advanced",
+            "displayName" : "Advanced",
+            "isExpanded" : false
+        }
+    ],
+    "inputs" : [
+        {
+            "name" : "ConnectedServiceNameSelector",
+            "type" : "pickList",
+            "label" : "Azure Connection Type",
+            "required" : true,
+            "helpMarkDown" : "",
+            "defaultValue" : "ConnectedServiceNameARM",
+            "options" : {
+                "ConnectedServiceNameARM" : "Azure Resource Manager"
+            },
+            "groupname" : "azure"
+        },
+        {
+            "name" : "ConnectedServiceNameARM",
+            "type" : "connectedService:AzureRM",
+            "label" : "Azure RM Subscription",
+            "defaultValue" : "",
+            "required" : true,
+            "helpMarkDown" : "Select the Azure Resource Manager subscription.",
+            "groupname" : "azure"
+        },
+        {
+            "name" : "resourceGroupName",
+            "type" : "pickList",
+            "label" : "Resource group",
+            "required" : true,
+            "helpMarkDown" : "Provide the name of the resource group.",
+            "properties" : {
+                "EditableOptions" : "True"
+            },
+            "groupname" : "azure"
+        },
+        {
+            "name" : "adfname",
+            "type" : "string",
+            "label" : "Azure Data Factory",
+            "defaultValue" : "",
+            "required" : "true",
+            "helpMarkDown" : "Name of the Azure Data Factory.",
+            "groupname" : "azure"
+        },
+        {
+            "name" : "timeSone",
+            "type" : "pickList",
+            "label" : "Set Timezone",
+            "groupname" : "adf",
+            "defaultValue" : "local",
+            "options" : {
+                "local" : "Local Timezone",
+                "utc" : "UTC"
+            }
+        },
+        {
+            "name" : "dateFixed",
+            "type" : "pickList",
+            "label" : "Date",
+            "defaultValue" : "today",
+            "groupname" : "adf",
+            "options" : {
+                "today" : "Today",
+                "yesterday" : "Yesterday",
+                "tomorrow" : "Tomorrow",
+                "custom" : "Custom"
+            }
+        },
+        {
+            "name" : "dateCustom",
+            "type" : "string",
+            "label" : "Custom Date",
+            "helpMarkDown" : "Custom Date in Format YYYY/MM/DD",
+            "groupname" : "adf",
+            "visibleRule" : "dateFixed = custom"
+        },
+        {
+            "name" : "fixedTime",
+            "type" : "pickList",
+            "label" : "Date",
+            "defaultValue" : "Midnight",
+            "groupname" : "adf",
+            "options" : {
+                "midnight" : "Midnight",
+                "noon" : "Noon",
+                "now" : "Now",
+                "custom" : "Custom"
+            }
+        },
+        {
+            "name" : "timeCustom",
+            "type" : "string",
+            "required" : true,
+            "label" : "Custom Time in format hh:dd:ss [24h].",
+            "groupname" : "adf",
+            "visibleRule" : "timeFixed = custom"
+        },
+        {
+            "name" : "parallel",
+            "type" : "string",
+            "label" : "Parallel tasks",
+            "defaultValue" : "5",
+            "required" : false,
+            "helpMarkDown" : "Number of parallel task",
+            "groupName" : "advanced"
+        }
+    ],
+    "dataSourceBindings" : [
+        {
+            "target" : "resourceGroupName",
+            "endpointId" : "$(ConnectedServiceNameARM)",
+            "dataSourceName" : "AzureResourceGroups"
+        }
+    ],
+    "instanceNameFormat" : "Set schedule for $(adfname) pipelines",
+    "execution" : {
+        "PowerShell3" : {
+            "target" : "$(currentDirectory)\\schedule-adf-pipeline.ps1",
+            "workingDirectory" : "$(currentDirectory)"
+        }
+    }
+}
