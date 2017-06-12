@@ -1,8 +1,8 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "1.0.0",
-    "name": "Azure Data Factory",
+    "version": "1.0.5",
+    "name": "Azure Data Factory (Preview)",
     "publisher": "liprec",
     "public": false,
     "description": "This extension adds release tasks related to Azure Data Factory: publishing JSON, suspend/resume pipelines",
@@ -63,16 +63,6 @@
             ],
             "properties": {
                 "name" : "deploy-adf-json"
-            }
-        },
-        {
-            "id": "schedule-adf-pipeline",
-            "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
-            "properties": {
-                "name" : "schedule-adf-pipeline"
             }
         },
         {

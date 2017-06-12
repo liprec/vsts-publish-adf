@@ -1,5 +1,5 @@
 # Set the $version to the 'to be tested' version
-$version = '1.0.1'
+$version = '1.0.5'
 
 # Dynamic set the $testModule to the module file linked to the current test file
 $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.Tests.ps1', '')
@@ -73,7 +73,6 @@ Describe "Module: $linkedModule" {
             Mock Suspend-AzureRmDataFactoryPipeline { return }
             # Standard mock function for Azure 'Resume-​Azure​Rm​Data​Factory​Pipelin' call
             Mock Resume-AzureRmDataFactoryPipeline { return }
-            # Overwrite Write-Host to suppress progress information
 
             Context "Check empty DataFactory" {
                 $dataFactory = $null
@@ -93,7 +92,7 @@ Describe "Module: $linkedModule" {
                 $dataFactory.ResourceGroupName = 'resourceGroupName'
                 $dataFactory.DataFactoryName = 'dataFactory'    
 
-                $pipeline = 'pipeline1'
+                $pipeline = @{ PipelineName = 'pipeline1' }
                 $pipelineStatus = 'suspend'                
 
                 $status = setStatus -DataFactory $dataFactory -Pipeline $pipeline -PipelineStatus $pipelineStatus
@@ -108,7 +107,7 @@ Describe "Module: $linkedModule" {
                 }
                 
                 It "correct return" {
-                    $status | Should Be 1
+                    $status | Should Be "Set 'pipeline1' to 'suspend'"
                 }
             }
 
@@ -117,7 +116,7 @@ Describe "Module: $linkedModule" {
                 $dataFactory.ResourceGroupName = 'resourceGroupName'
                 $dataFactory.DataFactoryName = 'dataFactory'    
 
-                $pipeline = 'pipeline1'
+                $pipeline = @{ PipelineName = 'pipeline1' }
                 $pipelineStatus = 'resume'                
 
                 $status = setStatus -DataFactory $dataFactory -Pipeline $pipeline -PipelineStatus $pipelineStatus
@@ -132,7 +131,7 @@ Describe "Module: $linkedModule" {
                 }
                 
                 It "correct return" {
-                    $status | Should Be 1
+                    $status | Should Be "Set 'pipeline1' to 'resume'"
                 }
             }
         }
@@ -141,10 +140,16 @@ Describe "Module: $linkedModule" {
     Context "function: setPipelineStatus" {
         InModuleScope $linkedModule {
             # Standard mock function for Azure 'Get-AzureRmDataFactoryPipeline' call
-            Mock Get-AzureRmDataFactoryPipeline { return @( 'pipeline1', 'pipeline2', 'pipeline3' ) }
+            Mock Get-AzureRmDataFactoryPipeline { return @( @{ PipelineName = 'pipeline1' }, @{ PipelineName = 'pipeline2' }, @{ PipelineName = 'pipeline3' } ) }
             # Override mock function for Azure 'Get-AzureRmDataFactory' call with -DataFactory $null
             Mock Get-AzureRmDataFactoryPipeline { return $null } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryEmpty' }
-            
+            #
+            Mock Suspend-AzureRmDataFactoryPipeline { return $true }
+            #
+            Mock Resume-AzureRmDataFactoryPipeline { return }
+            # Overwrite Write-Host to suppress progress information
+            Mock Write-Host { return }
+
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
             $dataFactory.DataFactoryName = 'dataFactory'

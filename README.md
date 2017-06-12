@@ -18,7 +18,7 @@ This release task can be added to a release pipeline to either suspend or resume
 
 ## Release notes
 
-**1.0.1**
+**1.0.5**
 - [Bug] Fixed suspend/resume logic
 
 **1.0.0**

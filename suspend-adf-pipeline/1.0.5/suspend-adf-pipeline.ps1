@@ -16,6 +16,6 @@ $p = checkParallel -Value $parallel
 
 $adf = getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $adfname
 
-setPipelineStatus -DataFactory $adf -PipelineStatus $pipelineStatus -Parallel $p
+$result = setPipelineStatus -DataFactory $adf -PipelineStatus $pipelineStatus -Parallel $p
 
 Write-Host "Set pipelines to '$pipelineStatus' complete"

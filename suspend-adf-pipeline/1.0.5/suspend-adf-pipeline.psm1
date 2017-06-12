@@ -70,26 +70,26 @@ General notes
 #>
 function setStatus($DataFactory, $Pipeline, $PipelineStatus){
     if ($DataFactory) {
+        $pipelineName = $Pipeline.PipelineName
         switch -CaseSensitive ($PipelineStatus) {
             "suspend" { 
                 try {
-                    Suspend-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $Pipeline 
+                    $result = Suspend-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $pipelineName 
                 } catch {
-                    return -1
+                    return "Error setting pipeline '$pipelineName' to 'suspend' ($_.exception.message)"
                 }
             }
             "resume" {
                 try {
-                    Resume-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $Pipeline
+                    $result = Resume-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $pipelineName
                 } catch {
-                    return -1
+                    return "Error setting pipeline '$pipelineName' to 'resume' ($_.exception.message)"
                 }
             }
         }
-
-        return 1
+        return "Set '$pipelineName' to '$PipelineStatus'"
     } else {
-        return -1
+        return "-1"
     }
 }
 
@@ -119,7 +119,8 @@ function setPipelineStatus($DataFactory, [string]$PipelineStatus, [int]$Parallel
     $step = [Math]::Floor(100.0 / $pipelines.Count)
 
     foreach ($pipeline in $pipelines) {
-        $status = setStatus -DataFactory $DataFactory -Pipeline $pipeline -PipelineStatus $PipelineStatus
+        $result = setStatus -DataFactory $DataFactory -Pipeline $pipeline -PipelineStatus $PipelineStatus
+        Write-Host $result
     }
 
     return $pipelines.Count
