@@ -73,14 +73,14 @@ function setStatus($DataFactory, $Pipeline, $PipelineStatus){
         switch -CaseSensitive ($PipelineStatus) {
             "suspend" { 
                 try {
-                    Suspend-AzureRmDataFactoryPipeline -ResourceGroupName $DataFactory.ResourceGroupName -DataFactoryName $DataFactory.DataFactoryName -Name $pipeline 
+                    Suspend-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $Pipeline 
                 } catch {
                     return -1
                 }
             }
             "resume" {
                 try {
-                    Resume-AzureRmDataFactoryPipeline -ResourceGroupName $DataFactory.ResourceGroupName -DataFactoryName $DataFactory.DataFactoryName -Name $pipeline
+                    Resume-AzureRmDataFactoryPipeline -DataFactory $DataFactory -Name $Pipeline
                 } catch {
                     return -1
                 }

@@ -17,5 +17,8 @@ Data Factory Details:
 
 ## Release notes
 
+**1.0.1**
+- [Bug]Fixed Suspend/Resume logic
+
 **1.0.0**
 - Initial public release
