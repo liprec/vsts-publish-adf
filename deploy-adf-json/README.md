@@ -25,4 +25,7 @@ Advanced:
 ## Release notes
 
 **1.0.0**
+- Add extra error logging
+
+**1.0.0**
 - Initial public release

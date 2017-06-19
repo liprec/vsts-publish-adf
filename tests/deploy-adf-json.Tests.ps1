@@ -1,5 +1,5 @@
 # Set the $version to the 'to be tested' version
-$version = '1.0.0'
+$version = '1.0.1'
 
 # Dynamic set the $testModule to the module file linked to the current test file
 $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.Tests.ps1', '')
@@ -207,9 +207,9 @@ Describe "Module: $linkedModule" {
             Mock deployDatasetJSON { return @{ ProvisioningState = "Suceeded" } }
             Mock deployPipelineJSON { return @{ ProvisioningState = "Suceeded" } }
 
-            Mock deployLinkedServiceJSON { throw } -ParameterFilter { $Json.Name -eq "file2.json" }
-            Mock deployDatasetJSON { throw } -ParameterFilter { $Json.Name -eq "file2.json" }
-            Mock deployPipelineJSON { throw } -ParameterFilter { $Json.Name -eq "file2.json" }
+            Mock deployLinkedServiceJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
+            Mock deployDatasetJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
+            Mock deployPipelineJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
 
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
@@ -271,7 +271,7 @@ Describe "Module: $linkedModule" {
                 It "check Linked Service deploy" {
                     $deployType = 0 #linkedservice                    
                     $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
-                    $result | Should Be "Error deploying 'file2.json' : "
+                    $result | Should Be "Error deploying 'file2.json' (File not found.exception.message)"
                 }
 
                 It "check Linked Service deploy - no exception" {
@@ -284,7 +284,7 @@ Describe "Module: $linkedModule" {
                 It "check Dataset deploy" {
                     $deployType = 1 #dataset
                     $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
-                    $result | Should Be "Error deploying 'file2.json' : "
+                    $result | Should Be "Error deploying 'file2.json' (File not found.exception.message)"
                 }
 
                 It "check Dataset deploy - no exception" {
@@ -297,7 +297,7 @@ Describe "Module: $linkedModule" {
                 It "check Pipeline deploy" {
                     $deployType = 2 #pipeline
                     $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
-                    $result | Should Be "Error deploying 'file2.json' : "
+                    $result | Should Be "Error deploying 'file2.json' (File not found.exception.message)"
                 }
 
                 It "check Pipeline deploy - no exception" {

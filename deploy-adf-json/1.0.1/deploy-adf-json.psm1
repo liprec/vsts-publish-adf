@@ -316,9 +316,9 @@ function deployJson($DataFactory, [int]$DeployType, $Json, [boolean]$Overwrite, 
         return "Deploy $friendlyName '$jsonFile' : $resultState" 
     } catch {
         if (!$Continue) {
-            throw "Error deploying '$jsonFile' : $resultStat"
+            throw "Error deploying '$jsonFile' ($_.exception.message)"
         } else {
-            return "Error deploying '$jsonFile' : $resultState"
+            return "Error deploying '$jsonFile' ($_.exception.message)"
         }
     }
 }
