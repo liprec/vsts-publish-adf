@@ -24,7 +24,7 @@ Advanced:
 
 ## Release notes
 
-**1.0.0**
+**1.0.2**
 - Add extra error logging
 
 **1.0.0**

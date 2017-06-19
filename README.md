@@ -1,3 +1,5 @@
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/liprec/vsts-publish-adf?branch=master&svg=true)](https://ci.appveyor.com/project/liprec/vsts-publish-adf)
+
 # Azure Data Factory
 
 This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
@@ -18,7 +20,7 @@ This release task can be added to a release pipeline to either suspend or resume
 
 ## Release notes
 
-**1.0.6**
+**1.0.7**
 - Add extra error logging
 
 **1.0.5**
