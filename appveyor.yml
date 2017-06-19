@@ -4,11 +4,12 @@
 skip_commits:  
   message: /updated readme.*/
 
+# Pester tests are written against version 4.0.3-rc, so -pre is needed
 install:
-  - cinst pester -y
+  - cinst pester -y -pre 
 
 build: false
 
 test_script:
-  - ps: . .\Tests\appveyor.pester.ps1 -Test
+  - ps: . .\Tests\appveyor.pester.ps1
   - ps: . .\Tests\appveyor.pester.ps1 -Finalize
