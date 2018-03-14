@@ -1,0 +1,123 @@
+{
+    "id": "c1024007-2299-4799-bc66-6f7d78365b28",
+    "name": "toggle-adf-trigger",
+    "friendlyName": "Azure Data Factory (V2) Trigger",
+    "description": "Start/stop an Azure Data Factory Trigger",
+    "author": "Jan Pieter Posthuma",
+    "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
+    "category": "Deploy",
+    "visibility": [
+        "Build",
+        "Release"
+    ],
+    "demands": [
+        "azureps"
+    ],
+    "version": {
+        "Major": "1",
+        "Minor": "0",
+        "Patch": "2"
+    },
+    "minimumAgentVersion": "1.95.0",
+    "groups": [
+        {
+            "name": "azure",
+            "displayName": "Azure Details",
+            "isExpanded": true
+        },
+        {
+            "name": "adf",
+            "displayName": "Data Factory Details",
+            "isExpanded": true
+        },
+        {
+            "name": "advanced",
+            "displayName": "Advanced",
+            "isExpanded": false
+        }
+    ],
+    "inputs": [
+        {
+            "name": "ConnectedServiceNameSelector",
+            "type": "pickList",
+            "label": "Azure Connection Type",
+            "required": true,
+            "helpMarkDown": "",
+            "defaultValue": "ConnectedServiceNameARM",
+            "options": {
+                "ConnectedServiceNameARM": "Azure Resource Manager"
+            },
+            "groupname": "azure"
+        },
+        {
+            "name": "ConnectedServiceNameARM",
+            "type": "connectedService:AzureRM",
+            "label": "Azure RM Subscription",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "Select the Azure Resource Manager subscription.",
+            "groupname": "azure"
+        },
+        {
+            "name": "resourceGroupName",
+            "type": "pickList",
+            "label": "Resource group",
+            "required": true,
+            "helpMarkDown": "Provide the name of the resource group.",
+            "properties": {
+                "EditableOptions": "True"
+            },
+            "groupname": "azure"
+        },
+        {
+            "name": "adfName",
+            "type": "string",
+            "label": "Azure Data Factory",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Name of the Azure Data Factory.",
+            "groupname": "adf"
+        },
+        {
+            "name": "triggerName",
+            "type": "string",
+            "label": "Trigger name",
+            "defaultValue": "",
+            "helpMarkDown": "(Optional) Name of the Trigger.",
+            "groupname": "adf"
+        },
+        {
+            "name": "triggerStatus",
+            "type": "pickList",
+            "label": "Set Trigger Status",
+            "groupname": "adf",
+            "options": {
+                "start": "Start",
+                "stop": "Stop"
+            }
+        },
+        {
+            "name": "continue",
+            "type": "boolean",
+            "label": "Continue on Error",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Continue on failures",
+            "groupName": "advanced"
+        }
+    ],
+    "dataSourceBindings": [
+        {
+            "target": "resourceGroupName",
+            "endpointId": "$(ConnectedServiceNameARM)",
+            "dataSourceName": "AzureResourceGroups"
+        }
+    ],
+    "instanceNameFormat": "Toggle trigger(s) in $(adfName)",
+    "execution": {
+        "PowerShell3": {
+            "target": "$(currentDirectory)\\toggle-adf-trigger.ps1",
+            "workingDirectory": "$(currentDirectory)"
+        }
+    }
+}

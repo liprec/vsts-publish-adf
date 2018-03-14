@@ -1,11 +1,11 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "1.0.7",
+    "version": "1.5.0",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": true,
-    "description": "This extension adds release tasks related to Azure Data Factory: publishing JSON, suspend/resume pipelines",
+    "description": "This extension adds release tasks related to Azure Data Factory V1 and V2: publishing JSON, start/stop triggers, suspend/resume pipelines",
     "targets": [
         {
             "id": "Microsoft.VisualStudio.Services.Cloud"
@@ -25,7 +25,8 @@
         "azure",
         "deployment",
         "adf",
-        "data factory"
+        "data factory",
+        "data factory v2"
     ],
     "scopes": [
         "vso.release"
@@ -74,6 +75,16 @@
             "properties": {
                 "name" : "suspend-adf-pipeline"
             }
+        },
+        {
+            "id": "toggle-adf-trigger",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "toggle-adf-trigger"
+            }
         }
     ],
     "files": [
@@ -82,6 +93,9 @@
         },
         {
             "path": "suspend-adf-pipeline"
+        },
+        {
+            "path": "toggle-adf-trigger"
         },
         {
             "path": "images/logo.png",
@@ -97,6 +111,10 @@
         },
         {
             "path": "images/screenshot-3.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-4.png",
             "addressable": true
         }
     ]

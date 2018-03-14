@@ -76,69 +76,28 @@
             "defaultValue" : "",
             "required" : "true",
             "helpMarkDown" : "Name of the Azure Data Factory.",
-            "groupname" : "azure"
+            "groupname" : "adf"
         },
         {
-            "name" : "timeSone",
-            "type" : "pickList",
-            "label" : "Set Timezone",
-            "groupname" : "adf",
-            "defaultValue" : "local",
-            "options" : {
-                "local" : "Local Timezone",
-                "utc" : "UTC"
-            }
+            "name": "windowUnit",
+            "type": "string",
+            "label": "Window Unit",
+            "defaultValue": "Days",
+            "required": "true",
+            "helpMarkDown": "Unit of window length",
+            "options": {
+                "suspend": "Days",
+                "resume": "Hours"
+            },
+            "groupname": "adf"
         },
         {
-            "name" : "dateFixed",
-            "type" : "pickList",
-            "label" : "Date",
-            "defaultValue" : "today",
-            "groupname" : "adf",
-            "options" : {
-                "today" : "Today",
-                "yesterday" : "Yesterday",
-                "tomorrow" : "Tomorrow",
-                "custom" : "Custom"
-            }
-        },
-        {
-            "name" : "dateCustom",
-            "type" : "string",
-            "label" : "Custom Date",
-            "helpMarkDown" : "Custom Date in Format YYYY/MM/DD",
-            "groupname" : "adf",
-            "visibleRule" : "dateFixed = custom"
-        },
-        {
-            "name" : "fixedTime",
-            "type" : "pickList",
-            "label" : "Date",
-            "defaultValue" : "Midnight",
-            "groupname" : "adf",
-            "options" : {
-                "midnight" : "Midnight",
-                "noon" : "Noon",
-                "now" : "Now",
-                "custom" : "Custom"
-            }
-        },
-        {
-            "name" : "timeCustom",
-            "type" : "string",
-            "required" : true,
-            "label" : "Custom Time in format hh:dd:ss [24h].",
-            "groupname" : "adf",
-            "visibleRule" : "timeFixed = custom"
-        },
-        {
-            "name" : "parallel",
-            "type" : "string",
-            "label" : "Parallel tasks",
-            "defaultValue" : "5",
-            "required" : false,
-            "helpMarkDown" : "Number of parallel task",
-            "groupName" : "advanced"
+            "name": "windowLength",
+            "type": "number",
+            "label": "Window Length",
+            "required": "true",
+            "helpMarkDown": "Length of window",
+            "groupname": "adf"
         }
     ],
     "dataSourceBindings" : [

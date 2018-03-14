@@ -1,5 +1,5 @@
 # Set the $version to the 'to be tested' version
-$version = '1.0.2'
+$version = '1.1.5'
 
 # Dynamic set the $testModule to the module file linked to the current test file
 $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.Tests.ps1', '')
@@ -33,6 +33,7 @@ Describe "Module: $linkedModule" {
         InModuleScope $linkedModule {
             # Standard mock function for Azure 'Get-AzureRmDataFactory' call
             Mock Get-AzureRmDataFactory { return $DataFactoryName }
+            Mock Get-AzureRmDataFactoryV2 { return $DataFactoryName }
             # Override mock function for Azure 'Get-AzureRmDataFactory' call with -DataFactoryName 'dataFactoryEmpty'
             Mock Get-AzureRmDataFactory { return $null } -ParameterFilter { $DataFactoryName -eq 'dataFactoryEmpty' }
 
@@ -42,8 +43,32 @@ Describe "Module: $linkedModule" {
                 $dataFactoryName = 'dataFactory'
                 $dataFactory = getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName
 
-                It "mock Get-AzureRmDataFactory correct" {
+                It "mock functions correct" {
+                    #V1
                     Assert-MockCalled Get-AzureRmDataFactory -Times 1
+                    #V2
+                    Assert-MockCalled Get-AzureRmDataFactoryV2 -Times 0
+                }
+
+                It "return an Azure Data Factory object" {
+                    $dataFactory | Should Be $dataFactoryName
+                }
+
+                It "complete succesfully" {
+                    { $dataFactory } | Should Not Throw
+                }
+            }
+
+            Context "Existing Azure Data Factory V2" {
+                $dataFactoryName = 'dataFactoryV2'
+                $version = "V2"
+                $dataFactory = getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+
+                It "mock functions correct" {
+                    #V1
+                    Assert-MockCalled Get-AzureRmDataFactory -Times 0
+                    #V2
+                    Assert-MockCalled Get-AzureRmDataFactoryV2 -Times 1
                 }
 
                 It "return an Azure Data Factory object" {
@@ -83,25 +108,27 @@ Describe "Module: $linkedModule" {
                 $deployType = 2 #pipeline
                 getFriendlyName $deployType | Should Be "Pipeline" 
             }
+
+            It "return value Trigger" {
+                $deployType = 3 #trigger
+                getFriendlyName $deployType | Should Be "Trigger" 
+            }
         }
     }
 
     Context "function: clearExisting" {
         InModuleScope $linkedModule {
-            Mock Get-AzureRmDataFactoryLinkedService { return @( @{ LinkedServiceName = 'linkedservice1' }, @{ LinkedServiceName = 'linkedservice2' }, @{ LinkedServiceName = 'linkedservice3' } ) }
-            Mock Get-AzureRmDataFactoryDataset { return @( @{ DatasetName = 'dataset1' }, @{ DatasetName = 'dataset2' }, @{ DatasetName = 'dataset3' } ) }
-            Mock Get-AzureRmDataFactoryPipeline { return @( @{ PipelineName = 'pipeline1' }, @{ PipelineName = 'pipeline2' }, @{ PipelineName = 'pipeline3' } ) }
-
-            Mock Remove-AzureRmDataFactoryLinkedService { return $true }
-            Mock Remove-AzureRmDataFactoryDataset { return $true }
-            Mock Remove-AzureRmDataFactoryPipeline { return $true }
+            Mock clearLinkedService { return 3 }
+            Mock clearDataset { return 3 }
+            Mock clearPipeline { return 3 }
+            Mock clearTrigger { return 3 }
 
             Mock Write-Host {}
 
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
             $dataFactory.DataFactoryName = 'dataFactory'
-            $path = "c:\\temp"
+            $path = @{ FullName = "C:\temp"; Name = "temp" }
 
             Context "clear existing Linked Service" {
                 $deployType = 0 #linkedservice
@@ -112,13 +139,10 @@ Describe "Module: $linkedModule" {
                 }
 
                 It "correct functions called" {
-                    Assert-MockCalled Get-AzureRmDataFactoryLinkedService -Times 1
-                    Assert-MockCalled Get-AzureRmDataFactoryDataset -Times 0
-                    Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 0
-
-                    Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 1
-                    Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 0
-                    Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 0
+                    Assert-MockCalled clearLinkedService -Times 1
+                    Assert-MockCalled clearDataset -Times 0
+                    Assert-MockCalled clearPipeline -Times 0
+                    Assert-MockCalled clearTrigger -Times 0
 
                     Assert-MockCalled Write-Host -Times 1
                 }
@@ -133,13 +157,10 @@ Describe "Module: $linkedModule" {
                 }
 
                 It "correct functions called" {
-                    Assert-MockCalled Get-AzureRmDataFactoryLinkedService -Times 0
-                    Assert-MockCalled Get-AzureRmDataFactoryDataset -Times 1
-                    Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 0
-
-                    Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 0
-                    Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 1
-                    Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 0
+                    Assert-MockCalled clearLinkedService -Times 0
+                    Assert-MockCalled clearDataset -Times 1
+                    Assert-MockCalled clearPipeline -Times 0
+                    Assert-MockCalled clearTrigger -Times 0
 
                     Assert-MockCalled Write-Host -Times 1
                 }
@@ -154,13 +175,28 @@ Describe "Module: $linkedModule" {
                 }
 
                 It "correct functions called" {
-                    Assert-MockCalled Get-AzureRmDataFactoryLinkedService -Times 0
-                    Assert-MockCalled Get-AzureRmDataFactoryDataset -Times 0
-                    Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 1
+                    Assert-MockCalled clearLinkedService -Times 0
+                    Assert-MockCalled clearDataset -Times 0
+                    Assert-MockCalled clearPipeline -Times 1
+                    Assert-MockCalled clearTrigger -Times 0
 
-                    Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 0
-                    Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 0
-                    Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 1
+                    Assert-MockCalled Write-Host -Times 1
+                }
+            }
+
+            Context "clear existing Triger" {
+                $deployType = 3 #trigger
+
+                It "correct return value" {
+                    $return = clearExisting -DataFactory $dataFactory -DeployType $deployType -Path $path
+                    $return | Should Be 3
+                }
+
+                It "correct functions called" {
+                    Assert-MockCalled clearLinkedService -Times 0
+                    Assert-MockCalled clearDataset -Times 0
+                    Assert-MockCalled clearPipeline -Times 0
+                    Assert-MockCalled clearTrigger -Times 1
 
                     Assert-MockCalled Write-Host -Times 1
                 }
@@ -199,6 +235,189 @@ Describe "Module: $linkedModule" {
         }
     }
 
+    Context "function: clearLinkedServices" {
+        InModuleScope $linkedModule {
+            Mock Get-AzureRmDataFactoryLinkedService { return @( @{ LinkedServiceName = 'linkedservice1' }, @{ LinkedServiceName = 'linkedservice2' }, @{ LinkedServiceName = 'linkedservice3' } ) }
+            Mock Get-AzureRmDataFactoryV2LinkedService { return @( @{ LinkedServiceName = 'linkedservice1' }, @{ LinkedServiceName = 'linkedservice2' }, @{ LinkedServiceName = 'linkedservice3' } ) }
+
+            Mock Remove-AzureRmDataFactoryLinkedService { return $true }
+            Mock Remove-AzureRmDataFactoryV2LinkedService { return $true }
+                
+            Context "V1/Default" {    
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactory'
+
+                Context "clear existing Linked Service" {
+                    It "correct return value" {
+                        $return = clearLinkedService -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V1 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryLinkedService -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 1
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2LinkedService -Times 0
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2LinkedService -Times 0
+                    }
+                }
+            }
+            Context "V2" {
+                $version = "V2" 
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactoryV2'
+
+                Context "clear existing Linked Service" {
+                    It "correct return value" {
+                        $return = clearLinkedService -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V1 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryLinkedService -Times 0
+                        Assert-MockCalled Remove-AzureRmDataFactoryLinkedService -Times 0
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2LinkedService -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2LinkedService -Times 1
+                    }
+                }
+            }
+        }
+    }
+
+    Context "function: clearDatasets" {
+        InModuleScope $linkedModule {
+            Mock Get-AzureRmDataFactoryDataset { return @( @{ DatasetName = 'dataset1' }, @{ DatasetName = 'dataset2' }, @{ DatasetName = 'dataset3' } ) }
+            Mock Get-AzureRmDataFactoryV2Dataset { return @( @{ DatasetName = 'dataset1' }, @{ DatasetName = 'dataset2' }, @{ DatasetName = 'dataset3' } ) }
+            
+            Mock Remove-AzureRmDataFactoryDataset { return $true }
+            Mock Remove-AzureRmDataFactoryV2Dataset { return $true }
+                
+            Context "V1/Default" {    
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactory'
+
+                Context "clear existing Dataset" {
+                    It "correct return value" {
+                        $return = clearDataset -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V1 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryDataset -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 1
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2Dataset -Times 0
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2Dataset -Times 0
+                    }
+                }
+            }
+            Context "V2" {
+                $version = "V2" 
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactoryV2'
+
+                Context "clear existing Dataset" {
+                    It "correct return value" {
+                        $return = clearDataset -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V1 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryDataset -Times 0
+                        Assert-MockCalled Remove-AzureRmDataFactoryDataset -Times 0
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2Dataset -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2Dataset -Times 1
+                    }
+                }
+            }
+        }
+    }
+
+    Context "function: clearPipelines" {
+        InModuleScope $linkedModule {
+            Mock Get-AzureRmDataFactoryPipeline { return @( @{ PipelineName = 'pipeline1' }, @{ PipelineName = 'pipeline2' }, @{ PipelineName = 'pipeline3' } ) }
+            Mock Get-AzureRmDataFactoryV2Pipeline { return @( @{ PipelineName = 'pipeline1' }, @{ PipelineName = 'pipeline2' }, @{ PipelineName = 'pipeline3' } ) }
+            
+            Mock Remove-AzureRmDataFactoryPipeline { return $true }
+            Mock Remove-AzureRmDataFactoryV2Pipeline { return $true }
+                
+            Context "V1/Default" {    
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactory'
+
+                Context "clear existing Pipeline" {
+                    It "correct return value" {
+                        $return = clearPipeline -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V1 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 1
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2Pipeline -Times 0
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2Pipeline -Times 0
+                    }
+                }
+            }
+            Context "V2" {
+                $version = "V2" 
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactoryV2'
+
+                Context "clear existing Pipeline" {
+                    It "correct return value" {
+                        $return = clearPipeline -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V1 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryPipeline -Times 0
+                        Assert-MockCalled Remove-AzureRmDataFactoryPipeline -Times 0
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2Pipeline -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2Pipeline -Times 1
+                    }
+                }
+            }
+        }
+    }
+
+    Context "function: clearTriggers" {
+        InModuleScope $linkedModule {
+            Mock Get-AzureRmDataFactoryV2Trigger { return @( @{ TriggerName = 'trigger1' }, @{ TriggerName = 'trigger2' }, @{ TriggerName = 'trigger3' } ) }
+
+            Mock Remove-AzureRmDataFactoryV2Trigger { return $true }
+                
+            Context "V2" {
+                $version = "V2" 
+                $resourceGroupName = 'resourceGroupName'
+                $dataFactoryName = 'dataFactoryV2'
+
+                Context "clear existing Trigger" {
+                    It "correct return value" {
+                        $return = clearTrigger -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version
+                        $return | Should Be 3
+                    }
+    
+                    It "correct functions called" {
+                        # V2 versions
+                        Assert-MockCalled Get-AzureRmDataFactoryV2Trigger -Times 1
+                        Assert-MockCalled Remove-AzureRmDataFactoryV2Trigger -Times 1
+                    }
+                }
+            }
+        }
+    }
+
     Context "function: deployJson" {    
         InModuleScope $linkedModule {
             #Mock Write-Host {}
@@ -206,10 +425,12 @@ Describe "Module: $linkedModule" {
             Mock deployLinkedServiceJSON { return @{ ProvisioningState = "Suceeded" } }
             Mock deployDatasetJSON { return @{ ProvisioningState = "Suceeded" } }
             Mock deployPipelineJSON { return @{ ProvisioningState = "Suceeded" } }
+            Mock deployTriggerJSON { return @{ ProvisioningState = "Suceeded" } }
 
             Mock deployLinkedServiceJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
             Mock deployDatasetJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
             Mock deployPipelineJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
+            Mock deployTriggerJSON { throw "File not found" } -ParameterFilter { $Json.Name -eq "file2.json" }
 
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
@@ -259,6 +480,19 @@ Describe "Module: $linkedModule" {
                         $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
                     } | Should Not Throw
                 }
+
+                It "check Trigger deploy" {
+                    $deployType = 3 #trigger
+                    $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
+                    $result | Should Be "Deploy Trigger 'file1.json' : Suceeded"
+                }
+
+                It "check Trigger deploy - no exception" {
+                    $deployType = 3 #pipeline                    
+                    { 
+                        $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
+                    } | Should Not Throw
+                }
             }
 
             Context "deploy throws error; continue set to `$true" {
@@ -271,7 +505,7 @@ Describe "Module: $linkedModule" {
                 It "check Linked Service deploy" {
                     $deployType = 0 #linkedservice                    
                     $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
-                    $result | Should Be "Error deploying 'file2.json' (File not found.exception.message)"
+                    $result | Should Be "Error deploying 'file2.json' (File not found)"
                 }
 
                 It "check Linked Service deploy - no exception" {
@@ -284,7 +518,7 @@ Describe "Module: $linkedModule" {
                 It "check Dataset deploy" {
                     $deployType = 1 #dataset
                     $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
-                    $result | Should Be "Error deploying 'file2.json' (File not found.exception.message)"
+                    $result | Should Be "Error deploying 'file2.json' (File not found)"
                 }
 
                 It "check Dataset deploy - no exception" {
@@ -297,11 +531,24 @@ Describe "Module: $linkedModule" {
                 It "check Pipeline deploy" {
                     $deployType = 2 #pipeline
                     $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
-                    $result | Should Be "Error deploying 'file2.json' (File not found.exception.message)"
+                    $result | Should Be "Error deploying 'file2.json' (File not found)"
                 }
 
                 It "check Pipeline deploy - no exception" {
                     $deployType = 2 #pipeline                    
+                    { 
+                        $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
+                    } | Should Not Throw
+                }
+
+                It "check Trigger deploy" {
+                    $deployType = 3 #trigger
+                    $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
+                    $result | Should Be "Error deploying 'file2.json' (File not found)"
+                }
+
+                It "check Trigger deploy - no exception" {
+                    $deployType = 3 #trigger                    
                     { 
                         $result = deployJson -DataFactory $dataFactory -DeployType $deployType -Json $json -Overwrite $overwrite -Continue $continue
                     } | Should Not Throw
@@ -341,60 +588,138 @@ Describe "Module: $linkedModule" {
 
     Context "function: deployLinkedServiceJSON" {
         InModuleScope $linkedModule {
-            Mock New-AzureRmDataFactoryLinkedService { return "Succeeded" }
-            Mock New-AzureRmDataFactoryLinkedService { throw } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryOverwrite' }
-            Mock New-AzureRmDataFactoryLinkedService { throw } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryError' }
+            Context "V1/Default" {
+                Mock New-AzureRmDataFactoryLinkedService { return "Succeeded" }
+                Mock New-AzureRmDataFactoryLinkedService { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryOverwrite' }
+                Mock New-AzureRmDataFactoryLinkedService { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryError' }
 
-            $jsonFile = "C:\\temp\\test.json"
-            
-            Context "overwrite = `$true" {
-                $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                $dataFactory.ResourceGroupName = 'resourceGroupName'
-                $dataFactory.DataFactoryName = 'dataFactory'
-                $overwrite = $true
-            
-                $return = deployLinkedServiceJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
+                Mock Set-AzureRmDataFactoryV2LinkedService { return "Succeeded" }
 
-                It "mock New-AzureRmDataFactoryLinkedService correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 1
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactory'
+                    $overwrite = $true
+                
+                    $return = deployLinkedServiceJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 1
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2LinkedService -Times 0
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "check correct deploy" {
-                    $return | Should Be "Succeeded"
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryOverwrite'
+
+                        $overwrite = $false
+                        {
+                            deployLinkedServiceJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 1 { $DataFactoryName -eq 'dataFactoryOverwrite' }
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2LinkedService -Times 0
+                    }
+                }
+
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryError'
+
+                        $overwrite = $false
+                        {
+                            deployLinkedServiceJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryError' }
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2LinkedService -Times 0
+                    }
                 }
             }
 
-            Context "overwrite = `$false" {
-                It "check correct deploy" {
-                    $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                    $dataFactory.ResourceGroupName = 'resourceGroupName'
-                    $dataFactory.DataFactoryName = 'dataFactoryOverwrite'
+            Context "V2" {
+                Mock Set-AzureRmDataFactoryV2LinkedService { return "Succeeded" }
+                Mock Set-AzureRmDataFactoryV2LinkedService { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                Mock Set-AzureRmDataFactoryV2LinkedService { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
 
-                    $overwrite = $false
-                    {
-                        deployLinkedServiceJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
-                    } | Should Throw
+                Mock New-AzureRmDataFactoryLinkedService { return "Succeeded" }
+
+                $version = "V2"
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactoryV2'
+                    $overwrite = $true
+                
+                    $return = deployLinkedServiceJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2LinkedService -Times 1
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "mock New-AzureRmDataFactoryLinkedService correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 1 { $DataFactory.DataFactoryName -eq 'dataFactoryOverwrite' }
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Overwrite'
+
+                        $overwrite = $false
+                        {
+                            deployLinkedServiceJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2LinkedService -Times 1 { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                    }
                 }
-            }
 
-            Context "Empty DataFactory" {
-                It "check deploy to empty datafactory" {
-                    $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                    $dataFactory.ResourceGroupName = 'resourceGroupName'
-                    $dataFactory.DataFactoryName = 'dataFactoryError'
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Error'
 
-                    $overwrite = $false
-                    {
-                        deployLinkedServiceJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
-                    } | Should Throw
-                }
+                        $overwrite = $false
+                        {
+                            deployLinkedServiceJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
 
-                It "mock New-AzureRmDataFactoryLinkedService correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 1 -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryError' }
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryLinkedService -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2LinkedService -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
+                    }
                 }
             }
         }
@@ -402,60 +727,138 @@ Describe "Module: $linkedModule" {
 
     Context "function: deployDatasetJSON" {
         InModuleScope $linkedModule {
-            Mock New-AzureRmDataFactoryDataset { return "Succeeded" }
-            Mock New-AzureRmDataFactoryDataset { throw } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryOverwrite' }
-            Mock New-AzureRmDataFactoryDataset { throw } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryError' }
+            Context "V1/Default" {
+                Mock New-AzureRmDataFactoryDataset { return "Succeeded" }
+                Mock New-AzureRmDataFactoryDataset { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryOverwrite' }
+                Mock New-AzureRmDataFactoryDataset { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryError' }
 
-            $jsonFile = "C:\\temp\\test.json"
-            
-            Context "overwrite = `$true" {
-                $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                $dataFactory.ResourceGroupName = 'resourceGroupName'
-                $dataFactory.DataFactoryName = 'dataFactory'
-                $overwrite = $true
-            
-                $return = deployDatasetJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
+                Mock Set-AzureRmDataFactoryV2Dataset { return "Succeeded" }
 
-                It "mock New-AzureRmDataFactoryDataset correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryDataset -Times 1
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactory'
+                    $overwrite = $true
+                
+                    $return = deployDatasetJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryDataset -Times 1
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Dataset -Times 0
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "check correct deploy" {
-                    $return | Should Be "Succeeded"
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactoryOverwrite'
+
+                        $overwrite = $false
+                        {
+                            deployDatasetJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryDataset -Times 1 { $DataFactoryName -eq 'dataFactoryOverwrite' }
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Dataset -Times 0
+                    }
+                }
+
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryError'
+
+                        $overwrite = $false
+                        {
+                            deployDatasetJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryDataset -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryError' }
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Dataset -Times 0
+                    }
                 }
             }
 
-            Context "overwrite = `$false" {
-                It "check correct deploy" {
-                    $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                    $dataFactory.ResourceGroupName = 'resourceGroupName'
-                    $dataFactory.DataFactoryName = 'dataFactoryOverwrite'
+            Context "V2" {
+                Mock Set-AzureRmDataFactoryV2Dataset { return "Succeeded" }
+                Mock Set-AzureRmDataFactoryV2Dataset { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                Mock Set-AzureRmDataFactoryV2Dataset { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
 
-                    $overwrite = $false
-                    {
-                        deployDatasetJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
-                    } | Should Throw
+                Mock New-AzureRmDataFactoryDataset { return "Succeeded" }
+
+                $version = "V2"
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactoryV2'
+                    $overwrite = $true
+                
+                    $return = deployDatasetJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryDataset -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Dataset -Times 1
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "mock New-AzureRmDataFactoryDataset correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryDataset -Times 1 { $DataFactory.DataFactoryName -eq 'dataFactoryOverwrite' }
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactoryV2Overwrite'
+
+                        $overwrite = $false
+                        {
+                            deployDatasetJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryDataset -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Dataset -Times 1 { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                    }
                 }
-            }
 
-            Context "Empty DataFactory" {
-                It "check deploy to empty datafactory" {
-                    $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                    $dataFactory.ResourceGroupName = 'resourceGroupName'
-                    $dataFactory.DataFactoryName = 'dataFactoryError'
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Error'
 
-                    $overwrite = $false
-                    {
-                        deployDatasetJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
-                    } | Should Throw
-                }
+                        $overwrite = $false
+                        {
+                            deployDatasetJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
 
-                It "mock New-AzureRmDataFactoryDataset correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryDataset -Times 1 -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryError' }
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryDataset -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Dataset -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
+                    }
                 }
             }
         }        
@@ -463,60 +866,202 @@ Describe "Module: $linkedModule" {
 
     Context "function: deployPipelineJSON" {
         InModuleScope $linkedModule {
-            Mock New-AzureRmDataFactoryPipeline { return "Succeeded" }
-            Mock New-AzureRmDataFactoryPipeline { throw } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryOverwrite' }
-            Mock New-AzureRmDataFactoryPipeline { throw } -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryError' }
+            Context "V1/Default" {
+                Mock New-AzureRmDataFactoryPipeline { return "Succeeded" }
+                Mock New-AzureRmDataFactoryPipeline { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryOverwrite' }
+                Mock New-AzureRmDataFactoryPipeline { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryError' }
 
-            $jsonFile = "C:\\temp\\test.json"
-            
-            Context "overwrite = `$true" {
-                $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                $dataFactory.ResourceGroupName = 'resourceGroupName'
-                $dataFactory.DataFactoryName = 'dataFactory'
-                $overwrite = $true
-            
-                $return = deployPipelineJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
+                Mock Set-AzureRmDataFactoryV2Pipeline { return "Succeeded" }
 
-                It "mock New-AzureRmDataFactoryPipeline correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 1
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactory'
+                    $overwrite = $true
+                
+                    $return = deployPipelineJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 1
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Pipeline -Times 0
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "check correct deploy" {
-                    $return | Should Be "Succeeded"
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryOverwrite'
+
+                        $overwrite = $false
+                        {
+                            deployPipelineJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock New-AzureRmDataFactoryPipeline correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 1 { $DataFactoryName -eq 'dataFactoryOverwrite' }
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Pipeline -Times 0
+                    }
+                }
+
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryError'
+
+                        $overwrite = $false
+                        {
+                            deployPipelineJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock funcions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryError' }
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Pipeline -Times 0
+                    }
                 }
             }
 
-            Context "overwrite = `$false" {
-                It "check correct deploy" {
-                    $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                    $dataFactory.ResourceGroupName = 'resourceGroupName'
-                    $dataFactory.DataFactoryName = 'dataFactoryOverwrite'
+            Context "V2" {
+                Mock Set-AzureRmDataFactoryV2Pipeline { return "Succeeded" }
+                Mock Set-AzureRmDataFactoryV2Pipeline { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                Mock Set-AzureRmDataFactoryV2Pipeline { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
 
-                    $overwrite = $false
-                    {
-                        deployPipelineJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
-                    } | Should Throw
+                Mock New-AzureRmDataFactoryPipeline { return "Succeeded" }
+
+                $version = "V2"
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactoryV2'
+                    $overwrite = $true
+                
+                    $return = deployPipelineJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Pipeline -Times 1
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "mock New-AzureRmDataFactoryPipeline correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 1 { $DataFactory.DataFactoryName -eq 'dataFactoryOverwrite' }
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Overwrite'
+
+                        $overwrite = $false
+                        {
+                            deployPipelineJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Pipeline -Times 1 { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                    }
+                }
+
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Error'
+
+                        $overwrite = $false
+                        {
+                            deployPipelineJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V1
+                        Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 0
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Pipeline -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
+                    }
                 }
             }
+        }
+    }
 
-            Context "Empty DataFactory" {
-                It "check deploy to empty datafactory" {
-                    $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
-                    $dataFactory.ResourceGroupName = 'resourceGroupName'
-                    $dataFactory.DataFactoryName = 'dataFactoryError'
+    Context "function: deployTriggerJSON" {
+        InModuleScope $linkedModule {
+            Context "V2" {
+                Mock Set-AzureRmDataFactoryV2Trigger { return "Succeeded" }
+                Mock Set-AzureRmDataFactoryV2Trigger { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                Mock Set-AzureRmDataFactoryV2Trigger { throw } -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
 
-                    $overwrite = $false
-                    {
-                        deployPipelineJSON -DataFactory $dataFactory -JsonFile $jsonFile -Overwrite $overwrite
-                    } | Should Throw
+                $version = "V2"
+                $jsonFile = @{ FullName = "C:\temp\test.json"; Name = "test.json" }
+                
+                Context "overwrite = `$true" {
+                    $resourceGroupName = 'resourceGroupName'
+                    $dataFactoryName = 'dataFactoryV2'
+                    $overwrite = $true
+                
+                    $return = deployTriggerJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+
+                    It "mock functions correct" {
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Trigger -Times 1
+                    }
+
+                    It "check correct deploy" {
+                        $return | Should Be "Succeeded"
+                    }
                 }
 
-                It "mock New-AzureRmDataFactoryPipeline correct" {
-                    Assert-MockCalled New-AzureRmDataFactoryPipeline -Times 1 -ParameterFilter { $DataFactory.DataFactoryName -eq 'dataFactoryError' }
+                Context "overwrite = `$false" {
+                    It "check correct deploy" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Overwrite'
+
+                        $overwrite = $false
+                        {
+                            deployTriggerJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Trigger -Times 1 { $DataFactoryName -eq 'dataFactoryV2Overwrite' }
+                    }
+                }
+
+                Context "Empty DataFactory" {
+                    It "check deploy to empty datafactory" {
+                        $resourceGroupName = 'resourceGroupName'
+                        $dataFactoryName = 'dataFactoryV2Error'
+
+                        $overwrite = $false
+                        {
+                            deployTriggerJSON -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName -Version $version -JsonFile $jsonFile -Overwrite $overwrite
+                        } | Should Throw
+                    }
+
+                    It "mock functions correct" {
+                        #V2
+                        Assert-MockCalled Set-AzureRmDataFactoryV2Trigger -Times 1 -ParameterFilter { $DataFactoryName -eq 'dataFactoryV2Error' }
+                    }
                 }
             }
         }
@@ -532,7 +1077,7 @@ Describe "Module: $linkedModule" {
             $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory
             $dataFactory.ResourceGroupName = 'resourceGroupName'
             $dataFactory.DataFactoryName = 'dataFactory'
-            $path = "C:\\temp"
+            $path = @{ FullName = "C:\temp"; Name = "temp" }
             $deployType = 0 #linkedservice
             $overwrite = $true
             $continue = $true
@@ -566,7 +1111,6 @@ Describe "Module: $linkedModule" {
                     Assert-MockCalled Write-Host -Times 5
                 }
             }
-
 
             Context "path incorrect parameter" {
                 $dataFactory = New-Object Microsoft.Azure.Commands.DataFactories.Models.PSDataFactory

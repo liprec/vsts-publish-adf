@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "1.0.5",
+    "version": "1.2.11",
     "name": "Azure Data Factory (Preview)",
     "publisher": "liprec",
     "public": false,
@@ -74,6 +74,16 @@
             "properties": {
                 "name" : "suspend-adf-pipeline"
             }
+        },
+        {
+            "id": "toggle-adf-trigger",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "toggle-adf-trigger"
+            }
         }
     ],
     "files": [
@@ -81,10 +91,10 @@
             "path": "deploy-adf-json"
         },
         {
-            "path": "schedule-adf-pipeline"
+            "path": "suspend-adf-pipeline"
         },
         {
-            "path": "suspend-adf-pipeline"
+            "path": "toggle-adf-trigger"
         },
         {
             "path": "images/logo.png",
@@ -100,6 +110,10 @@
         },
         {
             "path": "images/screenshot-3.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-4.png",
             "addressable": true
         }
     ]

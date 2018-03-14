@@ -13,20 +13,13 @@ Initialize-Azure
 # Definition parameter retrieval
 $resourceGroupName = Get-VstsInput -Name "resourceGroupName" -Require
 $adfname = Get-VstsInput -Name "adfname" -Require
-$timeZone = Get-VstsInput -Name "timeZone"
-$dateFixed = Get-VstsInput -Name "dateFixed"
-$dateCustom = Get-VstsInput -Name "dateCustom"
-$timeFixed = Get-VstsInput -Name "timeFixed"
-$timeCustom = Get-VstsInput -Name "timeCustom"
-$parallel = Get-VstsInput -Name "parallel"
+$windowUnit = Get-VstsInput -Name "windowUnit" -Require
+$windowLength = Get-VstsInput -Name "windowLength" -Require
 
-
-$p = checkParallel -Value $parallel
-$startDateTime = convertToDateTime  -TimeZone $timeZone `
-                                    -DateFixed $dateChoose -DateCustom $dateCustom `
-                                    -TimeFixed $timeFixed -TimeCustom $timeCustom
+$endWindow = getEndWindow
+$startWindow = getStartWindow -EndWindow $endWindow -WindowUnit $windowUnit -WindowLength $windowLength
 
 $adf = getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $adfname
 
-
+$result = setPipelineActivityWindow -DataFactory $adf -
 Write-Host "Set schedule for '$adfname' pipelines"

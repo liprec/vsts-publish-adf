@@ -22,6 +22,22 @@ function checkParallel([string]$Value) {
 
 <#
 .SYNOPSIS
+
+.DESCRIPTION
+Long description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+function getEndWindow() {
+    return [DateTime](Get-Date)
+}
+
+<#
+.SYNOPSIS
 Short description
 
 .DESCRIPTION
@@ -45,45 +61,19 @@ Parameter description
 .EXAMPLE
 An example
 #>
-function convertToDateTime($TimeZone, $DateFixed, $DateCustom, $TimeFixed, $TimeCustom) {
-    
-    switch ($DateFixed) {
-        "today" {
-            $rDate = (Get-Date)
-        }
-        "yesterday" {
-            $rDate = (Get-Date).AddDays(-1)
-        }
-        "tomorrow" {
-            $rDate = (Get-Date).AddDays(1)
-        }
-        "custom" {
-            try {
-                $rDate = Get-Date -Date $DateCustom
-            } catch {
-                throw "Incorrect custom date provided"
-            }
-        }
-    }
-    $rDate = $rDate.Date
+function getStartWindow($EndWindow, $WindowUnit, $WindowLength) {
 
-    switch ($TimeFixed) {
-        "midnight" {
+    $rDate = $EndWindow
+
+    switch ($WindowUnit) {
+        "Days" {
+            $rDate = $rDate.AddDays(-$WindowLength)
         }
-        "noon" {
-            $rDate = $rDate.AddHours(12)
-        }
-        "now" {
-            $rDate = $rDate.AddTicks($rDate.TimeOfDay.Ticks)
-        }
-        "custom" {
-            try {
-                $rDate = $rDate.AddTicks((New-TimeSpan $TimeCustom).Ticks)
-            } catch {
-                throw "Incorrect custom time provided"
-            }
+        "Hours" {
+            $rDate = $rDate.AddHours(-$WindowLength)
         }
     }
+
     return $rDate
 }
 
