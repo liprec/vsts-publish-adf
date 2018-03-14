@@ -18,6 +18,10 @@ if (-not $Finalize) {
     "`n`tSTATUS: Testing with PowerShell $PSVersion`n"
 		
     Import-Module Pester
+
+    # Install AzureRM.DataFactoryV2
+    Install-Module -Name AzureRM.DataFactoryV2 -RequiredVersion 0.5.0 
+
     Set-Variable ProgressPreference -Value SilentlyContinue
     Invoke-Pester -Quiet -Path "$ProjectRoot\Tests" -OutputFormat NUnitXml -OutputFile "$ProjectRoot\$TestFile" -PassThru |
         Export-Clixml -Path "$ProjectRoot\PesterResults$PSVersion.xml"
