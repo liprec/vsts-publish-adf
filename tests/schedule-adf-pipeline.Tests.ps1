@@ -66,41 +66,6 @@ Describe "Module: $linkedModule" {
             }
         }
     }
-
-    Context "convertToDateTime" {
-        InModuleScope $linkedModule {
-            # Get-Date returns always 2017/03/05T13:24:04Z+03:00 = UTC+3
-            $fixedDate = (Get-Date -Year 2017 -Month 3 -Day 5 -Hour 13 -Minute 24 -Second 4).ToUniversalTime().AddHours(3)
-            Mock Get-Date { return  $fixedDate } 
-            #Mock Get-Date { return "2017/05/01 10:24:04" }
-
-            It "convert options 'Local', Today', 'Midnight'" {
-                $timeZone = 'local'
-                $dateFixed = 'today'
-                $dateCustom = $null
-                $timeFixed = 'midnight'
-                $timeCustom = $null
-                
-                $startDateTime = convertToDateTime  -TimeZone $timeZone `
-                                    -DateFixed $dateFixed -DateCustom $dateCustom `
-                                    -TimeFixed $timeFixed -TimeCustom $timeCustom
-                $startDateTime.ToString("yyy/MM/dd hh:mm:ss tt") | Should Be "2017/03/05 12:00:00 AM"
-            }
-
-            It "convert options 'Local', Today', 'Noon'" {
-                $timeZone = 'local'
-                $dateFixed = 'today'
-                $dateCustom = $null
-                $timeFixed = 'noon'
-                $timeCustom = $null
-                
-                $startDateTime = convertToDateTime  -TimeZone $timeZone `
-                                    -DateFixed $dateFixed -DateCustom $dateCustom `
-                                    -TimeFixed $timeFixed -TimeCustom $timeCustom
-                $startDateTime.ToString("yyy/MM/dd hh:mm:ss tt") | Should Be "2017/03/05 12:00:00 PM"
-            }
-        }
-    }
 }
 
 
