@@ -155,7 +155,8 @@ function clearLinkedService($ResourceGroupName, $DataFactoryName, $Version) {
         "V2" {
             $linkedServices = Get-AzureRmDataFactoryV2LinkedService -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName
             foreach($linkedService in $linkedServices) {
-                $result = Remove-AzureRmDataFactoryV2LinkedService -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $linkedService.LinkedServiceName -Force
+                $name = $linkedService.Name
+                $result = Remove-AzureRmDataFactoryV2LinkedService -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $name -Force
             }
         }
         default {
@@ -198,7 +199,8 @@ function clearDataset($ResourceGroupName, $DataFactoryName, $Version) {
         "V2" {
             $datasets = Get-AzureRmDataFactoryV2Dataset -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName
             foreach($dataset in $datasets) {
-                $result = Remove-AzureRmDataFactoryV2Dataset -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $dataset.DatasetName -Force
+                $name = $dataset.Name
+                $result = Remove-AzureRmDataFactoryV2Dataset -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $name -Force
             }
         }
         default {
@@ -241,7 +243,8 @@ function clearPipeline($ResourceGroupName, $DataFactoryName, $Version) {
         "V2" {
             $pipelines = Get-AzureRmDataFactoryV2Pipeline -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName
             foreach($pipeline in $pipelines) {
-                $result = Remove-AzureRmDataFactoryV2Pipeline -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $pipeline.PipelineName -Force
+                $name = $pipeline.Name
+                $result = Remove-AzureRmDataFactoryV2Pipeline -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $name -Force
             }
         }
         default {
@@ -284,7 +287,8 @@ function clearTrigger($ResourceGroupName, $DataFactoryName, $Version) {
         "V2" {
             $triggers = Get-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName
             foreach($trigger in $triggers) {
-                $result = Remove-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $trigger.TriggerName -Force
+                $name = $trigger.Name
+                $result = Remove-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $name -Force
             }
         }
     }

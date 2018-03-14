@@ -26,7 +26,7 @@ Advanced:
 
 ## Release notes
 
-**1.1.6**
+**1.1.8**
 - Add support for Azure Data Facory V2
 
 **1.0.2**

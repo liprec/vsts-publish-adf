@@ -17,5 +17,5 @@ Data Factory Details:
 
 ## Release notes
 
-**1.0.0**
+**1.0.4**
 - Initial public release

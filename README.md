@@ -27,7 +27,7 @@ This release task can be added to a release pipeline to either suspend or resume
 
 ## Release notes
 
-**1.5.0**
+**1.5.7**
 - Added support for V2 deployments
 - Added trigger start/stop task (V2)
 

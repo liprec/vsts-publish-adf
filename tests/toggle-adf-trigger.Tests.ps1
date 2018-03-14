@@ -1,5 +1,5 @@
 # Set the $version to the 'to be tested' version
-$version = '1.0.2'
+$version = '1.0.3'
 
 # Dynamic set the $testModule to the module file linked to the current test file
 $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.Tests.ps1', '')
@@ -210,7 +210,7 @@ Describe "Module: $linkedModule" {
             }
 
             Context "Multiple triggers" {
-                Mock Get-AzureRmDataFactoryV2Trigger { return @( @{ TriggerName = 'trigger1' }, @{ TriggerName = 'trigger2' }, @{ TriggerName = 'trigger3' } ) }
+                Mock Get-AzureRmDataFactoryV2Trigger { return @( @{ Name = 'trigger1' }, @{ Name = 'trigger2' }, @{ Name = 'trigger3' } ) }
 
                 Context "Correct 'stopping' flow with multiple trigger and Continue $true" {
                     $resourceGroupName = 'resourceGroup'

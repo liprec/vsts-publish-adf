@@ -24,14 +24,14 @@ function setStatus([string]$ResourceGroupName, [string]$DataFactoryName, [string
     switch -CaseSensitive ($TriggerStatus) {
         "start" { 
             try {
-                $result = Start-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $TriggerName
+                $result = Start-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $TriggerName -Force
             } catch {
                 return "Error while starting the trigger '$TriggerName' ($_)"
             }
         }
         "stop" {
             try {
-                $result = Stop-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $TriggerName
+                $result = Stop-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $TriggerName -Force
             } catch {
                 return "Error while stopping the trigger '$TriggerName' ($_)"
             }
@@ -45,10 +45,10 @@ function setTriggerStatus([string]$ResourceGroupName, [string]$DataFactoryName, 
         if ([string]::IsNullOrWhitespace($TriggerName) -eq $true) {
             $triggers = Get-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName
         } else {
-            $triggers = @{ TriggerName = $TriggerName }
+            $triggers = @{ Name = $TriggerName }
         }
         foreach ($trigger in $triggers) {
-            $name = $trigger.TriggerName
+            $name = $trigger.Name
             $result = setStatus -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -TriggerName $name -TriggerStatus $TriggerStatus
             Write-Host $result
         }
