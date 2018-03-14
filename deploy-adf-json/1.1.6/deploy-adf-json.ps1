@@ -8,13 +8,19 @@ $linkedModule = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace('.ps1', 
 # Import the logic of the linked module
 Import-Module $PSScriptRoot\$linkedModule -Force
 Import-Module $PSScriptRoot\ps_modules\VstsAzureHelpers_
-Import-Module $PSScriptRoot\ps_modules\AzureRM.profile
-Import-Module $PSScriptRoot\ps_modules\AzureRM.DataFactoryV2
+
+#ADF Version
+$adfversion = Get-VstsInput -Name "adfversion" -Require
+# is V2?
+if ($adfversion -eq "V2") {
+    Import-Module $PSScriptRoot\ps_modules\AzureRM.profile
+    Import-Module $PSScriptRoot\ps_modules\AzureRM.DataFactoryV2
+}
 Initialize-Azure
 
 $resourceGroupName = Get-VstsInput -Name "resourceGroupName" -Require
 $adfname = Get-VstsInput -Name "adfname" -Require
-$adfversion = Get-VstsInput -Name "adfversion" -Require
+
 
 $pathToServices = Get-VstsInput -Name "pathToServices"
 $pathToDataSets = Get-VstsInput -Name "pathToDataSets"

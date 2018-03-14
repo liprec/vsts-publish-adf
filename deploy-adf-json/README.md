@@ -9,12 +9,14 @@ Azure Details:
 - **Azure Connection Type** - Only Azure Resource Manager is supported
 - **Azure RM Subscription** - Which Azure Subscription (Service Endpoint) should be used to connect to the datafactory
 - **Resource Group** - To which Resource Group is the Azure Data Factory deployed
-- **Azure Data Factory** - The name of the Azure Data Factory
 
 Data Factory Details:
+- **Azure Data Factory** - The name of the Azure Data Factory
+- **Azure Data Factory Version** - The version of the Azure Data Factory
 - **Path to Linked Services** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Linked Services
 - **Path to Datasets** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Datasets
 - **Path to Pipelines** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Pipelines
+- **Path to Triggers** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Triggers. Only available in V2.
 
 Advanced:
 - **Overwrite** - Option to overwrite existing definitions with the new ones.
@@ -23,6 +25,9 @@ Advanced:
 - **Parallel tasks** - [Future use]Option to set the number of parallel processes.
 
 ## Release notes
+
+**1.1.6**
+- Add support for Azure Data Facory V2
 
 **1.0.2**
 - Add extra error logging
