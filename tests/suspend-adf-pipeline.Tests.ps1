@@ -36,7 +36,7 @@ Describe "Module: $linkedModule" {
             # Override mock function for Azure 'Get-AzureRmDataFactory' call with -DataFactoryName 'dataFactoryEmpty'
             Mock Get-AzureRmDataFactory { return $null } -ParameterFilter { $DataFactoryName -eq 'dataFactoryEmpty' }
 
-            $resourceGroupName = 'resoureGroupName'
+            $resourceGroupName = 'resourceGroupName'
 
             Context "Existing Azure Data Factory" {
                 $dataFactoryName = 'dataFactory'
@@ -61,7 +61,7 @@ Describe "Module: $linkedModule" {
                         $dataFactoryName = 'dataFactoryEmpty' # Mock function returns empty DataFactory
                         getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName
                     } | `
-                    Should Throw "Azure Data Factory 'dataFactoryEmpty' could not be found in Resourse Group 'resoureGroupName'"
+                    Should Throw "Azure Data Factory 'dataFactoryEmpty' could not be found in Resource Group 'resourceGroupName'"
                 }
             }
         }
