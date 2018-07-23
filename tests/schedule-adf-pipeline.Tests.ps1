@@ -36,7 +36,7 @@ Describe "Module: $linkedModule" {
             # Override mock function for Azure 'Get-AzureRmDataFactory' call with -DataFactoryName 'dataFactoryEmpty'
             Mock Get-AzureRmDataFactory { return $null } -ParameterFilter { $DataFactoryName -eq 'dataFactoryEmpty' }
 
-            $resourceGroupName = 'resoureGroupName'
+            $resourceGroupName = 'resourceGroupName'
 
             Context "Existing Azure Data Factory" {
                 $dataFactoryName = 'dataFactory'
