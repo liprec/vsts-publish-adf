@@ -40,7 +40,7 @@ function getAzureDataFactory([string]$ResourceGroupName, [string]$DataFactoryNam
     $DataFactory = Get-AzureRmDataFactory -ResourceGroupName $ResourceGroupName -Name $DataFactoryName
     
     if (!$DataFactory) {
-        throw "Azure Data Factory '$DataFactoryName' could not be found in Resourse Group '$ResourceGroupName'"
+        throw "Azure Data Factory '$DataFactoryName' could not be found in Resource Group '$ResourceGroupName'"
     } 
 
     return $DataFactory
