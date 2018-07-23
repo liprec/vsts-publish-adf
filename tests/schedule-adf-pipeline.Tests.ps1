@@ -61,7 +61,7 @@ Describe "Module: $linkedModule" {
                         $dataFactoryName = 'dataFactoryEmpty' # Mock function returns empty DataFactory
                         getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryName $dataFactoryName
                     } | `
-                    Should Throw "Azure Data Factory 'dataFactoryEmpty' could not be found in Resource Group 'resoureGroupName'"
+                    Should Throw "Azure Data Factory 'dataFactoryEmpty' could not be found in Resource Group 'resourceGroupName'"
                 }
             }
         }
