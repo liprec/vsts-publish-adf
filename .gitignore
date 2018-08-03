@@ -215,4 +215,8 @@ ModelManifest.xml
 .powerbirc
 
 # Visual Studio Addins
+.taskkey
 *.vsix
+
+# Prevent Environment PowerShell scripts for NodeJs tasks
+*/v2/*.ps1
