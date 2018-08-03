@@ -1,29 +1,49 @@
 {
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
-    "version": "0.1.0",
-    "isShellCommand": true,
-    "windows" : {
-        "command"  : "C:\\WINDOWS\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe"
-    },
-    "showOutput": "always",
+    "version": "2.0.0",
     "tasks": [
         {
-            "taskName": "release",
-            "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "-File", "./.vscode/build.ps1", "vss-extension.json" ],
-            "suppressTaskName": true
+            "label": "release",
+            "type": "shell",
+            "command": "C:\\WINDOWS\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy Unrestricted -NoProfile -File ./.vscode/build.ps1 vss-extension.json"
         },
         {
-            "taskName": "preview",
-            "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "-File", "./.vscode/build.ps1", "vss-extension-preview.json" ],
-            "suppressTaskName": true,
-            "isBuildCommand": true
+            "label": "preview",
+            "type": "shell",
+            "command": "C:\\WINDOWS\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy Unrestricted -NoProfile -File ./.vscode/build.ps1 vss-extension-preview.json",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
-            "taskName": "test-preview",
-            "args": [ "-ExecutionPolicy", "Unrestricted", "-NoProfile", "Invoke-Pester", "-Script @{ Path = './tests/*' }" ],
-            "suppressTaskName": true,
-            "isTestCommand": true
+            "label": "test-preview",
+            "type": "shell",
+            "command": "C:\\WINDOWS\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy Unrestricted -NoProfile Invoke-Pester -Script @{ Path = './tests/*' }",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "typescript",
+            "tsconfig": "tsconfig.json",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "typescript",
+            "tsconfig": "delete-adf-items\\2.0.0\\tsconfig.json",
+            "option": "watch",
+            "problemMatcher": [
+                "$tsc-watch"
+            ]
         }
     ]
 }
