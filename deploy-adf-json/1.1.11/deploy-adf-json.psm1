@@ -377,7 +377,7 @@ An example
 function deployLinkedServiceJSON($ResourceGroupName, $DataFactoryName, $Version, $JsonFile, $Overwrite) {
     switch ($Version) {
         "V2" {
-            $linkedServiceName =  ($JsonFile.Name).Replace('.json', '')
+            $linkedServiceName = (Get-Content $JsonFile | ConvertFrom-Json).name
             if ($Overwrite) {
                 $result = Set-AzureRmDataFactoryV2LinkedService -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $linkedServiceName -File $JsonFile.FullName -Force
             } else {
@@ -417,7 +417,7 @@ An example
 function deployDatasetJSON($ResourceGroupName, $DataFactoryName, $Version, $JsonFile, $Overwrite) {
     switch ($Version) {
         "V2" {
-            $datasetName =  ($JsonFile.Name).Replace('.json', '')
+            $datasetName = (Get-Content $JsonFile | ConvertFrom-Json).name
             if ($Overwrite) {
                 $result = Set-AzureRmDataFactoryV2Dataset -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $datasetName -File $JsonFile.FullName -Force
             } else {
@@ -457,7 +457,7 @@ An example
 function deployPipelineJSON($ResourceGroupName, $DataFactoryName, $Version, $JsonFile, $Overwrite) {
     switch ($Version) {
         "V2" {
-            $pipelineName =  ($JsonFile.Name).Replace('.json', '')
+            $pipelineName = (Get-Content $JsonFile | ConvertFrom-Json).name
             if ($Overwrite) {
                 $result = Set-AzureRmDataFactoryV2Pipeline -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $pipelineName -File $JsonFile.FullName -Force
             } else {
@@ -497,7 +497,7 @@ An example
 function deployTriggerJSON($ResourceGroupName, $DataFactoryName, $Version, $JsonFile, $Overwrite) {
     switch ($Version) {
         "V2" { 
-            $triggerName = ($JsonFile.Name).Replace('.json', '')
+            $triggerName = (Get-Content $JsonFile | ConvertFrom-Json).name
             if ($Overwrite) {
                 $result = Set-AzureRmDataFactoryV2Trigger -ResourceGroupName $ResourceGroupName -DataFactoryName $DataFactoryName -Name $triggerName -File $JsonFile.FullName -Force
             } else {
