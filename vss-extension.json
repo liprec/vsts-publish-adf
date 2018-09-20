@@ -111,7 +111,7 @@
             "path": "deploy-adf-json/1.1.9"
         },
         {
-            "path": "suspend-adf-pipeline/1.0.5"
+            "path": "suspend-adf-pipeline/1.0.6"
         },
         {
             "path": "toggle-adf-trigger/1.0.4"
