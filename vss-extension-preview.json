@@ -108,7 +108,7 @@
     ],
     "files": [
         {
-            "path": "deploy-adf-json/1.1.9"
+            "path": "deploy-adf-json/1.1.11"
         },
         {
             "path": "suspend-adf-pipeline/1.0.6"
