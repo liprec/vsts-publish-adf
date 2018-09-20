@@ -31,7 +31,7 @@ const task = require("vsts-task-lib/task");
 class TaskParameters {
     constructor() {
         try {
-            let rootPath = task.getVariable("System.DefaultWorkingDirectory");
+            let rootPath = task.getVariable("System.DefaultWorkingDirectory") || "C:\\";
             this.connectedServiceName = task.getInput('ConnectedServiceName', true);
             this.resourceGroupName = task.getInput('ResourceGroupName', true);
             this.datafactoryName = task.getInput('DatafactoryName', true);

@@ -27,6 +27,7 @@
  */
 
 import Q = require('q');
+import throat = require('throat');
 import task = require('vsts-task-lib/task');
 import fs = require('fs');
 import path = require('path');
@@ -36,15 +37,16 @@ import { TaskParameters } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
-import { UrlBasedRequestPrepareOptions } from './node_modules/ms-rest';
+import { UrlBasedRequestPrepareOptions } from 'ms-rest';
+import { resolve } from 'url';
 
 task.setResourcePath(path.join(__dirname, '../task.json'));
 
 enum DatafactoryTypes {
-    Pipeline = 'Pipeline',
-    Dataset = 'Dataset',
-    Trigger = 'Trigger',
-    LinkedService = 'Linked Service'
+    Pipeline = 'pipeline',
+    Dataset = 'dataset',
+    Trigger = 'trigger',
+    LinkedService = 'linked service'
 }
 
 interface DatafactoryOptions {
@@ -68,8 +70,8 @@ function loginAzure(clientId: string, key: string, tenantID: string): Promise<Az
     return new Promise<AzureServiceClient>((resolve, reject) => {
         msRestAzure.loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
             if (err) {
-                task.error(task.loc("DeployAdfJson_LoginAzure", err.message));
-                reject(task.loc("DeployAdfJson_LoginAzure", err.message));
+                task.error(task.loc("Generic_LoginAzure", err.message));
+                reject(task.loc("Generic_LoginAzure", err.message));
             }
             resolve(new AzureServiceClient(credentials, {}));
         });
@@ -84,18 +86,18 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         let options: UrlBasedRequestPrepareOptions = {
             method: 'GET',
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2017-09-01-preview`,
+            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
             serializationMapper: null,
             deserializationMapper: null
         }
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("DeployAdfJson_CheckDataFactory", err));
-                reject(task.loc("DeployAdfJson_CheckDataFactory", err));
+                task.error(task.loc("Generic_CheckDataFactory", err));
+                reject(task.loc("Generic_CheckDataFactory", err));
             }
             if (response.statusCode!==200) {
-                task.debug(task.loc("DeployAdfJson_CheckDataFactory2", dataFactoryName));
-                reject(task.loc("DeployAdfJson_CheckDataFactory2", dataFactoryName));
+                task.debug(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
             }
@@ -111,10 +113,12 @@ function getObjects(datafactoryOption: DatafactoryOptions, datafactoryType: Data
         if (matchedFiles.length > 0) {
             console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
             resolve(matchedFiles.map((file: string) => {
-                let data = fs.readFileSync(file, 'utf8')
+                let data = fs.readFileSync(file, 'utf8');
+                let json = JSON.parse(data);
+                let name = json.name || path.parse(file).name.replace(' ', '_');
                 return {
-                        name: path.parse(file).name.replace(' ', '_'),
-                        json: data.replace(/(\r\n|\n|\r)/gm, ''),
+                        name: name,
+                        json: JSON.stringify(json),
                         type: datafactoryType
                     };
             }));
@@ -146,7 +150,7 @@ function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
         }
         let options: UrlBasedRequestPrepareOptions = {
             method: 'PUT',
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2017-09-01-preview`,
+            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
             serializationMapper: null,
             deserializationMapper: null,
             headers: {
@@ -159,16 +163,16 @@ function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
             if ((err) && (!deployOptions.continue)) {
                 task.error(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
                 reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
-            }
-            if (response.statusCode!==200) {
+            } else if (response.statusCode!==200) {
                 if (deployOptions.continue) {
                     task.warning(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
                     reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                 }
+            } else {
+                resolve(true);
             }
-            resolve(true);
         });
         
     });
@@ -178,56 +182,37 @@ function deployItems(datafactoryOption: DatafactoryOptions, folder:string, deplo
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryOption, datafactoryType, deployOptions, folder)
             .then((items: DatafactoryDeployObject[]) => {
-                processItems(datafactoryOption, deployOptions, datafactoryType, items);
-                resolve(true);
-                return
+                processItems(datafactoryOption, deployOptions, datafactoryType, items)
+                    .catch((err) => {
+                        reject(err);
+                    })
+                    .then(() => {
+                        resolve(true);
+                    });
             })
             .catch((err) => {
                 task.debug(task.loc("DeployAdfJson_DeployItems", folder, err.message));
-                reject(task.loc("DeployAdfJson_DeployItems", folder, err.message))
-                return
+                reject(task.loc("DeployAdfJson_DeployItems", folder, err.message));
             });
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[], throttle: number = 5) {
-    let queue = [];
-    let counter = 0;
-    let totalItems = items.length;
-    
-    if (totalItems===0) { return }
+function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[], throttle: number = 5): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        let totalItems = items.length;
 
-    let addToQueue = function(data) {
-        let deferred = Q.defer();
-        queue.push({data: data, promise: deferred});
-        processQueue();
-        return(deferred.promise);
-    }
-    
-    let processQueue = function() {
-        if(queue.length > 0 && counter < throttle) {
-            counter++;
-            let item = queue.shift();
-            console.log(`Deploy ${datafactoryType} '${item.data.name}'.`);
-            deployItem(datafactoryOption, deployOptions, item.data)
-                .catch((err) => {
-                    if (!deployOptions.continue) {
-                        item.promise.reject(err.message);
-                    }
-                });
-            item.promise.resolve();
-            counter--;
-            if(queue.length > 0 && counter < throttle) {
-                task.debug(`Processing next ${datafactoryType} in queue.`);
-                processQueue(); // on to next item in queue
-            }
-        }
-    }
-
-    task.debug(`Processing ${totalItems} ${datafactoryType}(s) with ${throttle} queues.`);
-    Q.all(items.map(addToQueue))
-        .catch((err) => { task.error(err); })
-        .done(() => { task.debug(`${totalItems} ${datafactoryType}(s) deployed.`); })
+        let process = Q.all(items.map(throat(throttle, (item) => {
+                console.log(`Deploy ${datafactoryType} '${item.name}'.`);
+                return deployItem(datafactoryOption, deployOptions, item); 
+            })))
+            .catch((err) => {
+                reject(err); 
+            })
+            .done(() => { 
+                task.debug(`${totalItems} ${datafactoryType}(s) deployed.`); 
+                resolve(true);
+            });
+        });
 }
 
 async function main(): Promise<void> {
@@ -263,6 +248,8 @@ async function main(): Promise<void> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
+            let hasError = false,
+                firstError;
             task.debug('Parsed task inputs');
             
             loginAzure(clientId, key, tenantID)
@@ -270,20 +257,37 @@ async function main(): Promise<void> {
                     datafactoryOption.azureClient = azureClient;
                     task.debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
-            }).then((result) => {
+            }).then(() => {
                 task.debug(`Datafactory '${dataFactoryName}' exist`);
-                if (triggerPath !== null) {
-                    deployItems(datafactoryOption, triggerPath, deployOptions, DatafactoryTypes.Trigger);
+                let deployTasks = [];
+                if (servicePath !== null) {
+                    deployTasks.push({path: servicePath, type: DatafactoryTypes.LinkedService});
+                }
+                if (datasetPath !== null) {
+                    deployTasks.push({path: datasetPath, type: DatafactoryTypes.Dataset});
                 }
                 if (pipelinePath !== null) {
-                    deployItems(datafactoryOption, pipelinePath, deployOptions, DatafactoryTypes.Pipeline);
-                    }
-                if (datasetPath !== null) {
-                    deployItems(datafactoryOption, datasetPath, deployOptions, DatafactoryTypes.Dataset);
+                    deployTasks.push({path: pipelinePath, type: DatafactoryTypes.Pipeline});
                 }
-                if (servicePath !== null) {
-                    deployItems(datafactoryOption, servicePath, deployOptions, DatafactoryTypes.LinkedService);
+                if (triggerPath !== null) {
+                    deployTasks.push({path: triggerPath, type: DatafactoryTypes.Trigger});
                 }
+                Q.all(deployTasks.map(throat(1, (task) => {
+                        return hasError ? undefined : deployItems(datafactoryOption, task.path, deployOptions, task.type); 
+                    })))
+                    .catch((err) => {
+                        firstError = firstError || err;
+                        if (!deployOptions.continue) {
+                            task.debug('Cancelling deploy operations.');
+                            hasError = true;
+                            reject(firstError);
+                        }
+                    })
+                    .done(() => {
+                        if (!hasError) {
+                            resolve();
+                        }
+                    });      
             }).catch((err) => {
                 reject(err.message);
             })
@@ -296,5 +300,9 @@ async function main(): Promise<void> {
 }
 
 main()
-    .then((result) => { task.setResult(task.TaskResult.Succeeded, ""); })
-    .catch((err) => { task.setResult(task.TaskResult.Failed, err); });
+    .then(() => {
+        task.setResult(task.TaskResult.Succeeded, "");
+    })
+    .catch((err) => { 
+        task.setResult(task.TaskResult.Failed, err); 
+    });

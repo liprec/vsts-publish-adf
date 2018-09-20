@@ -1,0 +1,113 @@
+{
+    "id": "da9d5e69-e1b0-4af0-8f4b-a236c0c1d55d",
+    "name": "trigger-adf-pipeline",
+    "friendlyName": "Azure Data Factory Trigger Pipeline",
+    "description": "Trigger Azure Data Factory V2 Pipelines",
+    "author": "Jan Pieter Posthuma",
+    "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
+    "category": "Deploy",
+    "preview": true,
+    "visibility": [
+        "Build",
+        "Release"
+    ],
+    "runsOn": [
+        "Agent"
+    ],
+    "demands": [],
+    "version": {
+        "Major": "2",
+        "Minor": "0",
+        "Patch": "0"
+    },
+    "minimumAgentVersion": "1.100.0",
+    "groups": [
+        {
+            "name": "azure",
+            "displayName": "Azure Details",
+            "isExpanded": true
+        },
+        {
+            "name": "adf",
+            "displayName": "Data Factory Details",
+            "isExpanded": true
+        },
+        {
+            "name": "advanced",
+            "displayName": "Advanced",
+            "isExpanded": false
+        }
+    ],
+    "inputs": [
+        {
+            "name": "ConnectedServiceName",
+            "aliases": ["azureSubscription"],
+            "type": "connectedService:AzureRM",
+            "label": "Azure Subscription",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "This is needed to connect to your Azure account.<br>To configure new service connection, select the Azure subscription from the list and click 'Authorize'.<br>If your subscription is not listed or if you want to use an existing Service Principal, you can setup an Azure service connection using 'Add' or 'Manage' button."
+        },
+        {
+            "name": "ResourceGroupName",
+            "type": "pickList",
+            "label": "Resource group",
+            "required": true,
+            "helpMarkDown": "Provide the name of the resource group.",
+            "properties": {
+                "EditableOptions": "True"
+            },
+            "groupname": "azure"
+        },
+        {
+            "name": "DatafactoryName",
+            "type": "string",
+            "label": "Azure Data Factory",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Name of the Azure Data Factory.",
+            "groupname": "azure"
+        },
+        {
+            "name": "PipelineFilter",
+            "type": "string",
+            "label": "Pipeline Filter",
+            "helpMarkDown": "Filter to determine which pipeline to trigger execution.\n`*`: *all* pipeline will be triggered.",
+            "groupname": "adf"
+        },
+        {
+            "name": "continue",
+            "type": "boolean",
+            "label": "Continue on Error",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Continue on deployment failures",
+            "groupName": "advanced"
+        }
+    ],
+    "dataSourceBindings": [
+        {
+            "target": "ResourceGroupName",
+            "endpointId": "$(ConnectedServiceName)",
+            "dataSourceName": "AzureResourceGroups"
+        }
+    ],
+    "instanceNameFormat": "Trigger pipeline run $(DatafactoryName)",
+    "execution": {
+        "Node": {
+            "target": "./dist/deleteadfitems.js",
+            "argumentFormat": ""
+        }
+    },
+    "messages": {
+        "TaskParameters_ConstructorFailed": "Task failed while initializing. Error: %s.",
+        "AzureModels_ConstructorFailed": "Unable to retrieve endpoint details for Azure",
+        "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
+        "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
+        "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "TriggerAdfPipelines_GetPipelines": "Error calling DataFactory/pipelines API. Error: %s.",
+        "TriggerAdfPipelines_GetPipelines2": "No pipeline(s) found.",
+        "TriggerAdfPipelines_TriggerPipeline": "Error calling 'createRun' API for pipeline %s. Error: %s.",
+        "TriggerAdfPipelines_TriggerPipelines": "Error retrieving pipelines: Error: %s."
+    }
+}

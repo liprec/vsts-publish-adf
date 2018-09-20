@@ -27,23 +27,64 @@
             }
         },
         {
+            "label": "delete-adf-items",
             "type": "typescript",
-            "tsconfig": "tsconfig.json",
+            "tsconfig": "delete-adf-items\\v2\\tsconfig.json",
             "problemMatcher": [
                 "$tsc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            ]
         },
         {
+            "label": "deploy-adf-json",
             "type": "typescript",
-            "tsconfig": "delete-adf-items\\2.0.0\\tsconfig.json",
-            "option": "watch",
+            "tsconfig": "deploy-adf-json\\v2\\tsconfig.json",
             "problemMatcher": [
-                "$tsc-watch"
+                "$tsc"
             ]
+        },
+        {
+            "label": "toggle-adf-trigger",
+            "type": "typescript",
+            "tsconfig": "toggle-adf-trigger\\v2\\tsconfig.json",
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "trigger-adf-pipeline",
+            "type": "typescript",
+            "tsconfig": "trigger-adf-pipeline\\v2\\tsconfig.json",
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "Build and prepare all extensions (v2)",
+            "dependsOn": [
+                "delete-adf-items",
+                "deploy-adf-json",
+                "toggle-adf-trigger",
+                "trigger-adf-pipeline"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Create preview extension (v2)",
+            "type": "shell",
+            "command": "tfx extension create --manifests .\\vss-extension-preview.json",
+            "dependsOn": [
+                "Build and prepare all extensions (v2)"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Create release extension (v2)",
+            "type": "shell",
+            "command": "tfx extension create --manifests .\\vss-extension.json",
+            "dependsOn": [
+                "Build and prepare all extensions (v2)"
+            ],
+            "problemMatcher": []
         }
     ]
 }

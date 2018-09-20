@@ -38,6 +38,7 @@ class TaskParameters {
             this.pipelineFilter = task.getInput('PipelineFilter', false);
             this.datasetFilter = task.getInput('DatasetFilter', false);
             this.triggerFilter = task.getInput('TriggerFilter', false);
+            this.continue = task.getBoolInput('Continue', false);
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
@@ -63,6 +64,9 @@ class TaskParameters {
     }
     getTriggerFilter() {
         return this.triggerFilter;
+    }
+    getContinue() {
+        return this.continue;
     }
 }
 exports.TaskParameters = TaskParameters;

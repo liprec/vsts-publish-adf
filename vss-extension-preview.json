@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "2.2.9",
+    "version": "2.0.1",
     "name": "Azure Data Factory (Preview)",
     "publisher": "liprec",
     "public": false,
@@ -94,9 +94,28 @@
             "properties": {
                 "name" : "delete-adf-items"
             }
+        },
+        {
+            "id": "trigger-adf-pipeline",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "trigger-adf-pipeline"
+            }
         }
     ],
     "files": [
+        {
+            "path": "deploy-adf-json/1.1.9"
+        },
+        {
+            "path": "suspend-adf-pipeline/1.0.5"
+        },
+        {
+            "path": "toggle-adf-trigger/1.0.4"
+        },
         {
             "path": "delete-adf-items/v2/dist"
         },
@@ -122,13 +141,28 @@
             "path": "deploy-adf-json/v2/icon.png"
         },
         {
-            "path": "deploy-adf-json/1.1.9"
+            "path": "toggle-adf-trigger/v2/dist"
         },
         {
-            "path": "suspend-adf-pipeline/1.0.5"
+            "path": "toggle-adf-trigger/v2/node_modules"
         },
         {
-            "path": "toggle-adf-trigger/1.0.4"
+            "path": "toggle-adf-trigger/v2/task.json"
+        },
+        {
+            "path": "toggle-adf-trigger/v2/icon.png"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/dist"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/node_modules"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/task.json"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/icon.png"
         },
         {
             "path": "images/logo.png",

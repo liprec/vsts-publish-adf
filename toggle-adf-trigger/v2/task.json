@@ -1,0 +1,125 @@
+{
+    "id": "c1024007-2299-4799-bc66-6f7d78365b28",
+    "name": "toggle-adf-trigger",
+    "friendlyName": "Azure Data Factory (V2) Trigger",
+    "description": "Start/stop an Azure Data Factory Trigger",
+    "author": "Jan Pieter Posthuma",
+    "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
+    "category": "Deploy",
+    "preview": true,
+    "visibility": [
+        "Build",
+        "Release"
+    ],
+    "runsOn:": [
+        "Agent"
+    ],
+    "demands": [],
+    "version": {
+        "Major": "2",
+        "Minor": "0",
+        "Patch": "0"
+    },
+    "minimumAgentVersion": "1.100.0",
+    "groups": [
+        {
+            "name": "azure",
+            "displayName": "Azure Details",
+            "isExpanded": true
+        },
+        {
+            "name": "adf",
+            "displayName": "Data Factory Details",
+            "isExpanded": true
+        },
+        {
+            "name": "advanced",
+            "displayName": "Advanced",
+            "isExpanded": false
+        }
+    ],
+    "inputs": [
+        {
+            "name": "ConnectedServiceName",
+            "aliases": ["azureSubscription"],
+            "type": "connectedService:AzureRM",
+            "label": "Azure Subscription",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "This is needed to connect to your Azure account.<br>To configure new service connection, select the Azure subscription from the list and click 'Authorize'.<br>If your subscription is not listed or if you want to use an existing Service Principal, you can setup an Azure service connection using 'Add' or 'Manage' button."
+        },
+        {
+            "name": "ResourceGroupName",
+            "type": "pickList",
+            "label": "Resource group",
+            "required": true,
+            "helpMarkDown": "Provide the name of the resource group.",
+            "properties": {
+                "EditableOptions": "True"
+            },
+            "groupname": "azure"
+        },
+        {
+            "name": "DatafactoryName",
+            "type": "string",
+            "label": "Azure Data Factory",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Name of the Azure Data Factory.",
+            "groupname": "azure"
+        },
+        {
+            "name": "TriggerFilter",
+            "type": "string",
+            "label": "Trigger Filter",
+            "required": "true",
+            "helpMarkDown": "Filter to determine which triggers to delete.\n-Empty string: *none* triggers will be deleted.\n-`*`: *all* triggers will be deleted.",
+            "groupname": "adf"
+        },
+        {
+            "name": "TriggerStatus",
+            "type": "pickList",
+            "label": "Set Trigger Status",
+            "required": "true",
+            "groupname": "adf",
+            "options": {
+                "start": "Start",
+                "stop": "Stop"
+            }
+        },
+        {
+            "name": "Continue",
+            "type": "boolean",
+            "label": "Continue on Error",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Continue on failures",
+            "groupName": "advanced"
+        }
+    ],
+    "dataSourceBindings": [
+        {
+            "target": "ResourceGroupName",
+            "endpointId": "$(ConnectedServiceName)",
+            "dataSourceName": "AzureResourceGroups"
+        }
+    ],
+    "instanceNameFormat": "Toggle trigger(s) in $(adfName)",
+    "execution": {
+        "Node": {
+            "target": "./dist/toggleadftrigger.js",
+            "argumentFormat": ""
+        }
+    },
+    "messages": {
+        "TaskParameters_ConstructorFailed": "Task failed while initializing. Error: %s.",
+        "AzureModels_ConstructorFailed": "Unable to retrieve endpoint details for Azure",
+        "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
+        "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
+        "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "ToggleAdfTrigger_GetTriggers": "Error calling DataFactory/trigger API. Error: %s.",
+        "ToggleAdfTrigger_GetTriggers2": "No %s found.",
+        "ToggleAdfTrigger_ToggleTrigger": "Error toggle trigger(s) to state %s:  Error: %s.",
+        "ToggleAdfTrigger_ToggleTrigger2": "Error toggle trigger %s to state %s:  Error: %s."
+    }
+}

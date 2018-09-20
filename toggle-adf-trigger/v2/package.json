@@ -1,0 +1,17 @@
+{
+  "name": "toggle-adf-trigger",
+  "version": "2.0.0",
+  "description": "Toggle ADFv2 trigger",
+  "main": "tasks.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jan Pieter Posthuma",
+  "license": "MIT",
+  "dependencies": {
+    "ms-rest-azure": "2.5.7",
+    "q": "1.5.1",
+    "throat": "^4.1.0",
+    "vsts-task-lib": "2.1.0"
+  }
+}

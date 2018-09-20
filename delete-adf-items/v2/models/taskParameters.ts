@@ -39,6 +39,8 @@ export class TaskParameters {
     private datasetFilter: string;
     private triggerFilter: string;
 
+    private continue: boolean;
+
     constructor() {
         try {
             this.connectedServiceName = task.getInput('ConnectedServiceName', true);
@@ -49,6 +51,8 @@ export class TaskParameters {
             this.pipelineFilter = task.getInput('PipelineFilter', false);
             this.datasetFilter = task.getInput('DatasetFilter', false);
             this.triggerFilter = task.getInput('TriggerFilter', false);
+
+            this.continue = task.getBoolInput('Continue', false);
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
@@ -81,5 +85,9 @@ export class TaskParameters {
 
     public getTriggerFilter(): string {
         return this.triggerFilter;
+    }
+
+    public getContinue(): boolean {
+        return this.continue;
     }
 }

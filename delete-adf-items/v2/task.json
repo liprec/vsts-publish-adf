@@ -17,8 +17,8 @@
     "demands": [],
     "version": {
         "Major": "2",
-        "Minor": "2",
-        "Patch": "4"
+        "Minor": "0",
+        "Patch": "0"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -108,7 +108,7 @@
     ],
     "dataSourceBindings": [
         {
-            "target": "resourceGroupName",
+            "target": "ResourceGroupName",
             "endpointId": "$(ConnectedServiceName)",
             "dataSourceName": "AzureResourceGroups"
         }
@@ -123,12 +123,13 @@
     "messages": {
         "TaskParameters_ConstructorFailed": "Task failed while initializing. Error: %s.",
         "AzureModels_ConstructorFailed": "Unable to retrieve endpoint details for Azure",
-        "DeleteAdfItems_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
-        "DeleteAdfItems_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
-        "DeleteAdfItems_CheckDataFactory2": "Datafactory not found: %s.",
+        "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
+        "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
+        "Generic_CheckDataFactory2": "Datafactory not found: %s.",
         "DeleteAdfItems_GetObjects": "Error calling DataFactory/%s API. Error: %s.",
         "DeleteAdfItems_GetObjects2": "No %s found.",
         "DeleteAdfItems_DeleteItem": "Error calling DELETE DataFactory/%s API. Error: %s.",
+        "DeleteAdfItems_DeleteItem2": "Error deleting '%s' %s : %s",
         "DeleteAdfItems_DeleteItems": "Error retrieving %s: Error: %s."
     }
 }

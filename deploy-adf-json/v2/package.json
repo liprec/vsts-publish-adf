@@ -1,7 +1,7 @@
 {
-  "name": "delete-adf-items",
+  "name": "deploy-adf-json",
   "version": "2.0.0",
-  "description": "Deletes ADFv2 items",
+  "description": "Deploy ADFv2 items",
   "main": "tasks.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,6 +11,7 @@
   "dependencies": {
     "ms-rest-azure": "2.5.7",
     "q": "1.5.1",
+    "throat": "4.1.0",
     "vsts-task-lib": "2.1.0"
   }
 }

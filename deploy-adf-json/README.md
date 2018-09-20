@@ -5,15 +5,17 @@ Visual Studio Team Service deploy task that will deploy JSON files with definiti
 
 ## Parameters
 
-Azure Details:
+Generic:
 
+- **Display name** - Description name of the task
 - **Azure Subscription** - Which Azure Subscription (Service Endpoint) should be used to connect to the datafactory
+
+Azure Details:
 - **Resource Group** - To which Resource Group is the Azure Data Factory deployed
-- **Azure Data Factory** - The name of the Azure Data Factory
+- **Azure Data Factory** - The name of the Azure Data Factory.
 
 Data Factory Details:
 
-- **Azure Data Factory Version** - The version of the Azure Data Factory. Only available in v1.*
 - **Path to Linked Services** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Linked Services
 - **Path to Datasets** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Datasets
 - **Path to Pipelines** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Pipelines
@@ -25,10 +27,11 @@ Advanced:
 
 ## Release notes
 
-**2.0.0**
+**2.0.0** **PREVIEW**
 
 - Rewrite to platform independent version by using NodeJS and REST APIs
 - This version only support Azure Data Factory v2
+- Readme updated to version 2 functionality
 
 **1.1.8**
 

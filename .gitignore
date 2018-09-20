@@ -82,3 +82,6 @@ typings/
 
 # Prevent Environment PowerShell scripts for NodeJs tasks
 */v2/*.ps1
+
+# Typescript output
+.temp
