@@ -1,4 +1,4 @@
-# Azure Data Factory (V2) Trigger
+# Azure Data Factory Trigger
 
 This release task can be added to a release pipeline to either start or stop Azure Data Factory triggers.
 ![](../images/screenshot-4.png)

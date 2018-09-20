@@ -1,6 +1,6 @@
 # Azure Data Factory Deployment
 
-Visual Studio Team Service deploy task that will deploy JSON files with definition of Linked Services, Datasets and/or Pipelines to an existing Azure Data Factory. 
+Azure DevOps deploy task that will deploy JSON files with definition of Linked Services, Datasets and/or Pipelines to an existing Azure Data Factory. 
 ![](../images/screenshot-2.png)
 
 ## Parameters
