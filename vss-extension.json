@@ -183,6 +183,14 @@
         {
             "path": "images/screenshot-4.png",
             "addressable": true
+        },
+        {
+            "path": "images/screenshot-5.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-6.png",
+            "addressable": true
         }
     ]
 }
