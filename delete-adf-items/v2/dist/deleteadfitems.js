@@ -184,6 +184,9 @@ function deleteItem(datafactoryOption, deployOptions, item) {
     });
 }
 function deleteItems(datafactoryOption, filter, deployOptions, datafactoryType) {
+    if (hasError) {
+        return;
+    } // Some error occurred, so returning
     return new Promise((resolve, reject) => {
         getObjects(datafactoryOption, datafactoryType, filter)
             .then((items) => {
@@ -202,6 +205,7 @@ function deleteItems(datafactoryOption, filter, deployOptions, datafactoryType) 
     });
 }
 function processItems(datafactoryOption, deployOptions, datafactoryType, items) {
+    let firstError;
     return new Promise((resolve, reject) => {
         let totalItems = items.length;
         let process = Q.all(items.map(throat(deployOptions.throttle, (item) => {
@@ -209,11 +213,17 @@ function processItems(datafactoryOption, deployOptions, datafactoryType, items) 
             return deleteItem(datafactoryOption, deployOptions, item);
         })))
             .catch((err) => {
-            reject(err);
+            hasError = true;
+            firstError = firstError || err;
         })
             .done(() => {
             task.debug(`${totalItems} ${datafactoryType}(s) deleted.`);
-            resolve(true);
+            if (hasError) {
+                reject(firstError);
+            }
+            else {
+                resolve();
+            }
         });
     });
 }
@@ -247,7 +257,7 @@ function main() {
                     resourceGroup: resourceGroup,
                     dataFactoryName: dataFactoryName,
                 };
-                let hasError = false, firstError;
+                let firstError;
                 task.debug('Parsed task inputs');
                 loginAzure(clientId, key, tenantID)
                     .then((azureClient) => {
@@ -270,18 +280,17 @@ function main() {
                         deleteTasks.push({ filter: serviceFilter, type: DatafactoryTypes.LinkedService });
                     }
                     Q.all(deleteTasks.map(throat(1, (task) => {
-                        return hasError ? undefined : deleteItems(datafactoryOption, task.filter, deployOptions, task.type);
+                        return deleteItems(datafactoryOption, task.filter, deployOptions, task.type);
                     })))
                         .catch((err) => {
+                        hasError = true;
                         firstError = firstError || err;
-                        if (!deployOptions.continue) {
-                            task.debug('Cancelling delete operations.');
-                            hasError = true;
-                            reject(firstError);
-                        }
                     })
                         .done(() => {
-                        if (!hasError) {
+                        if (hasError) {
+                            reject(firstError);
+                        }
+                        else {
                             resolve();
                         }
                     });
@@ -299,6 +308,8 @@ function main() {
 function wildcardFilter(value, rule) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
+// Set generic error flag
+let hasError = false;
 main()
     .then(() => {
     task.setResult(task.TaskResult.Succeeded, "");

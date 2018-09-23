@@ -179,6 +179,7 @@ function triggerPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
 }
 
 function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipelines: DatafactoryPipelineObject[]): Promise<boolean> {
+    let firstError;
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = pipelines.length;
 
@@ -187,11 +188,16 @@ function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
                 return triggerPipeline(datafactoryOption, deployOptions, pipeline); 
             })))
             .catch((err) => {
-                reject(err);
+                hasError = true;
+                firstError = firstError || err;
             })
             .done(() => { 
-                task.debug(`${totalItems} pipeline(s) triggered.`);
-                resolve(true);
+                task.debug(`${totalItems} pipeline(s) triggered.`); 
+                if (hasError) {
+                    reject(firstError);
+                } else {
+                    resolve(true);
+                }
             });
         });
 }
@@ -227,6 +233,7 @@ async function main(): Promise<void> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
+            let firstError;
             task.debug('Parsed task inputs');
             
             loginAzure(clientId, key, tenantID)
@@ -263,6 +270,9 @@ async function main(): Promise<void> {
 function wildcardFilter(value: string, rule: string) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
+
+// Set generic error flag
+let hasError = false;
 
 main()
     .then(() => {

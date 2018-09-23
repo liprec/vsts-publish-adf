@@ -200,6 +200,7 @@ function deleteItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
 }
 
 function deleteItems(datafactoryOption: DatafactoryOptions, filter:string, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes): Promise<boolean> {
+    if (hasError) { return } // Some error occurred, so returning
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryOption, datafactoryType, filter)
             .then((items: DatafactoryObject[]) => {
@@ -219,6 +220,7 @@ function deleteItems(datafactoryOption: DatafactoryOptions, filter:string, deplo
 }
 
 function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryObject[]): Promise<boolean> {
+    let firstError; 
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
@@ -227,12 +229,17 @@ function processItems(datafactoryOption: DatafactoryOptions, deployOptions: Data
                 return deleteItem(datafactoryOption, deployOptions, item); 
             })))
             .catch((err) => {
-                reject(err);
-             })
-            .done(() => { 
+                hasError = true;
+                firstError = firstError || err;
+            })
+            .done(() => {
                 task.debug(`${totalItems} ${datafactoryType}(s) deleted.`); 
-                resolve(true);
-            });
+                if (hasError) {
+                    reject(firstError);
+                } else {
+                    resolve();
+                }
+            });  
         });
 }
 
@@ -270,8 +277,7 @@ async function main(): Promise<void> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            let hasError = false,
-                firstError;
+            let firstError;
             task.debug('Parsed task inputs');
             
             loginAzure(clientId, key, tenantID)
@@ -295,18 +301,16 @@ async function main(): Promise<void> {
                     deleteTasks.push({filter: serviceFilter, type: DatafactoryTypes.LinkedService});
                 }
                 Q.all(deleteTasks.map(throat(1, (task) => {
-                        return hasError ? undefined : deleteItems(datafactoryOption, task.filter, deployOptions, task.type)
+                        return deleteItems(datafactoryOption, task.filter, deployOptions, task.type);
                     })))
                     .catch((err) => {
+                        hasError = true;
                         firstError = firstError || err;
-                        if (!deployOptions.continue) {
-                            task.debug('Cancelling delete operations.');
-                            hasError = true;
-                            reject(firstError);
-                        }
                     })
                     .done(() => {
-                        if (!hasError) {
+                        if (hasError) {
+                            reject(firstError);
+                        } else {
                             resolve();
                         }
                     });
@@ -324,6 +328,9 @@ async function main(): Promise<void> {
 function wildcardFilter(value: string, rule: string) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
+
+// Set generic error flag
+let hasError = false;
 
 main()
     .then(() => {

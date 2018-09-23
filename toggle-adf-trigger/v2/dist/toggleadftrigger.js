@@ -163,6 +163,7 @@ function toggleTriggers(datafactoryOption, deployOptions, triggerFilter, toggle)
     });
 }
 function processItems(datafactoryOption, deployOptions, triggers) {
+    let firstError;
     return new Promise((resolve, reject) => {
         let totalItems = triggers.length;
         let process = Q.all(triggers.map(throat(deployOptions.throttle, (trigger) => {
@@ -170,11 +171,17 @@ function processItems(datafactoryOption, deployOptions, triggers) {
             return toggleTrigger(datafactoryOption, deployOptions, trigger);
         })))
             .catch((err) => {
-            reject(err);
+            hasError = true;
+            firstError = firstError || err;
         })
             .done(() => {
             task.debug(`${totalItems} trigger(s) toggled.`);
-            resolve(true);
+            if (hasError) {
+                reject(firstError);
+            }
+            else {
+                resolve(true);
+            }
         });
     });
 }
@@ -206,6 +213,7 @@ function main() {
                     resourceGroup: resourceGroup,
                     dataFactoryName: dataFactoryName,
                 };
+                let firstError;
                 task.debug('Parsed task inputs');
                 loginAzure(clientId, key, tenantID)
                     .then((azureClient) => {
@@ -243,6 +251,8 @@ function main() {
 function wildcardFilter(value, rule) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
+// Set generic error flag
+let hasError = false;
 main()
     .then(() => {
     task.setResult(task.TaskResult.Succeeded, "");

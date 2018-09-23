@@ -185,6 +185,7 @@ function toggleTriggers(datafactoryOption: DatafactoryOptions, deployOptions: Da
 }
 
 function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, triggers: DatafactoryTriggerObject[]) {
+    let firstError;
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = triggers.length;
 
@@ -192,12 +193,17 @@ function processItems(datafactoryOption: DatafactoryOptions, deployOptions: Data
                 console.log(`Toggle '${trigger.triggerName}' to '${trigger.toggle}'.`);
                 return toggleTrigger(datafactoryOption, deployOptions, trigger); 
             })))
-            .catch((err) => { 
-                reject(err); 
+            .catch((err) => {
+                hasError = true;
+                firstError = firstError || err;
             })
             .done(() => { 
                 task.debug(`${totalItems} trigger(s) toggled.`);
-                resolve(true);
+                if (hasError) {
+                    reject(firstError);
+                } else {
+                    resolve(true);
+                }
             });
         });
 }
@@ -234,6 +240,7 @@ async function main(): Promise<void> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
+            let firstError;
             task.debug('Parsed task inputs');
             
             loginAzure(clientId, key, tenantID)
@@ -271,6 +278,9 @@ async function main(): Promise<void> {
 function wildcardFilter(value: string, rule: string) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
+
+// Set generic error flag
+let hasError = false;
 
 main()
     .then(() => {
