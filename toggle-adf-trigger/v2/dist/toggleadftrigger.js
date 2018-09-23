@@ -152,8 +152,8 @@ function toggleTriggers(datafactoryOption, deployOptions, triggerFilter, toggle)
                 .catch((err) => {
                 reject(err);
             })
-                .then(() => {
-                resolve(true);
+                .then((result) => {
+                resolve(result);
             });
         })
             .catch((err) => {
@@ -174,13 +174,19 @@ function processItems(datafactoryOption, deployOptions, triggers) {
             hasError = true;
             firstError = firstError || err;
         })
-            .done(() => {
+            .done((results) => {
             task.debug(`${totalItems} trigger(s) toggled.`);
             if (hasError) {
                 reject(firstError);
             }
             else {
-                resolve(true);
+                let issues = results.filter((result) => { return !result; }).length;
+                if (issues > 0) {
+                    resolve(false);
+                }
+                else {
+                    resolve(true);
+                }
             }
         });
     });
@@ -225,8 +231,8 @@ function main() {
                     // Toggle Trigger logic
                     if (triggerFilter !== null) {
                         toggleTriggers(datafactoryOption, deployOptions, triggerFilter, triggerStatus)
-                            .then(() => {
-                            resolve();
+                            .then((result) => {
+                            resolve(result);
                         }).catch((err) => {
                             if (!deployOptions.continue) {
                                 task.debug('Cancelling toggle operation.');
@@ -254,8 +260,8 @@ function wildcardFilter(value, rule) {
 // Set generic error flag
 let hasError = false;
 main()
-    .then(() => {
-    task.setResult(task.TaskResult.Succeeded, "");
+    .then((result) => {
+    task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
 })
     .catch((err) => {
     task.setResult(task.TaskResult.Failed, err);

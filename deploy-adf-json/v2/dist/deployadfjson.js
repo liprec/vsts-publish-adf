@@ -169,8 +169,8 @@ function deployItems(datafactoryOption, folder, deployOptions, datafactoryType) 
                 .catch((err) => {
                 reject(err);
             })
-                .then(() => {
-                resolve(true);
+                .then((result) => {
+                resolve(result);
             });
         })
             .catch((err) => {
@@ -191,13 +191,19 @@ function processItems(datafactoryOption, deployOptions, datafactoryType, items) 
             hasError = true;
             firstError = firstError || err;
         })
-            .done(() => {
+            .done((results) => {
             task.debug(`${totalItems} ${datafactoryType}(s) deployed.`);
             if (hasError) {
                 reject(firstError);
             }
             else {
-                resolve(true);
+                let issues = results.filter((result) => { return !result; }).length;
+                if (issues > 0) {
+                    resolve(false);
+                }
+                else {
+                    resolve(true);
+                }
             }
         });
     });
@@ -261,12 +267,18 @@ function main() {
                         hasError = true;
                         firstError = firstError || err;
                     })
-                        .done(() => {
+                        .done((results) => {
                         if (hasError) {
                             reject(firstError);
                         }
                         else {
-                            resolve();
+                            let issues = results.filter((result) => { return !result; }).length;
+                            if (issues > 0) {
+                                resolve(false);
+                            }
+                            else {
+                                resolve(true);
+                            }
                         }
                     });
                 }).catch((err) => {
@@ -283,8 +295,8 @@ function main() {
 // Set generic error flag
 let hasError = false;
 main()
-    .then(() => {
-    task.setResult(task.TaskResult.Succeeded, "");
+    .then((result) => {
+    task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
 })
     .catch((err) => {
     task.setResult(task.TaskResult.Failed, err);

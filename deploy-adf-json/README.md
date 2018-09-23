@@ -22,12 +22,12 @@ Data Factory Details:
 - **Path to Triggers** [Optional] - Path to the folder in the linked artifact in which contains the JSON definitions for the Triggers. Only available in V2.
 
 Advanced:
-
-- **Continue on Error** - Option to continue deploying after errors occur.
+- **Continue on Error** - When turned on continue after an error occurs and finish the task with the status 'Partially succeeded'
+- **Number of parallel actions** - Maximum amount of parallel tasks are initiated.
 
 ## Release notes
 
-**2.0.0** **PREVIEW**
+**2.0** **PREVIEW**
 
 - Rewrite to platform independent version by using NodeJS and REST APIs
 - This version only support Azure Data Factory v2

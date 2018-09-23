@@ -167,8 +167,8 @@ function triggerPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
                     .catch((err) => {
                         reject(err);
                     })
-                    .then(() => {
-                        resolve(true);       
+                    .then((result: boolean) => {
+                        resolve(result);
                     });
             })
             .catch((err) => {
@@ -191,19 +191,24 @@ function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
                 hasError = true;
                 firstError = firstError || err;
             })
-            .done(() => { 
+            .done((results) => { 
                 task.debug(`${totalItems} pipeline(s) triggered.`); 
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    resolve(true);
+                    let issues = results.filter((result) => { return !result; }).length;
+                    if (issues > 0) {
+                        resolve(false);
+                    } else {
+                        resolve(true);
+                    }
                 }
             });
         });
 }
 
-async function main(): Promise<void> {
-    let promise = new Promise<void>(async (resolve, reject) => {
+async function main(): Promise<boolean> {
+    let promise = new Promise<boolean>(async (resolve, reject) => {
         let taskParameters: TaskParameters;
         let azureModels: AzureModels;
 
@@ -245,8 +250,8 @@ async function main(): Promise<void> {
                 task.debug(`Datafactory '${dataFactoryName}' exist`);
                 if (pipelineFilter !== null) {
                     triggerPipelines(datafactoryOption, deployOptions, pipelineFilter)
-                        .then(() => {
-                            resolve();
+                        .then((result: boolean) => {
+                            resolve(result);
                         }).catch((err) => {
                             if (!deployOptions.continue) {
                                 task.debug('Cancelling trigger operation.');
@@ -275,8 +280,8 @@ function wildcardFilter(value: string, rule: string) {
 let hasError = false;
 
 main()
-    .then(() => {
-        task.setResult(task.TaskResult.Succeeded, "");
+    .then((result) => {
+        task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
     })
     .catch((err) => { 
         task.setResult(task.TaskResult.Failed, err); 

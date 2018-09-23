@@ -25,9 +25,13 @@ For all filters:
 - Empty string: *none* items will be deleted.
 - `*`: *all* found items will be deleted.
 
+Advanced:
+- **Continue on Error** - When turned on continue after an error occurs and finish the task with the status 'Partially succeeded'
+- **Number of parallel actions** - Maximum amount of parallel tasks are initiated.
+
 ## Release notes
 
-**2.0.0** **PREVIEW**
+**2.0** **PREVIEW**
 
 - Rewrite to platform independent version by using NodeJS and REST APIs
 - This version only support Azure Data Factory v2

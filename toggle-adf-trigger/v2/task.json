@@ -11,14 +11,14 @@
         "Build",
         "Release"
     ],
-    "runsOn:": [
+    "runsOn": [
         "Agent"
     ],
     "demands": [],
     "version": {
         "Major": "2",
         "Minor": "0",
-        "Patch": "0"
+        "Patch": "3"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -99,10 +99,10 @@
         {
             "name": "Throttle",
             "type": "string",
-            "label": "Number of parallel deployments",
+            "label": "Number of parallel actions",
             "defaultValue": "5",
             "required": false,
-            "helpMarkDown": "Number of parallel deployments, default is 5",
+            "helpMarkDown": "Number of parallel actions, default is 5",
             "groupName": "advanced"
         }
     ],

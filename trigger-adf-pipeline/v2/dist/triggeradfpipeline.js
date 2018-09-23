@@ -150,8 +150,8 @@ function triggerPipelines(datafactoryOption, deployOptions, filter) {
                 .catch((err) => {
                 reject(err);
             })
-                .then(() => {
-                resolve(true);
+                .then((result) => {
+                resolve(result);
             });
         })
             .catch((err) => {
@@ -172,13 +172,19 @@ function processPipelines(datafactoryOption, deployOptions, pipelines) {
             hasError = true;
             firstError = firstError || err;
         })
-            .done(() => {
+            .done((results) => {
             task.debug(`${totalItems} pipeline(s) triggered.`);
             if (hasError) {
                 reject(firstError);
             }
             else {
-                resolve(true);
+                let issues = results.filter((result) => { return !result; }).length;
+                if (issues > 0) {
+                    resolve(false);
+                }
+                else {
+                    resolve(true);
+                }
             }
         });
     });
@@ -221,8 +227,8 @@ function main() {
                     task.debug(`Datafactory '${dataFactoryName}' exist`);
                     if (pipelineFilter !== null) {
                         triggerPipelines(datafactoryOption, deployOptions, pipelineFilter)
-                            .then(() => {
-                            resolve();
+                            .then((result) => {
+                            resolve(result);
                         }).catch((err) => {
                             if (!deployOptions.continue) {
                                 task.debug('Cancelling trigger operation.');
@@ -250,8 +256,8 @@ function wildcardFilter(value, rule) {
 // Set generic error flag
 let hasError = false;
 main()
-    .then(() => {
-    task.setResult(task.TaskResult.Succeeded, "");
+    .then((result) => {
+    task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
 })
     .catch((err) => {
     task.setResult(task.TaskResult.Failed, err);
