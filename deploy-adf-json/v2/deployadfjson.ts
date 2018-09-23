@@ -105,7 +105,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     });
 }
 
-function getObjects(datafactoryOption: DatafactoryOptions, datafactoryType: DatafactoryTypes, deployOptions: DataFactoryDeployOptions, folder: string): Promise<DatafactoryDeployObject[]> {
+function getObjects(datafactoryType: DatafactoryTypes, deployOptions: DataFactoryDeployOptions, folder: string): Promise<DatafactoryDeployObject[]> {
     return new Promise<DatafactoryDeployObject[]>((resolve, reject) => {
         let sourceFolder = path.normalize(folder);
         let allPaths: string[] = task.find(sourceFolder); // default find options (follow sym links)
@@ -179,8 +179,9 @@ function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
 }
 
 function deployItems(datafactoryOption: DatafactoryOptions, folder:string, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes): Promise<boolean> {
+    if (hasError) { return } // Some error occurred, so returning
     return new Promise<boolean>((resolve, reject) => {
-        getObjects(datafactoryOption, datafactoryType, deployOptions, folder)
+        getObjects(datafactoryType, deployOptions, folder)
             .then((items: DatafactoryDeployObject[]) => {
                 processItems(datafactoryOption, deployOptions, datafactoryType, items)
                     .catch((err) => {
@@ -198,6 +199,7 @@ function deployItems(datafactoryOption: DatafactoryOptions, folder:string, deplo
 }
 
 function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[], throttle: number = 5): Promise<boolean> {
+    let firstError; 
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
@@ -206,11 +208,16 @@ function processItems(datafactoryOption: DatafactoryOptions, deployOptions: Data
                 return deployItem(datafactoryOption, deployOptions, item); 
             })))
             .catch((err) => {
-                reject(err); 
+                hasError = true;
+                firstError = firstError || err;
             })
             .done(() => { 
                 task.debug(`${totalItems} ${datafactoryType}(s) deployed.`); 
-                resolve(true);
+                if (hasError) {
+                    reject(firstError);
+                } else {
+                    resolve(true);
+                }
             });
         });
 }
@@ -248,8 +255,7 @@ async function main(): Promise<void> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            let hasError = false,
-                firstError;
+            let firstError;
             task.debug('Parsed task inputs');
             
             loginAzure(clientId, key, tenantID)
@@ -273,18 +279,16 @@ async function main(): Promise<void> {
                     deployTasks.push({path: triggerPath, type: DatafactoryTypes.Trigger});
                 }
                 Q.all(deployTasks.map(throat(1, (task) => {
-                        return hasError ? undefined : deployItems(datafactoryOption, task.path, deployOptions, task.type); 
+                        return deployItems(datafactoryOption, task.path, deployOptions, task.type); 
                     })))
                     .catch((err) => {
+                        hasError = true;
                         firstError = firstError || err;
-                        if (!deployOptions.continue) {
-                            task.debug('Cancelling deploy operations.');
-                            hasError = true;
-                            reject(firstError);
-                        }
                     })
                     .done(() => {
-                        if (!hasError) {
+                        if (hasError) {
+                            reject(firstError);
+                        } else {
                             resolve();
                         }
                     });      
@@ -298,6 +302,9 @@ async function main(): Promise<void> {
     });
     return promise;
 }
+
+// Set generic error flag
+let hasError = false;
 
 main()
     .then(() => {

@@ -88,7 +88,7 @@ function checkDataFactory(datafactoryOption) {
         });
     });
 }
-function getObjects(datafactoryOption, datafactoryType, deployOptions, folder) {
+function getObjects(datafactoryType, deployOptions, folder) {
     return new Promise((resolve, reject) => {
         let sourceFolder = path.normalize(folder);
         let allPaths = task.find(sourceFolder); // default find options (follow sym links)
@@ -159,8 +159,11 @@ function deployItem(datafactoryOption, deployOptions, item) {
     });
 }
 function deployItems(datafactoryOption, folder, deployOptions, datafactoryType) {
+    if (hasError) {
+        return;
+    } // Some error occurred, so returning
     return new Promise((resolve, reject) => {
-        getObjects(datafactoryOption, datafactoryType, deployOptions, folder)
+        getObjects(datafactoryType, deployOptions, folder)
             .then((items) => {
             processItems(datafactoryOption, deployOptions, datafactoryType, items)
                 .catch((err) => {
@@ -177,6 +180,7 @@ function deployItems(datafactoryOption, folder, deployOptions, datafactoryType) 
     });
 }
 function processItems(datafactoryOption, deployOptions, datafactoryType, items, throttle = 5) {
+    let firstError;
     return new Promise((resolve, reject) => {
         let totalItems = items.length;
         let process = Q.all(items.map(throat(throttle, (item) => {
@@ -184,11 +188,17 @@ function processItems(datafactoryOption, deployOptions, datafactoryType, items, 
             return deployItem(datafactoryOption, deployOptions, item);
         })))
             .catch((err) => {
-            reject(err);
+            hasError = true;
+            firstError = firstError || err;
         })
             .done(() => {
             task.debug(`${totalItems} ${datafactoryType}(s) deployed.`);
-            resolve(true);
+            if (hasError) {
+                reject(firstError);
+            }
+            else {
+                resolve(true);
+            }
         });
     });
 }
@@ -221,7 +231,7 @@ function main() {
                     resourceGroup: resourceGroup,
                     dataFactoryName: dataFactoryName,
                 };
-                let hasError = false, firstError;
+                let firstError;
                 task.debug('Parsed task inputs');
                 loginAzure(clientId, key, tenantID)
                     .then((azureClient) => {
@@ -244,18 +254,17 @@ function main() {
                         deployTasks.push({ path: triggerPath, type: DatafactoryTypes.Trigger });
                     }
                     Q.all(deployTasks.map(throat(1, (task) => {
-                        return hasError ? undefined : deployItems(datafactoryOption, task.path, deployOptions, task.type);
+                        return deployItems(datafactoryOption, task.path, deployOptions, task.type);
                     })))
                         .catch((err) => {
+                        hasError = true;
                         firstError = firstError || err;
-                        if (!deployOptions.continue) {
-                            task.debug('Cancelling deploy operations.');
-                            hasError = true;
-                            reject(firstError);
-                        }
                     })
                         .done(() => {
-                        if (!hasError) {
+                        if (hasError) {
+                            reject(firstError);
+                        }
+                        else {
                             resolve();
                         }
                     });
@@ -270,6 +279,8 @@ function main() {
         return promise;
     });
 }
+// Set generic error flag
+let hasError = false;
 main()
     .then(() => {
     task.setResult(task.TaskResult.Succeeded, "");
