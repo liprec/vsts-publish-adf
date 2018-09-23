@@ -162,10 +162,10 @@ function toggleTriggers(datafactoryOption, deployOptions, triggerFilter, toggle)
         });
     });
 }
-function processItems(datafactoryOption, deployOptions, triggers, throttle = 5) {
+function processItems(datafactoryOption, deployOptions, triggers) {
     return new Promise((resolve, reject) => {
         let totalItems = triggers.length;
-        let process = Q.all(triggers.map(throat(throttle, (trigger) => {
+        let process = Q.all(triggers.map(throat(deployOptions.throttle, (trigger) => {
             console.log(`Toggle '${trigger.triggerName}' to '${trigger.toggle}'.`);
             return toggleTrigger(datafactoryOption, deployOptions, trigger);
         })))
@@ -194,7 +194,8 @@ function main() {
                 let triggerFilter = taskParameters.getTriggerFilter();
                 let triggerStatus = taskParameters.getTriggerStatus();
                 let deployOptions = {
-                    continue: taskParameters.getContinue()
+                    continue: taskParameters.getContinue(),
+                    throttle: taskParameters.getThrottle()
                 };
                 azureModels = new AzureModels(connectedServiceName);
                 let clientId = azureModels.getServicePrincipalClientId();
@@ -249,4 +250,3 @@ main()
     .catch((err) => {
     task.setResult(task.TaskResult.Failed, err);
 });
-//# sourceMappingURL=toggleadftrigger.js.map

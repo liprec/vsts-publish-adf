@@ -29,10 +29,8 @@
 import Q = require('q');
 import throat = require('throat');
 import task = require('vsts-task-lib/task');
-import fs = require('fs');
 import path = require('path');
 import msRestAzure = require('ms-rest-azure');
-import https = require('https');
 import taskParameters = require('./models/taskParameters');
 import azureModels = require('./models/azureModels');
 import { UrlBasedRequestPrepareOptions } from './node_modules/ms-rest';
@@ -54,7 +52,8 @@ interface DatafactoryOptions {
 }
 
 interface DataFactoryDeployOptions {
-    continue: boolean
+    continue: boolean,
+    throttle: number
 }
 
 interface DatafactoryTriggerObject {
@@ -185,11 +184,11 @@ function toggleTriggers(datafactoryOption: DatafactoryOptions, deployOptions: Da
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, triggers: DatafactoryTriggerObject[], throttle: number = 5) {
+function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, triggers: DatafactoryTriggerObject[]) {
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = triggers.length;
 
-        let process = Q.all(triggers.map(throat(throttle, (trigger) => {
+        let process = Q.all(triggers.map(throat(deployOptions.throttle, (trigger) => {
                 console.log(`Toggle '${trigger.triggerName}' to '${trigger.toggle}'.`);
                 return toggleTrigger(datafactoryOption, deployOptions, trigger); 
             })))
@@ -222,7 +221,8 @@ async function main(): Promise<void> {
             let triggerStatus = taskParameters.getTriggerStatus();
             
             let deployOptions = {
-                continue: taskParameters.getContinue()
+                continue: taskParameters.getContinue(),
+                throttle: taskParameters.getThrottle()
             }
             
             azureModels = new AzureModels(connectedServiceName);

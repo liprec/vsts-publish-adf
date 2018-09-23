@@ -32,13 +32,11 @@ import task = require('vsts-task-lib/task');
 import fs = require('fs');
 import path = require('path');
 import msRestAzure = require('ms-rest-azure');
-import https = require('https');
 import { TaskParameters } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
 import { UrlBasedRequestPrepareOptions } from 'ms-rest';
-import { resolve } from 'url';
 
 task.setResourcePath(path.join(__dirname, '../task.json'));
 
@@ -57,7 +55,8 @@ interface DatafactoryOptions {
 }
 
 interface DataFactoryDeployOptions {
-    continue: boolean
+    continue: boolean,
+    throttle: number
 }
 
 interface DatafactoryDeployObject {
@@ -198,12 +197,12 @@ function deployItems(datafactoryOption: DatafactoryOptions, folder:string, deplo
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[], throttle: number = 5): Promise<boolean> {
+function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[]): Promise<boolean> {
     let firstError; 
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
-        let process = Q.all(items.map(throat(throttle, (item) => {
+        let process = Q.all(items.map(throat(deployOptions.throttle, (item) => {
                 console.log(`Deploy ${datafactoryType} '${item.name}'.`);
                 return deployItem(datafactoryOption, deployOptions, item); 
             })))
@@ -243,7 +242,8 @@ async function main(): Promise<void> {
             let triggerPath = taskParameters.getTriggerPath();
 
             let deployOptions = {
-                continue: taskParameters.getContinue()
+                continue: taskParameters.getContinue(),
+                throttle: taskParameters.getThrottle()
             }
             
             azureModels = new AzureModels(connectedServiceName);

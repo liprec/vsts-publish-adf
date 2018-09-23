@@ -43,6 +43,7 @@ export class TaskParameters {
     private triggerStatus: DatafactoryToggle;
 
     private continue: boolean;
+    private throttle: number;
 
     constructor() {
         try {
@@ -64,6 +65,8 @@ export class TaskParameters {
             }
             
             this.continue = task.getBoolInput('Continue', false);
+            this.throttle = Number.parseInt(task.getInput('Throttle', false));
+            this.throttle = (this.throttle === NaN ? 5 : this.throttle);
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
@@ -92,5 +95,9 @@ export class TaskParameters {
 
     public getContinue(): boolean {
         return this.continue;
+    }
+
+    public getThrottle(): number {
+        return this.throttle;
     }
 }

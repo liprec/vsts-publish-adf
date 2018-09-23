@@ -36,6 +36,8 @@ class TaskParameters {
             this.datafactoryName = task.getInput('DatafactoryName', true);
             this.pipelineFilter = task.getInput('PipelineFilter', false);
             this.continue = task.getBoolInput('Continue', false);
+            this.throttle = Number.parseInt(task.getInput('Throttle', false));
+            this.throttle = (this.throttle === NaN ? 5 : this.throttle);
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
@@ -56,6 +58,8 @@ class TaskParameters {
     getContinue() {
         return this.continue;
     }
+    getThrottle() {
+        return this.throttle;
+    }
 }
 exports.TaskParameters = TaskParameters;
-//# sourceMappingURL=taskParameters.js.map

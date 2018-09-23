@@ -83,6 +83,15 @@
             "required": false,
             "helpMarkDown": "Continue on deployment failures",
             "groupName": "advanced"
+        },
+        {
+            "name": "Throttle",
+            "type": "string",
+            "label": "Number of parallel deployments",
+            "defaultValue": "5",
+            "required": false,
+            "helpMarkDown": "Number of parallel deployments, default is 5",
+            "groupName": "advanced"
         }
     ],
     "dataSourceBindings": [

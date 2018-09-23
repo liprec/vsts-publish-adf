@@ -39,6 +39,8 @@ class TaskParameters {
             this.datasetFilter = task.getInput('DatasetFilter', false);
             this.triggerFilter = task.getInput('TriggerFilter', false);
             this.continue = task.getBoolInput('Continue', false);
+            this.throttle = Number.parseInt(task.getInput('Throttle', false));
+            this.throttle = (this.throttle === NaN ? 5 : this.throttle);
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
@@ -68,6 +70,8 @@ class TaskParameters {
     getContinue() {
         return this.continue;
     }
+    getThrottle() {
+        return this.throttle;
+    }
 }
 exports.TaskParameters = TaskParameters;
-//# sourceMappingURL=taskParameters.js.map

@@ -5,7 +5,7 @@
         "noImplicitAny": false,
         "outDir": "dist",
         "rootDir": ".",
-        "sourceMap": true,
+        "sourceMap": false,
         "moduleResolution": "node"
     },
     "exclude": [

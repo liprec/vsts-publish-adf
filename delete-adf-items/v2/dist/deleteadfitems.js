@@ -201,10 +201,10 @@ function deleteItems(datafactoryOption, filter, deployOptions, datafactoryType) 
         });
     });
 }
-function processItems(datafactoryOption, deployOptions, datafactoryType, items, throttle = 5) {
+function processItems(datafactoryOption, deployOptions, datafactoryType, items) {
     return new Promise((resolve, reject) => {
         let totalItems = items.length;
-        let process = Q.all(items.map(throat(throttle, (item) => {
+        let process = Q.all(items.map(throat(deployOptions.throttle, (item) => {
             console.log(`Delete ${datafactoryType} '${item.name}'.`);
             return deleteItem(datafactoryOption, deployOptions, item);
         })))
@@ -235,7 +235,8 @@ function main() {
                 let datasetFilter = taskParameters.getDatasetFilter();
                 let triggerFilter = taskParameters.getTriggerFilter();
                 let deployOptions = {
-                    continue: taskParameters.getContinue()
+                    continue: taskParameters.getContinue(),
+                    throttle: taskParameters.getThrottle()
                 };
                 azureModels = new azureModels_1.AzureModels(connectedServiceName);
                 let clientId = azureModels.getServicePrincipalClientId();
@@ -305,4 +306,3 @@ main()
     .catch((err) => {
     task.setResult(task.TaskResult.Failed, err);
 });
-//# sourceMappingURL=deleteadfitems.js.map

@@ -31,7 +31,6 @@ import throat = require('throat');
 import task = require('vsts-task-lib/task');
 import path = require('path');
 import msRestAzure = require('ms-rest-azure');
-import https = require('https');
 import { TaskParameters } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
@@ -55,7 +54,8 @@ interface DatafactoryOptions {
 }
 
 interface DataFactoryDeployOptions {
-    continue: boolean
+    continue: boolean,
+    throttle: number
 }
 
 interface DatafactoryPipelineObject {
@@ -178,11 +178,11 @@ function triggerPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
     });
 }
 
-function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipelines: DatafactoryPipelineObject[], throttle: number = 5): Promise<boolean> {
+function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipelines: DatafactoryPipelineObject[]): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = pipelines.length;
 
-        let process = Q.all(pipelines.map(throat(throttle, (pipeline) => {
+        let process = Q.all(pipelines.map(throat(deployOptions.throttle, (pipeline) => {
                 console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
                 return triggerPipeline(datafactoryOption, deployOptions, pipeline); 
             })))
@@ -214,7 +214,8 @@ async function main(): Promise<void> {
             let pipelineFilter = taskParameters.getPipelineFilter();
             
             let deployOptions = {
-                continue: taskParameters.getContinue()
+                continue: taskParameters.getContinue(),
+                throttle: taskParameters.getThrottle()
             }
             
             azureModels = new AzureModels(connectedServiceName);

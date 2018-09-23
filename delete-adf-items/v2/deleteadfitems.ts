@@ -31,7 +31,6 @@ import throat = require('throat');
 import task = require('vsts-task-lib/task');
 import path = require('path');
 import msRestAzure = require('ms-rest-azure');
-import https = require('https');
 import { TaskParameters } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
@@ -55,7 +54,8 @@ interface DatafactoryOptions {
 }
 
 interface DataFactoryDeployOptions {
-    continue: boolean
+    continue: boolean,
+    throttle: number
 }
 
 interface DatafactoryObject {
@@ -218,11 +218,11 @@ function deleteItems(datafactoryOption: DatafactoryOptions, filter:string, deplo
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryObject[], throttle: number = 5): Promise<boolean> {
+function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryObject[]): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
-        let process = Q.all(items.map(throat(throttle, (item) => {
+        let process = Q.all(items.map(throat(deployOptions.throttle, (item) => {
                 console.log(`Delete ${datafactoryType} '${item.name}'.`);
                 return deleteItem(datafactoryOption, deployOptions, item); 
             })))
@@ -257,7 +257,8 @@ async function main(): Promise<void> {
             let triggerFilter = taskParameters.getTriggerFilter();
             
             let deployOptions = {
-                continue: taskParameters.getContinue()
+                continue: taskParameters.getContinue(),
+                throttle: taskParameters.getThrottle()
             }
             
             azureModels = new AzureModels(connectedServiceName);

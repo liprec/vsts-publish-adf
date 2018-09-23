@@ -160,10 +160,10 @@ function triggerPipelines(datafactoryOption, deployOptions, filter) {
         });
     });
 }
-function processPipelines(datafactoryOption, deployOptions, pipelines, throttle = 5) {
+function processPipelines(datafactoryOption, deployOptions, pipelines) {
     return new Promise((resolve, reject) => {
         let totalItems = pipelines.length;
-        let process = Q.all(pipelines.map(throat(throttle, (pipeline) => {
+        let process = Q.all(pipelines.map(throat(deployOptions.throttle, (pipeline) => {
             console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
             return triggerPipeline(datafactoryOption, deployOptions, pipeline);
         })))
@@ -191,7 +191,8 @@ function main() {
                 let dataFactoryName = taskParameters.getDatafactoryName();
                 let pipelineFilter = taskParameters.getPipelineFilter();
                 let deployOptions = {
-                    continue: taskParameters.getContinue()
+                    continue: taskParameters.getContinue(),
+                    throttle: taskParameters.getThrottle()
                 };
                 azureModels = new azureModels_1.AzureModels(connectedServiceName);
                 let clientId = azureModels.getServicePrincipalClientId();
@@ -245,4 +246,3 @@ main()
     .catch((err) => {
     task.setResult(task.TaskResult.Failed, err);
 });
-//# sourceMappingURL=triggeradfpipeline.js.map
