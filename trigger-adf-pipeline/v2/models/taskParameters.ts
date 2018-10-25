@@ -35,6 +35,7 @@ export class TaskParameters {
     private datafactoryName: string;
 
     private pipelineFilter: string;
+    private pipelineParameter: string
 
     private continue: boolean;
     private throttle: number;
@@ -46,6 +47,7 @@ export class TaskParameters {
             this.datafactoryName = task.getInput('DatafactoryName', true);
 
             this.pipelineFilter = task.getInput('PipelineFilter', false);
+            this.pipelineParameter = task.getInput('PipelineParameter', false);
 
             this.continue = task.getBoolInput('Continue', false);
             this.throttle = Number.parseInt(task.getInput('Throttle', false));
@@ -70,6 +72,10 @@ export class TaskParameters {
 
     public getPipelineFilter(): string {
         return this.pipelineFilter;
+    }
+
+    public getPipelineParameter(): string {
+        return this.pipelineParameter;
     }
 
     public getContinue(): boolean {

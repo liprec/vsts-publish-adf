@@ -35,6 +35,7 @@ class TaskParameters {
             this.resourceGroupName = task.getInput('ResourceGroupName', true);
             this.datafactoryName = task.getInput('DatafactoryName', true);
             this.pipelineFilter = task.getInput('PipelineFilter', false);
+            this.pipelineParameter = task.getInput('PipelineParameter', false);
             this.continue = task.getBoolInput('Continue', false);
             this.throttle = Number.parseInt(task.getInput('Throttle', false));
             this.throttle = (this.throttle === NaN ? 5 : this.throttle);
@@ -54,6 +55,9 @@ class TaskParameters {
     }
     getPipelineFilter() {
         return this.pipelineFilter;
+    }
+    getPipelineParameter() {
+        return this.pipelineParameter;
     }
     getContinue() {
         return this.continue;

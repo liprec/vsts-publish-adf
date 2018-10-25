@@ -60,6 +60,7 @@ interface DataFactoryDeployOptions {
 
 interface DatafactoryPipelineObject {
     pipelineName: string,
+    json?: string
 }
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
@@ -101,7 +102,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     });
 }
 
-function getPipelines(datafactoryOption: DatafactoryOptions, filter: string): Promise<DatafactoryPipelineObject[]> {
+function getPipelines(datafactoryOption: DatafactoryOptions, filter: string, parameter: string): Promise<DatafactoryPipelineObject[]> {
     return new Promise<DatafactoryPipelineObject[]>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
@@ -125,7 +126,7 @@ function getPipelines(datafactoryOption: DatafactoryOptions, filter: string): Pr
                 let items = objects.value;
                 items = items.filter((item) => { return wildcardFilter(item.name, filter); })
                 console.log(`Found ${items.length} pipeline(s).`);
-                resolve(items.map((value) => { return { pipelineName: value.name }; }));
+                resolve(items.map((value) => { return { pipelineName: value.name, json: parameter }; }));
             }
         });
     });
@@ -142,7 +143,12 @@ function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: D
             method: 'POST',
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines/${pipelineName}/createRun?api-version=2018-06-01`,
             serializationMapper: null,
-            deserializationMapper: null
+            deserializationMapper: null,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: pipeline.json,
+            disableJsonStringifyOnBody: true
         };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
@@ -159,9 +165,9 @@ function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: D
     });
 }
 
-function triggerPipelines(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, filter:string): Promise<boolean> {
+function triggerPipelines(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, filter: string, parameter: string): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        getPipelines(datafactoryOption, filter)
+        getPipelines(datafactoryOption, filter, parameter)
             .then((pipelines: DatafactoryPipelineObject[]) => {
                 processPipelines(datafactoryOption, deployOptions, pipelines)
                     .catch((err) => {
@@ -223,6 +229,7 @@ async function main(): Promise<boolean> {
             let dataFactoryName = taskParameters.getDatafactoryName();
 
             let pipelineFilter = taskParameters.getPipelineFilter();
+            let pipelineParameter = taskParameters.getPipelineParameter();
             
             let deployOptions = {
                 continue: taskParameters.getContinue(),
@@ -249,7 +256,7 @@ async function main(): Promise<boolean> {
             }).then((result) => {
                 task.debug(`Datafactory '${dataFactoryName}' exist`);
                 if (pipelineFilter !== null) {
-                    triggerPipelines(datafactoryOption, deployOptions, pipelineFilter)
+                    triggerPipelines(datafactoryOption, deployOptions, pipelineFilter, pipelineParameter)
                         .then((result: boolean) => {
                             resolve(result);
                         }).catch((err) => {

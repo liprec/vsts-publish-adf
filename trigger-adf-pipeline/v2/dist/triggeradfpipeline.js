@@ -87,7 +87,7 @@ function checkDataFactory(datafactoryOption) {
         });
     });
 }
-function getPipelines(datafactoryOption, filter) {
+function getPipelines(datafactoryOption, filter, parameter) {
     return new Promise((resolve, reject) => {
         let azureClient = datafactoryOption.azureClient, subscriptionId = datafactoryOption.subscriptionId, resourceGroup = datafactoryOption.resourceGroup, dataFactoryName = datafactoryOption.dataFactoryName;
         let options = {
@@ -110,7 +110,7 @@ function getPipelines(datafactoryOption, filter) {
                 let items = objects.value;
                 items = items.filter((item) => { return wildcardFilter(item.name, filter); });
                 console.log(`Found ${items.length} pipeline(s).`);
-                resolve(items.map((value) => { return { pipelineName: value.name }; }));
+                resolve(items.map((value) => { return { pipelineName: value.name, json: parameter }; }));
             }
         });
     });
@@ -123,7 +123,12 @@ function triggerPipeline(datafactoryOption, deployOptions, pipeline) {
             method: 'POST',
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines/${pipelineName}/createRun?api-version=2018-06-01`,
             serializationMapper: null,
-            deserializationMapper: null
+            deserializationMapper: null,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: pipeline.json,
+            disableJsonStringifyOnBody: true
         };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
@@ -142,9 +147,9 @@ function triggerPipeline(datafactoryOption, deployOptions, pipeline) {
         });
     });
 }
-function triggerPipelines(datafactoryOption, deployOptions, filter) {
+function triggerPipelines(datafactoryOption, deployOptions, filter, parameter) {
     return new Promise((resolve, reject) => {
-        getPipelines(datafactoryOption, filter)
+        getPipelines(datafactoryOption, filter, parameter)
             .then((pipelines) => {
             processPipelines(datafactoryOption, deployOptions, pipelines)
                 .catch((err) => {
@@ -203,6 +208,7 @@ function main() {
                 let resourceGroup = taskParameters.getResourceGroupName();
                 let dataFactoryName = taskParameters.getDatafactoryName();
                 let pipelineFilter = taskParameters.getPipelineFilter();
+                let pipelineParameter = taskParameters.getPipelineParameter();
                 let deployOptions = {
                     continue: taskParameters.getContinue(),
                     throttle: taskParameters.getThrottle()
@@ -226,7 +232,7 @@ function main() {
                 }).then((result) => {
                     task.debug(`Datafactory '${dataFactoryName}' exist`);
                     if (pipelineFilter !== null) {
-                        triggerPipelines(datafactoryOption, deployOptions, pipelineFilter)
+                        triggerPipelines(datafactoryOption, deployOptions, pipelineFilter, pipelineParameter)
                             .then((result) => {
                             resolve(result);
                         }).catch((err) => {

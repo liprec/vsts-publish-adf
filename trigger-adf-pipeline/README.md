@@ -18,6 +18,7 @@ Data Factory Details:
 - **Pipeline Filter** - Filter to determine which pipeline to delete.
     - Empty string: *none* items will be deleted.
     - `*`: *all* found items will be deleted.
+- **Pipeline Parameter** - (Optional) Add pipeline parameters in JSON
 
 Advanced:
 - **Continue on Error** - When turned on continue after an error occurs and finish the task with the status 'Partially succeeded'
