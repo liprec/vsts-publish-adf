@@ -42,11 +42,11 @@ class TaskParameters {
             this.datafactoryName = task.getInput('DatafactoryName', true);
             this.triggerFilter = task.getInput('TriggerFilter', true);
             let status = task.getInput('TriggerStatus', true);
-            switch (status) {
-                case 'Start':
+            switch (status.toLowerCase()) {
+                case 'start':
                     this.triggerStatus = DatafactoryToggle.Start;
                     break;
-                case 'Stop':
+                case 'stop':
                     this.triggerStatus = DatafactoryToggle.Stop;
                     break;
             }
