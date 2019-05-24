@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/datascenarios/GitHub%20Projects/_apis/build/status/vsts-publish-adf?branchName=master)](https://dev.azure.com/datascenarios/GitHub%20Projects/_build/latest?definitionId=23&branchName=master)
+
 # Azure Data Factory
 
 This extension adds release tasks related to Azure Data Factory (V1 and V2) to release pipelines of Azure DevOps.
