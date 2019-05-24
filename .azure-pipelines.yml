@@ -2,7 +2,7 @@ trigger:
 - v2.0
 
 pool:
-  vmImage: 'Ubuntu 16.04'
+  vmImage: 'windows-2019'
 
 steps:
 - task: NodeTool@0
@@ -36,10 +36,5 @@ steps:
 
 - script: |
     npm install tfx-cli -g
+    tfx extension create --manifest-globs ./vss-extension.json
   displayName: 'install tfx-cli'
-
-- task: Bash@3
-  inputs:
-    targetType: 'inline'
-    script: 'tfx extension create --manifest-globs ./vss-extension.json'
-  displayName: 'create extension'
