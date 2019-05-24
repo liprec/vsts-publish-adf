@@ -15,7 +15,5 @@
     "throat": "^4.1.0",
     "vsts-task-lib": "2.1.0"
   },
-  "devDependencies": {
-    "typescript": "^3.4.5"
-  }
+  "devDependencies": {}
 }
