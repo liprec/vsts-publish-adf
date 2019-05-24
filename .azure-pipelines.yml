@@ -58,6 +58,8 @@ steps:
     title: Version $(extensionversion)
     isDraft: true
     addChangeLog: false
+    assets: liprec.vsts-publish-adf-$(extensionversion).vsix
+    assetUploadMode: 'delete'
     releaseNotesSource: input
     releaseNotes: |
       # Azure Data Factory
