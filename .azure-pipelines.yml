@@ -35,6 +35,6 @@ steps:
   displayName: 'npm install & build trigger-adf-pipeline'
 
 - script: |
-    npm install tfx -g
+    npm install tfx-cli -g
     tfx extension create
-  displayName: 'install tfx and create extension'
+  displayName: 'install tfx-cli and create extension'
