@@ -64,3 +64,4 @@ steps:
      This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
     isDraft: true
     isPreRelease: true
+    addChangeLog: false
