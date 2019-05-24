@@ -55,13 +55,12 @@ steps:
     tagSource: manual
     tag: '$(extensionversion)'
     title: 'Version $(extensionversion)'
+    isDraft: true
+    addChangeLog: false
     releaseNotesSource: input
     releaseNotes: |
-     # Azure Data Factory
-     This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
-     
-     ## Availability
-     This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
-    isDraft: true
-    isPreRelease: true
-    addChangeLog: false
+      # Azure Data Factory
+      This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
+
+      ## Availability
+      This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
