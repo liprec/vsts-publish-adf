@@ -1,5 +1,6 @@
 variables:
   extensionversion: "0.0.0"
+  System.Debug: true
 
 trigger:
 - v2.0
@@ -50,11 +51,12 @@ steps:
   displayName: 'release to github'
   inputs:
     gitHubConnection: GitHub
-    repositoryName: 'liprec/vsts-publish-adf'
-    target: '$(extensionversion)'
+    repositoryName: liprec/vsts-publish-adf
+    action: edit
+    target: $(extensionversion)
     tagSource: manual
-    tag: '$(extensionversion)'
-    title: 'Version $(extensionversion)'
+    tag: $(extensionversion)
+    title: Version $(extensionversion)
     isDraft: true
     addChangeLog: false
     releaseNotesSource: input
