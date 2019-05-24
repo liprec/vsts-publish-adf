@@ -35,6 +35,6 @@ steps:
   displayName: 'npm install & build trigger-adf-pipeline'
 
 - script: |
-    npm install tfx-cli -g --quiet
+    npm install tfx-cli -g --silent
     tfx extension create --manifest-globs ./vss-extension.json
   displayName: 'install tfx-cli'

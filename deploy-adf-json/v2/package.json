@@ -11,10 +11,10 @@
   "license": "MIT",
   "repository": {},
   "dependencies": {
-    "ms-rest-azure": "2.5.7",
+    "ms-rest-azure": "^2.6.0",
     "q": "1.5.1",
     "throat": "4.1.0",
-    "vsts-task-lib": "2.1.0"
+    "vsts-task-lib": "^2.7.0"
   },
   "devDependencies": {}
 }
