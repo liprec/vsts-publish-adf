@@ -1,6 +1,5 @@
 variables:
   extensionversion: "0.0.0"
-  System.Debug: true
 
 trigger:
 - v2.0
@@ -53,7 +52,7 @@ steps:
     gitHubConnection: GitHub
     repositoryName: liprec/vsts-publish-adf
     action: edit
-    target: $(extensionversion)
+    target: $(Build.SourceVersion)
     tagSource: manual
     tag: $(extensionversion)
     title: Version $(extensionversion)
