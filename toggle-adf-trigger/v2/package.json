@@ -1,6 +1,6 @@
 {
   "name": "toggle-adf-trigger",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Toggle ADFv2 trigger",
   "main": "tasks.js",
   "scripts": {
@@ -9,6 +9,7 @@
   },
   "author": "Jan Pieter Posthuma",
   "license": "MIT",
+  "repository": {},
   "dependencies": {
     "ms-rest-azure": "2.5.7",
     "q": "1.5.1",
