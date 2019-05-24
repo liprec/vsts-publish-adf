@@ -48,6 +48,9 @@
         },
         "support": {
             "uri": "https://github.com/liprec/vsts-publish-adf/issues"
+        },
+        "privacypolicy": {
+            "uri": "https://azurebi-docs.jppp.org/vsts-extensions/privacy-terms.html"
         }
     },
     "repository": {

@@ -1,5 +1,3 @@
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/liprec/vsts-publish-adf?branch=master&svg=true)](https://ci.appveyor.com/project/liprec/vsts-publish-adf)
-
 # Azure Data Factory
 
 This extension adds release tasks related to Azure Data Factory (V1 and V2) to release pipelines of Azure DevOps.
@@ -41,7 +39,7 @@ Azure DevOps release task to either suspend or resume all pipelines of an Azure 
 
 ## Release notes
 
-**2.0.0**  **PREVIEW**
+**2.0.0**
 - Added new task: Delete Items
 - Added new task: Toggle Pipeline
 - Rewrite to platform independent version by using NodeJS and REST APIs

@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "2.0.6",
+    "version": "2.1.0",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": true,
@@ -48,6 +48,9 @@
         },
         "support": {
             "uri": "https://github.com/liprec/vsts-publish-adf/issues"
+        },
+        "privacypolicy": {
+            "uri": "https://azurebi-docs.jppp.org/vsts-extensions/privacy-terms.html"
         }
     },
     "repository": {
