@@ -10,26 +10,26 @@ steps:
   inputs:
     versionSpec: '10.x'
 
-- script:
-    npm install |
+- script: |
+    npm install
     npm run build
   workingDirectory: delete-adf-items/v2
   displayName: 'npm install & build delete-adf-items'
 
-- script:
-    npm install |
+- script: |
+    npm install
     npm run build
   workingDirectory: deploy-adf-json/v2
   displayName: 'npm install & build deploy-adf-json'
 
-- script:
-    npm install |
+- script: |
+    npm install
     npm run build
   workingDirectory: toggle-adf-trigger/v2
   displayName: 'npm install & build toggle-adf-trigger'
 
-- script:
-    npm install |
+- script: |
+    npm install
     npm run build
   workingDirectory: trigger-adf-pipeline/v2
   displayName: 'npm install & build trigger-adf-pipeline'
