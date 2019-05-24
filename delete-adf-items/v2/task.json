@@ -1,0 +1,144 @@
+{
+    "id": "27e6f8f4-515b-47c1-8c51-2b8e9c15c84d",
+    "name": "delete-adf-items",
+    "friendlyName": "Azure Data Factory Delete Items",
+    "description": "Delete Azure Data Factory V2 items, like Datasets, Pipelines, Linked Services or Triggers",
+    "author": "Jan Pieter Posthuma",
+    "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
+    "category": "Deploy",
+    "preview": false,
+    "visibility": [
+        "Build",
+        "Release"
+    ],
+    "runsOn": [
+        "Agent"
+    ],
+    "demands": [],
+    "version": {
+        "Major": "2",
+        "Minor": "1",
+        "Patch": "0"
+    },
+    "minimumAgentVersion": "1.100.0",
+    "groups": [
+        {
+            "name": "azure",
+            "displayName": "Azure Details",
+            "isExpanded": true
+        },
+        {
+            "name": "adf",
+            "displayName": "Data Factory Details",
+            "isExpanded": true
+        },
+        {
+            "name": "advanced",
+            "displayName": "Advanced",
+            "isExpanded": false
+        }
+    ],
+    "inputs": [
+        {
+            "name": "ConnectedServiceName",
+            "aliases": ["azureSubscription"],
+            "type": "connectedService:AzureRM",
+            "label": "Azure Subscription",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "This is needed to connect to your Azure account.<br>To configure new service connection, select the Azure subscription from the list and click 'Authorize'.<br>If your subscription is not listed or if you want to use an existing Service Principal, you can setup an Azure service connection using 'Add' or 'Manage' button."
+        },
+        {
+            "name": "ResourceGroupName",
+            "type": "pickList",
+            "label": "Resource group",
+            "required": true,
+            "helpMarkDown": "Provide the name of the resource group.",
+            "properties": {
+                "EditableOptions": "True"
+            },
+            "groupname": "azure"
+        },
+        {
+            "name": "DatafactoryName",
+            "type": "string",
+            "label": "Azure Data Factory",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Name of the Azure Data Factory.",
+            "groupname": "azure"
+        },
+        {
+            "name": "ServiceFilter",
+            "type": "string",
+            "label": "Linked Service Filter",
+            "helpMarkDown": "Filter to determine which linked service to delete.\n-Empty string: *none* linked service will be deleted.\n-`*`: *all* linked service will be deleted.",
+            "groupname": "adf"
+        },
+        {
+            "name": "PipelineFilter",
+            "type": "string",
+            "label": "Pipeline Filter",
+            "helpMarkDown": "Filter to determine which pipeline to delete.\n-Empty string: *none* pipeline will be deleted.\n-`*`: *all* pipeline will be deleted.",
+            "groupname": "adf"
+        },
+        {
+            "name": "DatasetFilter",
+            "type": "string",
+            "label": "Dataset Filter",
+            "helpMarkDown": "Filter to determine which datasets to delete.\n-Empty string: *none* datasets will be deleted.\n-`*`: *all* datasets will be deleted.",
+            "groupname": "adf"
+        },
+        {
+            "name": "TriggerFilter",
+            "type": "string",
+            "label": "Trigger Filter",
+            "helpMarkDown": "Filter to determine which triggers to delete.\n-Empty string: *none* triggers will be deleted.\n-`*`: *all* triggers will be deleted.",
+            "groupname": "adf"
+        },
+        {
+            "name": "continue",
+            "type": "boolean",
+            "label": "Continue on Error",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Continue on deployment failures",
+            "groupName": "advanced"
+        },
+        {
+            "name": "Throttle",
+            "type": "string",
+            "label": "Number of parallel actions",
+            "defaultValue": "5",
+            "required": false,
+            "helpMarkDown": "Number of parallel actions, default is 5",
+            "groupName": "advanced"
+        }
+    ],
+    "dataSourceBindings": [
+        {
+            "target": "ResourceGroupName",
+            "endpointId": "$(ConnectedServiceName)",
+            "dataSourceName": "AzureResourceGroups"
+        }
+    ],
+    "instanceNameFormat": "Delete items from $(DatafactoryName)",
+    "execution": {
+        "Node": {
+            "target": "./dist/deleteadfitems.js",
+            "argumentFormat": ""
+        }
+    },
+    "messages": {
+        "TaskParameters_ConstructorFailed": "Task failed while initializing. Error: %s.",
+        "AzureModels_ConstructorFailed": "Unable to retrieve endpoint details for Azure",
+        "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
+        "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
+        "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "DeleteAdfItems_GetObjects": "Error calling DataFactory/%s API. Error: %s.",
+        "DeleteAdfItems_GetObjects2": "No %s found.",
+        "DeleteAdfItems_DeleteItem": "Error calling DELETE DataFactory/%s API. Error: %s.",
+        "DeleteAdfItems_DeleteItem2": "Error deleting '%s' %s : %s",
+        "DeleteAdfItems_DeleteItems": "Error retrieving %s: Error: %s."
+    }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "trigger-adf-piepline",
+  "version": "2.1.0",
+  "description": "Trigger ADFv2 items",
+  "main": "tasks.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jan Pieter Posthuma",
+  "license": "MIT",
+  "repository": {},
+  "dependencies": {
+    "ms-rest-azure": "^2.6.0",
+    "q": "1.5.1",
+    "throat": "^4.1.0",
+    "vsts-task-lib": "^2.7.0"
+  },
+  "devDependencies": {}
+}

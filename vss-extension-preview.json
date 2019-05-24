@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "1.2.11",
+    "version": "2.0.5",
     "name": "Azure Data Factory (Preview)",
     "publisher": "liprec",
     "public": false,
@@ -48,6 +48,9 @@
         },
         "support": {
             "uri": "https://github.com/liprec/vsts-publish-adf/issues"
+        },
+        "privacypolicy": {
+            "uri": "https://azurebi-docs.jppp.org/vsts-extensions/privacy-terms.html"
         }
     },
     "repository": {
@@ -84,17 +87,85 @@
             "properties": {
                 "name" : "toggle-adf-trigger"
             }
+        },
+        {
+            "id": "delete-adf-items",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "delete-adf-items"
+            }
+        },
+        {
+            "id": "trigger-adf-pipeline",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name" : "trigger-adf-pipeline"
+            }
         }
     ],
     "files": [
         {
-            "path": "deploy-adf-json"
+            "path": "deploy-adf-json/1.1.11"
         },
         {
-            "path": "suspend-adf-pipeline"
+            "path": "suspend-adf-pipeline/1.0.6"
         },
         {
-            "path": "toggle-adf-trigger"
+            "path": "toggle-adf-trigger/1.0.4"
+        },
+        {
+            "path": "delete-adf-items/v2/dist"
+        },
+        {
+            "path": "delete-adf-items/v2/node_modules"
+        },
+        {
+            "path": "delete-adf-items/v2/task.json"
+        },
+        {
+            "path": "delete-adf-items/v2/icon.png"
+        },
+        {
+            "path": "deploy-adf-json/v2/dist"
+        },
+        {
+            "path": "deploy-adf-json/v2/node_modules"
+        },
+        {
+            "path": "deploy-adf-json/v2/task.json"
+        },
+        {
+            "path": "deploy-adf-json/v2/icon.png"
+        },
+        {
+            "path": "toggle-adf-trigger/v2/dist"
+        },
+        {
+            "path": "toggle-adf-trigger/v2/node_modules"
+        },
+        {
+            "path": "toggle-adf-trigger/v2/task.json"
+        },
+        {
+            "path": "toggle-adf-trigger/v2/icon.png"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/dist"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/node_modules"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/task.json"
+        },
+        {
+            "path": "trigger-adf-pipeline/v2/icon.png"
         },
         {
             "path": "images/logo.png",
@@ -114,6 +185,14 @@
         },
         {
             "path": "images/screenshot-4.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-5.png",
+            "addressable": true
+        },
+        {
+            "path": "images/screenshot-6.png",
             "addressable": true
         }
     ]

@@ -1,0 +1,73 @@
+variables:
+  extensionversion: "0.0.0"
+
+trigger:
+- v2.0
+
+pool:
+  vmImage: 'windows-2019'
+
+steps:
+- task: NodeTool@0
+  displayName: 'Install Node.js'
+  inputs:
+    versionSpec: '10.x'
+
+- script: |
+    npm install
+    npm run build
+  workingDirectory: delete-adf-items/v2
+  displayName: 'npm install & build delete-adf-items'
+
+- script: |
+    npm install
+    npm run build
+  workingDirectory: deploy-adf-json/v2
+  displayName: 'npm install & build deploy-adf-json'
+
+- script: |
+    npm install
+    npm run build
+  workingDirectory: toggle-adf-trigger/v2
+  displayName: 'npm install & build toggle-adf-trigger'
+
+- script: |
+    npm install
+    npm run build
+  workingDirectory: trigger-adf-pipeline/v2
+  displayName: 'npm install & build trigger-adf-pipeline'
+
+- script: |
+    npm install tfx-cli -g --silent
+    tfx extension create --manifest-globs ./vss-extension.json
+  displayName: 'install tfx-cli'
+
+- script: |
+    tfx extension create --manifest-globs ./vss-extension.json
+  displayName: 'create extension'
+
+- script: |
+    node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable variable=extensionversion]' + v);"
+  displayName: 'extract version name'
+
+- task: GitHubRelease@0
+  displayName: 'release to github'
+  inputs:
+    gitHubConnection: GitHub
+    repositoryName: liprec/vsts-publish-adf
+    action: edit
+    target: $(Build.SourceVersion)
+    tagSource: manual
+    tag: $(extensionversion)
+    title: Version $(extensionversion)
+    isDraft: true
+    addChangeLog: false
+    assets: liprec.vsts-publish-adf-$(extensionversion).vsix
+    assetUploadMode: 'delete'
+    releaseNotesSource: input
+    releaseNotes: |
+      # Azure Data Factory
+      This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
+
+      ## Availability
+      This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf

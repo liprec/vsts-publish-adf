@@ -1,7 +1,7 @@
-# Azure Data Factory Trigger
+# Azure Data Factory Trigger Pipelines **PREVIEW**
 
-This release task can be added to a release pipeline to either start or stop Azure Data Factory triggers.
-![](../images/screenshot-4.png)
+This release task can be added to a release pipeline to delete Azure Data Factory V2 items, like Datasets, Pipelines, Linked Services or Triggers.
+![](../images/screenshot-6.png)
 
 ## Parameters
 
@@ -15,10 +15,10 @@ Azure Details:
 - **Azure Data Factory** - The name of the Azure Data Factory.
 
 Data Factory Details:
-- **Trigger Filter** - Filter to determine which triggers to delete.
+- **Pipeline Filter** - Filter to determine which pipeline to delete.
     - Empty string: *none* items will be deleted.
     - `*`: *all* found items will be deleted.
-- **Set Trigger Status** - The status of the stigger: Start or Stop.
+- **Pipeline Parameter** - (Optional) Add pipeline parameters in JSON
 
 Advanced:
 - **Continue on Error** - When turned on continue after an error occurs and finish the task with the status 'Partially succeeded'
@@ -30,7 +30,4 @@ Advanced:
 
 - Rewrite to platform independent version by using NodeJS and REST APIs
 - This version only support Azure Data Factory v2
-- Readme updated to version 2 functionality
-
-**1.0.4**
 - Initial public release
