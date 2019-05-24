@@ -43,6 +43,10 @@ steps:
   displayName: 'install tfx-cli'
 
 - script: |
+    tfx extension create --manifest-globs ./vss-extension.json
+  displayName: 'create extension'
+
+- script: |
     node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable variable=extensionversion]' + v);"
   displayName: 'extract version name'
 
