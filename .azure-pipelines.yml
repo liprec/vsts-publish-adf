@@ -43,5 +43,24 @@ steps:
   displayName: 'install tfx-cli'
 
 - script: |
-    node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable extensionversion=' + v + ']');"
+    node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable variable=extensionversion]' + v);"
   displayName: 'extract version name'
+
+- task: GitHubRelease@0
+  displayName: 'release to github'
+  inputs:
+    gitHubConnection: GitHub
+    repositoryName: 'liprec/vsts-publish-adf'
+    target: '$(extensionversion)'
+    tagSource: manual
+    tag: '$(extensionversion)'
+    title: 'Version $(extensionversion)'
+    releaseNotesSource: input
+    releaseNotes: |
+     # Azure Data Factory
+     This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
+     
+     ## Availability
+     This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
+    isDraft: true
+    isPreRelease: true
