@@ -36,5 +36,5 @@ steps:
 
 - script: |
     npm install tfx-cli -g
-    tfx extension create --manifests .\vss-extension.json
+    tfx extension create --manifests ./vss-extension.json
   displayName: 'install tfx-cli and create extension'
