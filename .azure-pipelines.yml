@@ -71,3 +71,4 @@ steps:
 
       ## Availability
       This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
