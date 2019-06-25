@@ -1,9 +1,6 @@
 variables:
   extensionversion: "0.0.0"
 
-trigger:
-- master
-
 pool:
   vmImage: 'windows-2019'
 
