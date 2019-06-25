@@ -113,7 +113,7 @@
             "dataSourceName": "AzureResourceGroups"
         }
     ],
-    "instanceNameFormat": "Toggle trigger(s) in $(adfName)",
+    "instanceNameFormat": "Toggle trigger(s) in $(DatafactoryName)",
     "execution": {
         "Node": {
             "target": "./dist/toggleadftrigger.js",

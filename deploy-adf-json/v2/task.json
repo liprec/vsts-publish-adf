@@ -122,7 +122,7 @@
             "dataSourceName": "AzureResourceGroups"
         }
     ],
-    "instanceNameFormat": "Deploy JSON files to $(adfname)",
+    "instanceNameFormat": "Deploy JSON files to $(DatafactoryName)",
     "execution": {
         "Node": {
             "target": "./dist/deployadfjson.js",
