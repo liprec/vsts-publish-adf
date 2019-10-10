@@ -13,7 +13,7 @@ jobs:
       versionSpec: '10.x'
 
 - job: Build
-  stragery:
+  strategy:
     matrix:
       delete-adf-items:
         vstsTask: delete-adf-items
@@ -24,7 +24,7 @@ jobs:
       trigger-adf-pipeline:
         vstsTask: trigger-adf-pipeline
     maxParallel: 2
-  steps:  
+  steps:
     - template: .azure-pipeline-task.yml
       parameters:
         taskDirectory: $(vstsTask)
