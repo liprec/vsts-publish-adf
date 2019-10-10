@@ -1,22 +1,14 @@
 parameters:
-  taskDirectory: ''
+  vstsTasks: []
 
+${{ each vstsTask in parameters.vstsTasks }}:
 steps:
-- bash: |
-    if [ -z "$TASKDIRECTORY" ]; then
-      echo "##vso[task.logissue type=error;]Missing template parameter \"taskDirectory\""
-      echo "##vso[task.complete result=Failed;]"
-    fi
-  env:
-    TASKDIRECTORY: ${{ parameters.taskDirectory }}
-  displayName: Check for required parameters
+  - script: |
+      npm install
+    workingDirectory: ${{ vstsTasks }}/v2
+    displayName: npm install
 
-- script: |
-    npm install
-  workingDirectory: ${{ parameters.taskDirectory }}/v2
-  displayName: npm install
-
-- script: |
-    npm run build
-  workingDirectory: ${{ parameters.taskDirectory }}/v2
-  displayName: npm run build
+  - script: |
+      npm run build
+    workingDirectory: ${{ vstsTasks }}/v2
+    displayName: npm run build

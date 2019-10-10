@@ -4,67 +4,51 @@ variables:
 pool:
   vmImage: 'windows-2019'
 
-jobs:
-- job: Setup
-  steps:
-  - task: NodeTool@0
-    displayName: 'Install Node.js'
-    inputs:
-      versionSpec: '10.x'
+steps:
+- task: NodeTool@0
+  displayName: 'Install Node.js'
+  inputs:
+    versionSpec: '10.x'
 
-- job: Build
-  dependsOn: Setup
-  strategy:
-    matrix:
-      delete-adf-items:
-        vstsTask: delete-adf-items
-      deploy-adf-json:
-        vstsTask: deploy-adf-json
-      toggle-adf-trigger:
-        vstsTask: toggle-adf-trigger
-      trigger-adf-pipeline:
-        vstsTask: trigger-adf-pipeline
-    maxParallel: 2
-  steps:
-    - template: .azure-pipeline-task.yml
-      parameters:
-        taskDirectory: $(vstsTask)
+- template: .azure-pipeline-task.yml
+  parameters:
+    vstsTasks:
+      delete-adf-items
+      deploy-adf-json
+      toggle-adf-trigger
+      trigger-adf-pipeline
 
-- job: Package
-  dependsOn: Build
-  steps:
-  - script: |
-      npm install tfx-cli -g --silent
-    displayName: 'install tfx-cli'
-  - script: |
-      tfx extension create --manifest-globs ./vss-extension.json
-    displayName: 'create extension'
+- script: |
+    npm install tfx-cli -g --silent
+  displayName: 'install tfx-cli'
 
-- job: Release
-  dependsOn: Package
-  steps:
-  - script: |
-      node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable variable=extensionversion]' + v);"
-    displayName: 'extract version name'
-  - task: GitHubRelease@0
-    displayName: 'release to github'
-    inputs:
-      gitHubConnection: GitHub
-      repositoryName: liprec/vsts-publish-adf
-      action: edit
-      target: $(Build.SourceVersion)
-      tagSource: manual
-      tag: $(extensionversion)
-      title: Version $(extensionversion)
-      isDraft: true
-      addChangeLog: false
-      assets: liprec.vsts-publish-adf-$(extensionversion).vsix
-      assetUploadMode: 'delete'
-      releaseNotesSource: input
-      releaseNotes: |
-        # Azure Data Factory
-        This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
+- script: |
+    tfx extension create --manifest-globs ./vss-extension.json
+  displayName: 'create extension'
 
-        ## Availability
-        This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+- script: |
+    node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable variable=extensionversion]' + v);"
+  displayName: 'extract version name'
+
+- task: GitHubRelease@0
+  displayName: 'release to github'
+  inputs:
+    gitHubConnection: GitHub
+    repositoryName: liprec/vsts-publish-adf
+    action: edit
+    target: $(Build.SourceVersion)
+    tagSource: manual
+    tag: $(extensionversion)
+    title: Version $(extensionversion)
+    isDraft: true
+    addChangeLog: false
+    assets: liprec.vsts-publish-adf-$(extensionversion).vsix
+    assetUploadMode: 'delete'
+    releaseNotesSource: input
+    releaseNotes: |
+      # Azure Data Factory
+      This extension adds release tasks related to Azure Data Factory to Visual Studio Team Service.
+
+      ## Availability
+      This version is available at the Visual Studio Marketplace: http://marketplace.visualstudio.com/items?itemName=liprec.vsts-publish-adf
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
