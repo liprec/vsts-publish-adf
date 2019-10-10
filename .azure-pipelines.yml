@@ -13,10 +13,10 @@ steps:
 - template: .azure-pipeline-task.yml
   parameters:
     vstsTasks:
-      delete-adf-items
-      deploy-adf-json
-      toggle-adf-trigger
-      trigger-adf-pipeline
+      - delete-adf-items
+      - deploy-adf-json
+      - toggle-adf-trigger
+      - trigger-adf-pipeline
 
 - script: |
     npm install tfx-cli -g --silent
