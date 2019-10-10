@@ -12,31 +12,46 @@ steps:
 
 - script: |
     npm install
+  workingDirectory: delete-adf-items/v2
+  displayName: 'delete-adf-items: npm install'
+
+- script: |
     npm run build
   workingDirectory: delete-adf-items/v2
-  displayName: 'npm install & build delete-adf-items'
+  displayName: 'delete-adf-items: npm run build'
 
 - script: |
     npm install
+  workingDirectory: deploy-adf-json/v2
+  displayName: 'deploy-adf-json: npm install'
+
+- script: |
     npm run build
   workingDirectory: deploy-adf-json/v2
-  displayName: 'npm install & build deploy-adf-json'
+  displayName: 'deploy-adf-json: npm run build'
 
 - script: |
     npm install
+  workingDirectory: toggle-adf-trigger/v2
+  displayName: 'toggle-adf-trigger: npm install'
+
+- script: |
     npm run build
   workingDirectory: toggle-adf-trigger/v2
-  displayName: 'npm install & build toggle-adf-trigger'
+  displayName: 'toggle-adf-trigger: npm run build'
 
 - script: |
     npm install
+  workingDirectory: trigger-adf-pipeline/v2
+  displayName: 'trigger-adf-pipeline: npm install'
+
+- script: |
     npm run build
   workingDirectory: trigger-adf-pipeline/v2
-  displayName: 'npm install & build trigger-adf-pipeline'
+  displayName: 'trigger-adf-pipeline: npm run build'
 
 - script: |
     npm install tfx-cli -g --silent
-    tfx extension create --manifest-globs ./vss-extension.json
   displayName: 'install tfx-cli'
 
 - script: |
