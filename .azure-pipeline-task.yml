@@ -6,9 +6,9 @@ steps:
   - script: |
       npm install
     workingDirectory: ${{ vstsTask }}/v2
-    displayName: npm install
+    displayName: $(vstsTask) - npm install
 
   - script: |
       npm run build
     workingDirectory: ${{ vstsTask }}/v2
-    displayName: npm run build
+    displayName: $(vstsTask) - npm run build
