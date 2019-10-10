@@ -5,10 +5,10 @@ steps:
 - ${{ each vstsTask in parameters.vstsTasks }}:
   - script: |
       npm install
-    workingDirectory: ${{ vstsTasks }}/v2
+    workingDirectory: ${{ vstsTask }}/v2
     displayName: npm install
 
   - script: |
       npm run build
-    workingDirectory: ${{ vstsTasks }}/v2
+    workingDirectory: ${{ vstsTask }}/v2
     displayName: npm run build
