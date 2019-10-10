@@ -14,9 +14,9 @@ steps:
 - script: |
     npm install
   workingDirectory: ${{ parameters.taskDirectory }}/v2
-  displayName: ${{ parameters.taskDirectory }}: npm install
+  displayName: npm install
 
 - script: |
     npm run build
   workingDirectory: ${{ parameters.taskDirectory }}/v2
-  displayName: ${{ parameters.taskDirectory }}: npm run build
+  displayName: npm run build
