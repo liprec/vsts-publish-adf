@@ -10,15 +10,9 @@ steps:
   inputs:
     versionSpec: '10.x'
 
-- script: |
-    npm install
-  workingDirectory: delete-adf-items/v2
-  displayName: 'delete-adf-items: npm install'
-
-- script: |
-    npm run build
-  workingDirectory: delete-adf-items/v2
-  displayName: 'delete-adf-items: npm run build'
+- template: .azure-pipeline-task.yml
+  parameters:
+    taskDirectory: delete-adf-items
 
 - script: |
     npm install
