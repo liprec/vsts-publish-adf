@@ -13,6 +13,7 @@ jobs:
       versionSpec: '10.x'
 
 - job: Build
+  dependsOn: Setup
   strategy:
     matrix:
       delete-adf-items:
@@ -30,6 +31,7 @@ jobs:
         taskDirectory: $(vstsTask)
 
 - job: Package
+  dependsOn: Build
   steps:
   - script: |
       npm install tfx-cli -g --silent
@@ -39,6 +41,7 @@ jobs:
     displayName: 'create extension'
 
 - job: Release
+  dependsOn: Package
   steps:
   - script: |
       node -e "const v = require('./vss-extension.json').version;console.log('##vso[task.setvariable variable=extensionversion]' + v);"
