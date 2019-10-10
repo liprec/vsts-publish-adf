@@ -76,12 +76,11 @@ typings/
 .taskkey
 *.vsix
 
-# Visual Studio Addins
-.taskkey
-*.vsix
-
 # Prevent Environment PowerShell scripts for NodeJs tasks
-*/v2/*.ps1
+**/v2/*.ps1
+
+# Build versions
+**/v2/dist/*
 
 # Typescript output
 .temp
