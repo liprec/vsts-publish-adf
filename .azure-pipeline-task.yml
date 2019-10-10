@@ -1,8 +1,8 @@
 parameters:
   vstsTasks: []
 
-${{ each vstsTask in parameters.vstsTasks }}:
 steps:
+- ${{ each vstsTask in parameters.vstsTasks }}:
   - script: |
       npm install
     workingDirectory: ${{ vstsTasks }}/v2
