@@ -11,9 +11,9 @@
   "license": "MIT",
   "repository": {},
   "dependencies": {
-    "ms-rest-azure": "^2.6.0",
+    "ms-rest-azure": "^3.0.0",
     "q": "1.5.1",
-    "throat": "4.1.0",
+    "throat": "^5.0.0",
     "vsts-task-lib": "^2.7.0"
   },
   "devDependencies": {}
