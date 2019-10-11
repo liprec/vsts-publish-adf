@@ -26,11 +26,11 @@
  *  THE SOFTWARE.
  */
 
-import Q = require('q');
-import throat = require('throat');
-import task = require('vsts-task-lib/task');
-import path = require('path');
-import msRestAzure = require('ms-rest-azure');
+import Q from 'q';
+import throat from 'throat';
+import * as task from 'vsts-task-lib/task';
+import * as path from 'path';
+import * as msRestAzure from 'ms-rest-azure';
 import { TaskParameters } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
