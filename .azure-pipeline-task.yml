@@ -4,7 +4,7 @@ parameters:
 steps:
 - ${{ each vstsTask in parameters.vstsTasks }}:
   - script: |
-      npm install
+      npm install --production
     workingDirectory: ${{ vstsTask }}/v2
     displayName: ${{ vstsTask }} - npm install
 
