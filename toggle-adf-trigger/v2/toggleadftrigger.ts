@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import Q from 'q';
+import * as Q from 'q';
 import throat from 'throat';
 import * as task from 'vsts-task-lib/task';
 import * as path from 'path';
@@ -192,7 +192,7 @@ function processItems(datafactoryOption: DatafactoryOptions, deployOptions: Data
                 hasError = true;
                 firstError = firstError || err;
             })
-            .done((results) => { 
+            .done((results: any) => { 
                 task.debug(`${totalItems} trigger(s) toggled.`);
                 if (hasError) {
                     reject(firstError);

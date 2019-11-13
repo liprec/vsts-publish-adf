@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import Q from 'q';
+import * as Q from 'q';
 import throat from 'throat';
 import * as task from 'vsts-task-lib/task';
 import * as path from 'path';
@@ -232,7 +232,7 @@ function processItems(datafactoryOption: DatafactoryOptions, deployOptions: Data
                 hasError = true;
                 firstError = firstError || err;
             })
-            .done((results) => {
+            .done((results: any) => {
                 task.debug(`${totalItems} ${datafactoryType}(s) deleted.`); 
                 if (hasError) {
                     reject(firstError);
@@ -312,7 +312,7 @@ async function main(): Promise<boolean> {
                         hasError = true;
                         firstError = firstError || err;
                     })
-                    .done((results) => {
+                    .done((results: any) => {
                         if (hasError) {
                             reject(firstError);
                         } else {
