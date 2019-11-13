@@ -72,6 +72,7 @@
             "name": "PipelineFilter",
             "type": "string",
             "label": "Pipeline Filter",
+            "required": false,
             "helpMarkDown": "Filter to determine which pipeline to trigger execution.\n`*`: *all* pipeline will be triggered.",
             "groupname": "adf"
         },
@@ -99,6 +100,15 @@
             "required": false,
             "helpMarkDown": "Number of parallel actions, default is 5",
             "groupName": "advanced"
+        },
+        {
+            "name": "DeploymentOutputs",
+            "type": "string",
+            "label": "Deployment outputs",
+            "required": false,
+            "defaultValue": "",
+            "groupName": "advanced",
+            "helpMarkDown": "Provide a name for the variable for the output variable which will contain the RUN IDs of the package triggers in string format. You can use the “ConvertFrom-Json” PowerShell cmdlet to parse the JSON object and access the individual RUN IDs."
         }
     ],
     "dataSourceBindings": [
@@ -124,6 +134,7 @@
         "TriggerAdfPipelines_GetPipelines": "Error calling DataFactory/pipelines API. Error: %s.",
         "TriggerAdfPipelines_GetPipelines2": "No pipeline(s) found.",
         "TriggerAdfPipelines_TriggerPipeline": "Error calling 'createRun' API for pipeline %s. Error: %s.",
-        "TriggerAdfPipelines_TriggerPipelines": "Error retrieving pipelines: Error: %s."
+        "TriggerAdfPipelines_TriggerPipelines": "Error retrieving pipelines: Error: ",
+        "TriggerAdfPipelines_AddedOutputVariable": "Updated output variable '%s', which contains the RUN IDs of the package triggers in string format."
     }
 }

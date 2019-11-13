@@ -39,6 +39,7 @@ export class TaskParameters {
 
     private continue: boolean;
     private throttle: number;
+    private deploymentOutputs: string;
 
     constructor() {
         try {
@@ -51,6 +52,7 @@ export class TaskParameters {
 
             this.continue = task.getBoolInput('Continue', false);
             this.throttle = Number.parseInt(task.getInput('Throttle', false));
+            this.deploymentOutputs = task.getInput("deploymentOutputs", false);
             this.throttle = (this.throttle === NaN ? 5 : this.throttle);
         }
         catch (err) {
@@ -58,31 +60,35 @@ export class TaskParameters {
         }
     }
 
-    public getConnectedServiceName(): string {
+    public get ConnectedServiceName(): string {
         return this.connectedServiceName;
     }
 
-    public getResourceGroupName(): string {
+    public get ResourceGroupName(): string {
         return this.resourceGroupName;
     }
     
-    public getDatafactoryName(): string {
+    public get DatafactoryName(): string {
         return this.datafactoryName;
     }
 
-    public getPipelineFilter(): string {
+    public get PipelineFilter(): string {
         return this.pipelineFilter;
     }
 
-    public getPipelineParameter(): string {
+    public get PipelineParameter(): string {
         return this.pipelineParameter;
     }
 
-    public getContinue(): boolean {
+    public get Continue(): boolean {
         return this.continue;
     }
 
-    public getThrottle(): number {
+    public get Throttle(): number {
         return this.throttle;
+    }
+
+    public get DeploymentOutputs(): string {
+        return this.deploymentOutputs;
     }
 }

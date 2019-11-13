@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import Q from 'q';
+import * as Q from 'q';
 import throat from 'throat';
 import * as task from 'vsts-task-lib/task';
 import * as path from 'path';
@@ -55,7 +55,8 @@ interface DatafactoryOptions {
 
 interface DataFactoryDeployOptions {
     continue: boolean,
-    throttle: number
+    throttle: number,
+    deploymentOutputs: string;
 }
 
 interface DatafactoryPipelineObject {
@@ -132,8 +133,8 @@ function getPipelines(datafactoryOption: DatafactoryOptions, filter: string, par
     });
 }
 
-function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipeline: DatafactoryPipelineObject): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
+function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipeline: DatafactoryPipelineObject): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
@@ -150,17 +151,30 @@ function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: D
             body: pipeline.json,
             disableJsonStringifyOnBody: true
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        let request = azureClient.sendRequest(options, (err, result: string, request, response) => {
             if (err) {
-                task.error(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
-                reject(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                if (deployOptions.continue) {
+                    task.warning(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    resolve();
+                } else {
+                    task.error(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    reject(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                }
             } else if ((response.statusCode!==200) && (response.statusCode!==204)) {
-                resolve(false);
+                if (deployOptions.continue) {
+                    task.warning(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                    resolve();    
+                } else {
+                    task.error(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                    reject(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));    
+                }
             } else if (response.statusCode===204) {
-                task.debug(`'${pipelineName}' not found.`);
+                task.warning(`'${pipelineName}' not found.`);
+                resolve();
             } else {
-                resolve(true);
-            }
+                console.log(`Pipeline '${pipelineName}' triggered with run id: '${(result as any).runId}'.`);
+                resolve(result);
+            } 
         });
     });
 }
@@ -190,19 +204,23 @@ function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
         let totalItems = pipelines.length;
 
         let process = Q.all(pipelines.map(throat(deployOptions.throttle, (pipeline) => {
-                console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
+                // console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
                 return triggerPipeline(datafactoryOption, deployOptions, pipeline); 
             })))
             .catch((err) => {
                 hasError = true;
                 firstError = firstError || err;
             })
-            .done((results) => { 
+            .done((results: any) => { 
                 task.debug(`${totalItems} pipeline(s) triggered.`); 
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    let issues = results.filter((result) => { return !result; }).length;
+                    if (isNonEmpty(deployOptions.deploymentOutputs)) {
+                        task.setVariable(deployOptions.deploymentOutputs, JSON.stringify(results));
+                        console.log(task.loc('TriggerAdfPipelines_AddedOutputVariable', deployOptions.deploymentOutputs));
+                    }
+                    let issues = results.filter((result) => { return result === ''; }).length;
                     if (issues > 0) {
                         resolve(false);
                     } else {
@@ -224,16 +242,17 @@ async function main(): Promise<boolean> {
 
             task.debug('Task execution started ...');
             taskParameters = new TaskParameters();
-            let connectedServiceName = taskParameters.getConnectedServiceName();
-            let resourceGroup = taskParameters.getResourceGroupName();
-            let dataFactoryName = taskParameters.getDatafactoryName();
+            let connectedServiceName = taskParameters.ConnectedServiceName;
+            let resourceGroup = taskParameters.ResourceGroupName;
+            let dataFactoryName = taskParameters.DatafactoryName;
 
-            let pipelineFilter = taskParameters.getPipelineFilter();
-            let pipelineParameter = taskParameters.getPipelineParameter();
+            let pipelineFilter = taskParameters.PipelineFilter;
+            let pipelineParameter = taskParameters.PipelineParameter;
             
             let deployOptions = {
-                continue: taskParameters.getContinue(),
-                throttle: taskParameters.getThrottle()
+                continue: taskParameters.Continue,
+                throttle: taskParameters.Throttle,
+                deploymentOutputs: taskParameters.DeploymentOutputs,
             }
             
             azureModels = new AzureModels(connectedServiceName);
@@ -281,6 +300,10 @@ async function main(): Promise<boolean> {
 
 function wildcardFilter(value: string, rule: string) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
+}
+
+function isNonEmpty(str: string): boolean {
+    return (!!str && !!str.trim());
 }
 
 // Set generic error flag
