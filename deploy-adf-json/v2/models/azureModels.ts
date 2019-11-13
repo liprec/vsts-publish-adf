@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import task = require("vsts-task-lib/task");
+import * as task from 'azure-pipelines-task-lib/task';
 
 export class AzureModels {
 
