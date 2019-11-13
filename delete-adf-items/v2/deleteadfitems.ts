@@ -28,10 +28,10 @@
 
 import * as Q from 'q';
 import throat from 'throat';
-import * as task from 'vsts-task-lib/task';
+import * as task from 'azure-pipelines-task-lib/task';
 import * as path from 'path';
 import * as msRestAzure from 'ms-rest-azure';
-import { TaskParameters } from './models/taskParameters';
+import { TaskParameters, SortingDirection } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
@@ -53,9 +53,10 @@ interface DatafactoryOptions {
     dataFactoryName: string
 }
 
-interface DataFactoryDeployOptions {
+interface DatafactoryTaskOptions {
     continue: boolean,
-    throttle: number
+    throttle: number,
+    sorting: SortingDirection,
 }
 
 interface DatafactoryObject {
@@ -102,7 +103,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     });
 }
 
-function getObjects(datafactoryOption: DatafactoryOptions, datafactoryType: DatafactoryTypes, filter: string): Promise<DatafactoryObject[]> {
+function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, datafactoryType: DatafactoryTypes, filter: string): Promise<DatafactoryObject[]> {
     return new Promise<DatafactoryObject[]>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
@@ -140,6 +141,9 @@ function getObjects(datafactoryOption: DatafactoryOptions, datafactoryType: Data
                 let objects = JSON.parse(JSON.stringify(result));
                 let items = objects.value;
                 items = items.filter((item) => { return wildcardFilter(item.name, filter); })
+                taskOptions.sorting === SortingDirection.Ascending
+                    ? items.sort((item1, item2) =>  <any>(item1.name > item2.name) - <any>(item1.name < item2.name))
+                    : items.sort((item1, item2) =>  <any>(item2.name > item1.name) - <any>(item2.name < item1.name))
                 console.log(`Found ${items.length} ${datafactoryType}(s).`);
                 resolve(items.map((value) => { return { name: value.name, type: datafactoryType }; }));
             }
@@ -147,7 +151,7 @@ function getObjects(datafactoryOption: DatafactoryOptions, datafactoryType: Data
     });
 }
 
-function deleteItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, item: DatafactoryObject): Promise<boolean> {
+function deleteItem(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, item: DatafactoryObject): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
@@ -176,11 +180,11 @@ function deleteItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
             deserializationMapper: null
         };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if ((err) && (!deployOptions.continue)) {
+            if ((err) && (!taskOptions.continue)) {
                 task.error(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
                 reject(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
             } else if (response.statusCode===400) {
-                if (deployOptions.continue) {
+                if (taskOptions.continue) {
                     task.warning(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
@@ -199,12 +203,12 @@ function deleteItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
     });
 }
 
-function deleteItems(datafactoryOption: DatafactoryOptions, filter:string, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes): Promise<boolean> {
+function deleteItems(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, filter:string, datafactoryType: DatafactoryTypes): Promise<boolean> {
     if (hasError) { return } // Some error occurred, so returning
     return new Promise<boolean>((resolve, reject) => {
-        getObjects(datafactoryOption, datafactoryType, filter)
+        getObjects(datafactoryOption, taskOptions, datafactoryType, filter)
             .then((items: DatafactoryObject[]) => {
-                processItems(datafactoryOption, deployOptions, datafactoryType, items)
+                processItems(datafactoryOption, taskOptions, datafactoryType, items)
                     .catch((err) => {
                         reject(err);
                     })
@@ -219,14 +223,14 @@ function deleteItems(datafactoryOption: DatafactoryOptions, filter:string, deplo
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryObject[]): Promise<boolean> {
+function processItems(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, datafactoryType: DatafactoryTypes, items: DatafactoryObject[]): Promise<boolean> {
     let firstError; 
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
-        let process = Q.all(items.map(throat(deployOptions.throttle, (item) => {
+        let process = Q.all(items.map(throat(taskOptions.throttle, (item) => {
                 console.log(`Delete ${datafactoryType} '${item.name}'.`);
-                return deleteItem(datafactoryOption, deployOptions, item); 
+                return deleteItem(datafactoryOption, taskOptions, item); 
             })))
             .catch((err) => {
                 hasError = true;
@@ -259,18 +263,19 @@ async function main(): Promise<boolean> {
 
             task.debug('Task execution started ...');
             taskParameters = new TaskParameters();
-            let connectedServiceName = taskParameters.getConnectedServiceName();
-            let resourceGroup = taskParameters.getResourceGroupName();
-            let dataFactoryName = taskParameters.getDatafactoryName();
+            let connectedServiceName = taskParameters.ConnectedServiceName;
+            let resourceGroup = taskParameters.ResourceGroupName;
+            let dataFactoryName = taskParameters.DatafactoryName;
 
-            let serviceFilter = taskParameters.getServiceFilter();
-            let pipelineFilter = taskParameters.getPipelineFilter();
-            let datasetFilter = taskParameters.getDatasetFilter();
-            let triggerFilter = taskParameters.getTriggerFilter();
+            let serviceFilter = taskParameters.ServiceFilter;
+            let pipelineFilter = taskParameters.PipelineFilter;
+            let datasetFilter = taskParameters.DatasetFilter;
+            let triggerFilter = taskParameters.TriggerFilter;
             
-            let deployOptions = {
-                continue: taskParameters.getContinue(),
-                throttle: taskParameters.getThrottle()
+            let taskOptions = {
+                continue: taskParameters.Continue,
+                throttle: taskParameters.Throttle,
+                sorting: taskParameters.Sorting,
             }
             
             azureModels = new AzureModels(connectedServiceName);
@@ -306,7 +311,7 @@ async function main(): Promise<boolean> {
                     deleteTasks.push({filter: serviceFilter, type: DatafactoryTypes.LinkedService});
                 }
                 Q.all(deleteTasks.map(throat(1, (task) => {
-                        return deleteItems(datafactoryOption, task.filter, deployOptions, task.type);
+                        return deleteItems(datafactoryOption, taskOptions, task.filter, task.type);
                     })))
                     .catch((err) => {
                         hasError = true;

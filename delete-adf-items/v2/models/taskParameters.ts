@@ -26,7 +26,12 @@
  *  THE SOFTWARE.
  */
 
-import task = require("vsts-task-lib/task");
+import * as task from 'azure-pipelines-task-lib/task';
+
+export enum SortingDirection {
+    Ascending,
+    Descending
+}
 
 export class TaskParameters {
 
@@ -41,6 +46,7 @@ export class TaskParameters {
 
     private continue: boolean;
     private throttle: number;
+    private sorting: SortingDirection;
 
     constructor() {
         try {
@@ -56,45 +62,59 @@ export class TaskParameters {
             this.continue = task.getBoolInput('Continue', false);
             this.throttle = Number.parseInt(task.getInput('Throttle', false));
             this.throttle = (this.throttle === NaN ? 5 : this.throttle);
+
+            let sorting = task.getInput('Sorting', true);
+            switch (sorting.toLowerCase()) {
+                case 'ascending':
+                    this.sorting = SortingDirection.Ascending
+                    break;
+                case 'descending':
+                    this.sorting = SortingDirection.Descending
+                    break;
+            }
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
         }
     }
 
-    public getConnectedServiceName(): string {
+    public get ConnectedServiceName(): string {
         return this.connectedServiceName;
     }
 
-    public getResourceGroupName(): string {
+    public get ResourceGroupName(): string {
         return this.resourceGroupName;
     }
     
-    public getDatafactoryName(): string {
+    public get DatafactoryName(): string {
         return this.datafactoryName;
     }
 
-    public getServiceFilter(): string {
+    public get ServiceFilter(): string {
         return this.serviceFilter;
     }
 
-    public getPipelineFilter(): string {
+    public get PipelineFilter(): string {
         return this.pipelineFilter;
     }
 
-    public getDatasetFilter(): string {
+    public get DatasetFilter(): string {
         return this.datasetFilter;
     }
 
-    public getTriggerFilter(): string {
+    public get TriggerFilter(): string {
         return this.triggerFilter;
     }
 
-    public getContinue(): boolean {
+    public get Continue(): boolean {
         return this.continue;
     }
 
-    public getThrottle(): number {
+    public get Throttle(): number {
         return this.throttle;
+    }
+
+    public get Sorting(): SortingDirection {
+        return this.sorting;
     }
 }

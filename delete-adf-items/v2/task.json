@@ -113,6 +113,18 @@
             "required": false,
             "helpMarkDown": "Number of parallel actions, default is 5",
             "groupName": "advanced"
+        },
+        {
+            "name": "Sorting",
+            "type": "pickList",
+            "label": "Set sorting direction of the delete order",
+            "required": "true",
+            "defaultValue": "Descending",
+            "groupname": "advanced",
+            "options": {
+                "start": "Ascending",
+                "stop": "Descending"
+            }
         }
     ],
     "dataSourceBindings": [
