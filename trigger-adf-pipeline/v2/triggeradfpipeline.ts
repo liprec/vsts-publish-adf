@@ -1,7 +1,7 @@
 /*
- * VSTS Trigger ADF Pipeline Task
+ * Azure Pipelines Azure Datafactory Pipeline Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -26,18 +26,18 @@
  *  THE SOFTWARE.
  */
 
-import * as Q from 'q';
+import { all } from 'q';
 import throat from 'throat';
-import * as task from 'vsts-task-lib/task';
-import * as path from 'path';
-import * as msRestAzure from 'ms-rest-azure';
-import { TaskParameters } from './models/taskParameters';
+import { error, warning, debug, loc, getVariable, setResourcePath, setVariable, setResult, TaskResult } from 'azure-pipelines-task-lib/task';
+import { join } from 'path';
+import { readFileSync } from 'fs';
+import { AzureServiceClient, loginWithServicePrincipalSecret } from 'ms-rest-azure';
+import { UrlBasedRequestPrepareOptions } from 'ms-rest';
+
+import { TaskParameters, PipelineParameterType } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
-import AzureServiceClient = msRestAzure.AzureServiceClient;
-import { UrlBasedRequestPrepareOptions } from './node_modules/ms-rest';
-
-task.setResourcePath(path.join(__dirname, '../task.json'));
+setResourcePath(join(__dirname, '../task.json'));
 
 enum DatafactoryTypes {
     Pipeline = 'Pipeline',
@@ -64,12 +64,17 @@ interface DatafactoryPipelineObject {
     json?: string
 }
 
+interface DataFactoryRunResult {
+    pipeline: string;
+    runId: string;
+}
+
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        msRestAzure.loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
+        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
             if (err) {
-                task.error(task.loc("Generic_LoginAzure", err.message));
-                reject(task.loc("Generic_LoginAzure", err.message));
+                error(loc("Generic_LoginAzure", err.message));
+                reject(loc("Generic_LoginAzure", err.message));
             }
             resolve(new AzureServiceClient(credentials, {}));
         });
@@ -90,12 +95,12 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
         }
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("Generic_CheckDataFactory", err));
-                reject(task.loc("Generic_CheckDataFactory", err));
+                error(loc("Generic_CheckDataFactory", err));
+                reject(loc("Generic_CheckDataFactory", err));
             }
             if (response.statusCode!==200) {
-                task.debug(task.loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
             }
@@ -115,16 +120,23 @@ function getPipelines(datafactoryOption: DatafactoryOptions, filter: string, par
             serializationMapper: null,
             deserializationMapper: null
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        let request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("TriggerAdfPipelines_GetPipelines", err.message));
-                reject(task.loc("TriggerAdfPipelines_GetPipelines", err.message));
+                error(loc("TriggerAdfPipelines_GetPipelines", err.message));
+                reject(loc("TriggerAdfPipelines_GetPipelines", err.message));
             } else if (response.statusCode!==200) {
-                task.debug(task.loc("TriggerAdfPipelines_GetPipelines2"));
-                reject(task.loc("TriggerAdfPipelines_GetPipelines2"));
+                debug(loc("TriggerAdfPipelines_GetPipelines2"));
+                reject(loc("TriggerAdfPipelines_GetPipelines2"));
             } else {
                 let objects = JSON.parse(JSON.stringify(result));
                 let items = objects.value;
+                let nextLink = objects.nextLink;
+                while (nextLink !== undefined) {
+                    let result = await processNextLink(datafactoryOption, nextLink);
+                    objects = JSON.parse(JSON.stringify(result));
+                    items = items.concat(objects.value);
+                    nextLink = objects.nextLink;
+                }
                 items = items.filter((item) => { return wildcardFilter(item.name, filter); })
                 console.log(`Found ${items.length} pipeline(s).`);
                 resolve(items.map((value) => { return { pipelineName: value.name, json: parameter }; }));
@@ -133,8 +145,24 @@ function getPipelines(datafactoryOption: DatafactoryOptions, filter: string, par
     });
 }
 
-function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipeline: DatafactoryPipelineObject): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
+function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
+    const azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        options: UrlBasedRequestPrepareOptions = {
+            method: 'GET',
+            url: nextLink,
+            serializationMapper: null,
+            deserializationMapper: null
+        };
+    debug(`Following next link`);
+    return new Promise<any>((resolve, reject) => {
+        azureClient.sendRequest(options, (err, result, request, response) => {
+            resolve(result);
+        });
+    });
+}
+
+function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, pipeline: DatafactoryPipelineObject): Promise<DataFactoryRunResult> {
+    return new Promise<DataFactoryRunResult>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
@@ -154,27 +182,31 @@ function triggerPipeline(datafactoryOption: DatafactoryOptions, deployOptions: D
         let request = azureClient.sendRequest(options, (err, result: string, request, response) => {
             if (err) {
                 if (deployOptions.continue) {
-                    task.warning(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
                     resolve();
                 } else {
-                    task.error(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
-                    reject(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
                 }
             } else if ((response.statusCode!==200) && (response.statusCode!==204)) {
                 if (deployOptions.continue) {
-                    task.warning(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                    warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
                     resolve();    
                 } else {
-                    task.error(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
-                    reject(task.loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));    
+                    error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                    reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));    
                 }
             } else if (response.statusCode===204) {
-                task.warning(`'${pipelineName}' not found.`);
+                warning(`'${pipelineName}' not found.`);
                 resolve();
             } else {
-                console.log(`Pipeline '${pipelineName}' triggered with run id: '${(result as any).runId}'.`);
-                resolve(result);
-            } 
+                const runId = (result as any).runId;
+                console.log(`Pipeline '${pipelineName}' triggered with run id: '${runId}'.`);
+                resolve({
+                    pipeline: pipelineName,
+                    runId
+                });
+            }
         });
     });
 }
@@ -192,8 +224,8 @@ function triggerPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
                     });
             })
             .catch((err) => {
-                task.debug(task.loc("TriggerAdfPipelines_TriggerPipelines", err.message));
-                reject(task.loc("TriggerAdfPipelines_TriggerPipelines", err.message));
+                debug(loc("TriggerAdfPipelines_TriggerPipelines", err.message));
+                reject(loc("TriggerAdfPipelines_TriggerPipelines", err.message));
             });
     });
 }
@@ -203,7 +235,7 @@ function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = pipelines.length;
 
-        let process = Q.all(pipelines.map(throat(deployOptions.throttle, (pipeline) => {
+        let process = all(pipelines.map(throat(deployOptions.throttle, (pipeline) => {
                 // console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
                 return triggerPipeline(datafactoryOption, deployOptions, pipeline); 
             })))
@@ -212,13 +244,13 @@ function processPipelines(datafactoryOption: DatafactoryOptions, deployOptions: 
                 firstError = firstError || err;
             })
             .done((results: any) => { 
-                task.debug(`${totalItems} pipeline(s) triggered.`); 
+                debug(`${totalItems} pipeline(s) triggered.`); 
                 if (hasError) {
                     reject(firstError);
                 } else {
                     if (isNonEmpty(deployOptions.deploymentOutputs)) {
-                        task.setVariable(deployOptions.deploymentOutputs, JSON.stringify(results));
-                        console.log(task.loc('TriggerAdfPipelines_AddedOutputVariable', deployOptions.deploymentOutputs));
+                        setVariable(deployOptions.deploymentOutputs, JSON.stringify(results));
+                        console.log(loc('TriggerAdfPipelines_AddedOutputVariable', deployOptions.deploymentOutputs));
                     }
                     let issues = results.filter((result) => { return result === ''; }).length;
                     if (issues > 0) {
@@ -237,10 +269,10 @@ async function main(): Promise<boolean> {
         let azureModels: AzureModels;
 
         try {
-            let debugMode: string = task.getVariable('System.Debug');
+            let debugMode: string = getVariable('System.Debug');
             let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != 'false' : false;
 
-            task.debug('Task execution started ...');
+            debug('Task execution started ...');
             taskParameters = new TaskParameters();
             let connectedServiceName = taskParameters.ConnectedServiceName;
             let resourceGroup = taskParameters.ResourceGroupName;
@@ -248,6 +280,17 @@ async function main(): Promise<boolean> {
 
             let pipelineFilter = taskParameters.PipelineFilter;
             let pipelineParameter = taskParameters.PipelineParameter;
+
+            switch (taskParameters.PipelineParameterType) {
+                case PipelineParameterType.Inline:
+                default:
+                    pipelineParameter = taskParameters.PipelineParameter
+                    break;
+                case PipelineParameterType.Path:
+                    pipelineParameter = readFileSync(taskParameters.PipelineParameterPath, 'utf8');
+                    console.log(pipelineParameter);
+                    break;
+            }
             
             let deployOptions = {
                 continue: taskParameters.Continue,
@@ -265,22 +308,22 @@ async function main(): Promise<boolean> {
                 dataFactoryName: dataFactoryName,
             };
             let firstError;
-            task.debug('Parsed task inputs');
+            debug('Parsed task inputs');
             
             loginAzure(clientId, key, tenantID)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
-                    task.debug("Azure client retrieved.");
+                    debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
             }).then((result) => {
-                task.debug(`Datafactory '${dataFactoryName}' exist`);
+                debug(`Datafactory '${dataFactoryName}' exist`);
                 if (pipelineFilter !== null) {
                     triggerPipelines(datafactoryOption, deployOptions, pipelineFilter, pipelineParameter)
                         .then((result: boolean) => {
                             resolve(result);
                         }).catch((err) => {
                             if (!deployOptions.continue) {
-                                task.debug('Cancelling trigger operation.');
+                                debug('Cancelling trigger operation.');
                                 reject(err);
                             } else {
                                 resolve();
@@ -311,8 +354,8 @@ let hasError = false;
 
 main()
     .then((result) => {
-        task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
+        setResult(result ? TaskResult.Succeeded : TaskResult.SucceededWithIssues, "");
     })
     .catch((err) => { 
-        task.setResult(task.TaskResult.Failed, err); 
+        setResult(TaskResult.Failed, err); 
     });

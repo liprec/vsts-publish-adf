@@ -1,7 +1,7 @@
 /*
- * VSTS Trigger ADF Pipeline Task
+ * Azure Pipelines Azure Datafactory Pipeline Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -26,7 +26,12 @@
  *  THE SOFTWARE.
  */
 
-import task = require("vsts-task-lib/task");
+import { getInput, getBoolInput, loc, getPathInput, getVariable } from 'azure-pipelines-task-lib/task';
+
+export enum PipelineParameterType {
+    Inline,
+    Path
+}
 
 export class TaskParameters {
 
@@ -35,7 +40,9 @@ export class TaskParameters {
     private datafactoryName: string;
 
     private pipelineFilter: string;
+    private pipelineParameterType: PipelineParameterType;
     private pipelineParameter: string
+    private pipelineParameterPath: string
 
     private continue: boolean;
     private throttle: number;
@@ -43,20 +50,35 @@ export class TaskParameters {
 
     constructor() {
         try {
-            this.connectedServiceName = task.getInput('ConnectedServiceName', true);
-            this.resourceGroupName = task.getInput('ResourceGroupName', true);
-            this.datafactoryName = task.getInput('DatafactoryName', true);
+            const rootPath = getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.pipelineFilter = task.getInput('PipelineFilter', false);
-            this.pipelineParameter = task.getInput('PipelineParameter', false);
+            this.connectedServiceName = getInput('ConnectedServiceName', true);
+            this.resourceGroupName = getInput('ResourceGroupName', true);
+            this.datafactoryName = getInput('DatafactoryName', true);
 
-            this.continue = task.getBoolInput('Continue', false);
-            this.throttle = Number.parseInt(task.getInput('Throttle', false));
-            this.deploymentOutputs = task.getInput("deploymentOutputs", false);
+            this.pipelineFilter = getInput('PipelineFilter', false);
+            const pipelineParameterType = getInput('PipelineParameterType', false);
+            this.pipelineParameter = getInput('PipelineParameter', false);
+            this.pipelineParameterPath = getPathInput('PipelineParameterPath', false, pipelineParameterType.toLowerCase() === 'path');
+
+            this.continue = getBoolInput('Continue', false);
+            this.throttle = Number.parseInt(getInput('Throttle', false));
+            this.deploymentOutputs = getInput("deploymentOutputs", false);
             this.throttle = (this.throttle === NaN ? 5 : this.throttle);
+
+            this.pipelineParameterPath = this.pipelineParameterPath.replace(rootPath, "") === "" ? null : this.pipelineParameterPath
+            switch (pipelineParameterType.toLowerCase()) {
+                case 'path':
+                    this.pipelineParameterType = PipelineParameterType.Path;
+                    break;
+                case 'inline':
+                default:
+                    this.pipelineParameterType = PipelineParameterType.Inline;
+                    break;
+            }
         }
         catch (err) {
-            throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
+            throw new Error(loc("TaskParameters_ConstructorFailed", err.message));
         }
     }
 
@@ -76,8 +98,16 @@ export class TaskParameters {
         return this.pipelineFilter;
     }
 
+    public get PipelineParameterType(): PipelineParameterType {
+        return this.pipelineParameterType;
+    }
+
     public get PipelineParameter(): string {
         return this.pipelineParameter;
+    }
+
+    public get PipelineParameterPath(): string {
+        return this.pipelineParameterPath;
     }
 
     public get Continue(): boolean {

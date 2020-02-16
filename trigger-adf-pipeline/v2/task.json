@@ -77,10 +77,30 @@
             "groupname": "adf"
         },
         {
+            "name": "PipelineParameterType",
+            "type": "pickList",
+            "label": "Pipeline Parameter Location",
+            "defaultValue": "inline",
+            "groupname": "adf",
+            "options": {
+                "inline": "Inline JSON",
+                "path": "JSON Path"
+            }
+        },
+        {
             "name": "PipelineParameter",
             "type": "multiLine",
             "label": "Pipeline Parameter",
+            "visibleRule": "PipelineParameterType = inline",
             "helpMarkDown": "Additional pipeline parameters (JSON)",
+            "groupname": "adf"
+        },
+        {
+            "name": "PipelineParameterPath",
+            "type": "filePath",
+            "label": "Pipeline Parameter Path",
+            "visibleRule": "PipelineParameterType = path",
+            "helpMarkDown": "Fully qualified path of the JSON file with additional pipeline parameters",
             "groupname": "adf"
         },
         {
