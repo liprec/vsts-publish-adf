@@ -28,35 +28,35 @@
         },
         {
             "label": "delete-adf-items",
-            "type": "typescript",
-            "tsconfig": "delete-adf-items\\v2\\tsconfig.json",
-            "problemMatcher": [
-                "$tsc"
-            ]
+            "type": "npm",
+            "script": "build",
+            "path": "delete-adf-items/v2/",
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "label": "deploy-adf-json",
-            "type": "typescript",
-            "tsconfig": "deploy-adf-json\\v2\\tsconfig.json",
-            "problemMatcher": [
-                "$tsc"
-            ]
+            "type": "npm",
+            "script": "build",
+            "path": "deploy-adf-json/v2/",
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "label": "toggle-adf-trigger",
-            "type": "typescript",
-            "tsconfig": "toggle-adf-trigger\\v2\\tsconfig.json",
-            "problemMatcher": [
-                "$tsc"
-            ]
+            "type": "npm",
+            "script": "build",
+            "path": "toggle-adf-trigger/v2/",
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "label": "trigger-adf-pipeline",
-            "type": "typescript",
-            "tsconfig": "trigger-adf-pipeline\\v2\\tsconfig.json",
-            "problemMatcher": [
-                "$tsc"
-            ]
+            "type": "npm",
+            "script": "build",
+            "path": "trigger-adf-pipeline/v2/",
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "label": "Build and prepare all extensions (v2)",
