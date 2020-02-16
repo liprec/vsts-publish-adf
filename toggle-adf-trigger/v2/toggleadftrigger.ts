@@ -1,7 +1,7 @@
 /*
- * VSTS Azure Data Factory (V2) Trigger Task
+ * Azure Pipelines Azure Datafactory Trigger Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -28,7 +28,7 @@
 
 import * as Q from 'q';
 import throat from 'throat';
-import * as task from 'vsts-task-lib/task';
+import * as task from 'azure-pipelines-task-lib/task';
 import * as path from 'path';
 import * as msRestAzure from 'ms-rest-azure';
 import { TaskParameters, DatafactoryToggle } from './models/taskParameters';
@@ -86,7 +86,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
                 reject(task.loc("Generic_CheckDataFactory", err));
             }
             if (response.statusCode!==200) {
-                task.debug(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
                 reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
@@ -107,7 +107,7 @@ function getTriggers(datafactoryOption: DatafactoryOptions, deployOptions: DataF
             serializationMapper: null,
             deserializationMapper: null
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        let request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
                 task.error(task.loc("ToggleAdfTrigger_GetTriggers", err.message));
                 reject(task.loc("ToggleAdfTrigger_GetTriggers", err.message));
@@ -117,10 +117,33 @@ function getTriggers(datafactoryOption: DatafactoryOptions, deployOptions: DataF
             } else {
                 let objects = JSON.parse(JSON.stringify(result));
                 let items = objects.value;
+                let nextLink = objects.nextLink;
+                while (nextLink !== undefined) {
+                    let result = await processNextLink(datafactoryOption, nextLink);
+                    objects = JSON.parse(JSON.stringify(result));
+                    items = items.concat(objects.value);
+                    nextLink = objects.nextLink;
+                }
                 items = items.filter((item) => { return wildcardFilter(item.name, triggerFilter); })
                 console.log(`Found ${items.length} trigger(s).`);
                 resolve(items.map((value) => { return { triggerName: value.name, toggle: toggle }; }));
             }
+        });
+    });
+}
+
+function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
+    const azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        options: UrlBasedRequestPrepareOptions = {
+            method: 'GET',
+            url: nextLink,
+            serializationMapper: null,
+            deserializationMapper: null
+        };
+    task.debug(`Following next link`);
+    return new Promise<any>((resolve, reject) => {
+        azureClient.sendRequest(options, (err, result, request, response) => {
+            resolve(result);
         });
     });
 }

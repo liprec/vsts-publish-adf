@@ -1,6 +1,6 @@
 {
   "name": "toggle-adf-trigger",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Toggle ADFv2 trigger",
   "main": "tasks.js",
   "scripts": {
@@ -11,10 +11,10 @@
   "license": "MIT",
   "repository": {},
   "dependencies": {
+    "azure-pipelines-task-lib": "^2.9.3",
     "ms-rest-azure": "^3.0.0",
     "q": "1.5.1",
-    "throat": "^5.0.0",
-    "vsts-task-lib": "^2.7.0"
+    "throat": "^5.0.0"
   },
   "devDependencies": {
     "@types/q": "^1.5.2"

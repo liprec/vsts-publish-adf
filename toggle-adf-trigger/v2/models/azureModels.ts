@@ -1,7 +1,7 @@
 /*
- * VSTS Azure Data Factory (V2) Trigger Task
+ * Azure Pipelines Azure Datafactory Trigger Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import task = require("vsts-task-lib/task");
+import * as task from 'azure-pipelines-task-lib/task';
 
 export class AzureModels {
 

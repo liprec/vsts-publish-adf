@@ -1,7 +1,7 @@
 {
     "id": "c1024007-2299-4799-bc66-6f7d78365b28",
     "name": "toggle-adf-trigger",
-    "friendlyName": "Azure Data Factory (V2) Trigger",
+    "friendlyName": "Azure Data Factory Trigger",
     "description": "Start/stop an Azure Data Factory Trigger",
     "author": "Jan Pieter Posthuma",
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
@@ -72,7 +72,6 @@
             "name": "TriggerFilter",
             "type": "string",
             "label": "Trigger Filter",
-            "required": "true",
             "helpMarkDown": "Filter to determine which triggers to delete.\n-Empty string: *none* triggers will be deleted.\n-`*`: *all* triggers will be deleted.",
             "groupname": "adf"
         },
