@@ -32,7 +32,7 @@ Azure DevOps release task to trigger an Azure Data Factory pipeline to start.
 
 [More information](trigger-adf-pipeline/README.md)
 
-## Azure Data Factory Pipelines Management
+## Azure Data Factory Pipelines Management (Deprecated)
 
 Azure DevOps release task to either suspend or resume all pipelines of an Azure Data Factory.
 ![](images/screenshot-3.png)
@@ -40,6 +40,12 @@ Azure DevOps release task to either suspend or resume all pipelines of an Azure 
 [More information](suspend-adf-pipeline/README.md)
 
 ## Release notes
+
+**2.2**
+
+- Added support for deploy Data flows definition files
+- Added paging support for data factories with more than 50 objects
+- Adding support for trigger parameter files
 
 **2.0.0**
 - Added new task: Delete Items

@@ -1,32 +1,16 @@
-# Azure Data Factory Trigger Pipelines **PREVIEW**
+# Azure Data Factory Pipeline Trigger
 
-This release task can be added to a release pipeline to delete Azure Data Factory V2 items, like Datasets, Pipelines, Linked Services or Triggers.
-![](../images/screenshot-6.png)
+This task can be added to a pipeline to trigger a Azure Data Factory pipeline run.
 
-## Parameters
-
-Generic:
-
-- **Display name** - Description name of the task
-- **Azure Subscription** - Which Azure Subscription (Service Endpoint) should be used to connect to the datafactory
-
-Azure Details:
-- **Resource Group** - To which Resource Group is the Azure Data Factory deployed
-- **Azure Data Factory** - The name of the Azure Data Factory.
-
-Data Factory Details:
-- **Pipeline Filter** - Filter to determine which pipeline to delete.
-    - Empty string: *none* items will be deleted.
-    - `*`: *all* found items will be deleted.
-- **Pipeline Parameter** - (Optional) Add pipeline parameters in JSON
-
-Advanced:
-- **Continue on Error** - When turned on continue after an error occurs and finish the task with the status 'Partially succeeded'
-- **Number of parallel actions** - Maximum amount of parallel tasks are initiated.
+Full documentation: https://azurebi-docs.jppp.org/vsts-extensions/azure-data-factory-trigger.html
 
 ## Release notes
 
-**2.0** **PREVIEW**
+**2.2**
+
+- Added paging support for data factories with more than 50 pipelines
+
+**2.0**
 
 - Rewrite to platform independent version by using NodeJS and REST APIs
 - This version only support Azure Data Factory v2

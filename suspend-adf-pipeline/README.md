@@ -1,4 +1,4 @@
-# Azure Data Factory Pipelines Management
+# Azure Data Factory Pipelines Management (Deprecated)
 
 This release task can be added to a release pipeline to either suspend or resume all pipelines of an Azure Data Factory.
 ![](../images/screenshot-3.png)
