@@ -1,7 +1,7 @@
 /*
- * VSTS Azure Datafactory Deploy Task
+ * Azure Pipelines Azure Datafactory Deploy Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -32,7 +32,7 @@ import * as task from 'azure-pipelines-task-lib/task';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as msRestAzure from 'ms-rest-azure';
-import { TaskParameters } from './models/taskParameters';
+import { TaskParameters, SortingDirection } from './models/taskParameters';
 import { AzureModels } from './models/azureModels';
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
@@ -42,6 +42,7 @@ task.setResourcePath(path.join(__dirname, '../task.json'));
 
 enum DatafactoryTypes {
     Pipeline = 'pipeline',
+    Dataflow = 'dataflow',
     Dataset = 'dataset',
     Trigger = 'trigger',
     LinkedService = 'linked service'
@@ -54,9 +55,10 @@ interface DatafactoryOptions {
     dataFactoryName: string
 }
 
-interface DataFactoryDeployOptions {
+interface DatafactoryTaskOptions {
     continue: boolean,
-    throttle: number
+    throttle: number,
+    sorting: SortingDirection,
 }
 
 interface DatafactoryDeployObject {
@@ -95,7 +97,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
                 reject(task.loc("Generic_CheckDataFactory", err));
             }
             if (response.statusCode!==200) {
-                task.debug(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
                 reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
@@ -104,12 +106,15 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     });
 }
 
-function getObjects(datafactoryType: DatafactoryTypes, deployOptions: DataFactoryDeployOptions, folder: string): Promise<DatafactoryDeployObject[]> {
+function getObjects(datafactoryType: DatafactoryTypes, taskOptions: DatafactoryTaskOptions, folder: string): Promise<DatafactoryDeployObject[]> {
     return new Promise<DatafactoryDeployObject[]>((resolve, reject) => {
         let sourceFolder = path.normalize(folder);
         let allPaths: string[] = task.find(sourceFolder); // default find options (follow sym links)
         let matchedFiles: string[] = allPaths.filter((itemPath: string) => !task.stats(itemPath).isDirectory()); // filter-out directories
         if (matchedFiles.length > 0) {
+            taskOptions.sorting === SortingDirection.Ascending
+                    ? matchedFiles.sort((item1, item2) =>  <any>(path.basename(item1) > path.basename(item2)) - <any>(path.basename(item1) < path.basename(item2)))
+                    : matchedFiles.sort((item1, item2) =>  <any>(path.basename(item2) > path.basename(item1)) - <any>(path.basename(item2) < path.basename(item1)))
             console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
             resolve(matchedFiles.map((file: string) => {
                 let data = fs.readFileSync(file, 'utf8');
@@ -125,7 +130,7 @@ function getObjects(datafactoryType: DatafactoryTypes, deployOptions: DataFactor
     });
 }
 
-function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, item: DatafactoryDeployObject): Promise<boolean> {
+function deployItem(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, item: DatafactoryDeployObject): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
@@ -134,6 +139,9 @@ function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
         let objectName = item.name;
         let objectType;
         switch (item.type) {
+            case DatafactoryTypes.Dataflow:
+                objectType = "dataflows";
+                break;
             case DatafactoryTypes.Dataset:
                 objectType = "datasets";
                 break;
@@ -159,11 +167,11 @@ function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
             disableJsonStringifyOnBody: true
         };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if ((err) && (!deployOptions.continue)) {
+            if ((err) && (!taskOptions.continue)) {
                 task.error(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
                 reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
             } else if (response.statusCode!==200) {
-                if (deployOptions.continue) {
+                if (taskOptions.continue) {
                     task.warning(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
@@ -177,12 +185,12 @@ function deployItem(datafactoryOption: DatafactoryOptions, deployOptions: DataFa
     });
 }
 
-function deployItems(datafactoryOption: DatafactoryOptions, folder:string, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes): Promise<boolean> {
+function deployItems(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, folder:string, datafactoryType: DatafactoryTypes): Promise<boolean> {
     if (hasError) { return } // Some error occurred, so returning
     return new Promise<boolean>((resolve, reject) => {
-        getObjects(datafactoryType, deployOptions, folder)
+        getObjects(datafactoryType, taskOptions, folder)
             .then((items: DatafactoryDeployObject[]) => {
-                processItems(datafactoryOption, deployOptions, datafactoryType, items)
+                processItems(datafactoryOption, taskOptions, datafactoryType, items)
                     .catch((err) => {
                         reject(err);
                     })
@@ -197,14 +205,14 @@ function deployItems(datafactoryOption: DatafactoryOptions, folder:string, deplo
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, deployOptions: DataFactoryDeployOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[]): Promise<boolean> {
+function processItems(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, datafactoryType: DatafactoryTypes, items: DatafactoryDeployObject[]): Promise<boolean> {
     let firstError; 
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
-        let process = Q.all(items.map(throat(deployOptions.throttle, (item) => {
+        let process = Q.all(items.map(throat(taskOptions.throttle, (item) => {
                 console.log(`Deploy ${datafactoryType} '${item.name}'.`);
-                return deployItem(datafactoryOption, deployOptions, item); 
+                return deployItem(datafactoryOption, taskOptions, item); 
             })))
             .catch((err) => {
                 hasError = true;
@@ -237,18 +245,20 @@ async function main(): Promise<boolean> {
 
             task.debug('Task execution started ...');
             taskParameters = new TaskParameters();
-            let connectedServiceName = taskParameters.getConnectedServiceName();
-            let resourceGroup = taskParameters.getResourceGroupName();
-            let dataFactoryName = taskParameters.getDatafactoryName();
+            let connectedServiceName = taskParameters.ConnectedServiceName;
+            let resourceGroup = taskParameters.ResourceGroupName;
+            let dataFactoryName = taskParameters.DatafactoryName;
 
-            let servicePath = taskParameters.getServicePath();
-            let pipelinePath = taskParameters.getPipelinePath();
-            let datasetPath = taskParameters.getDatasetPath();
-            let triggerPath = taskParameters.getTriggerPath();
+            let servicePath = taskParameters.ServicePath;
+            let pipelinePath = taskParameters.PipelinePath;
+            let datasetPath = taskParameters.DatasetPath;
+            let dataflowPath = taskParameters.DataflowPath;
+            let triggerPath = taskParameters.TriggerPath;
 
-            let deployOptions = {
-                continue: taskParameters.getContinue(),
-                throttle: taskParameters.getThrottle()
+            let taskOptions = {
+                continue: taskParameters.Continue,
+                throttle: taskParameters.Throttle,
+                sorting: taskParameters.Sorting,
             }
             
             azureModels = new AzureModels(connectedServiceName);
@@ -277,6 +287,9 @@ async function main(): Promise<boolean> {
                 if (datasetPath !== null) {
                     deployTasks.push({path: datasetPath, type: DatafactoryTypes.Dataset});
                 }
+                if (dataflowPath !== null) {
+                    deployTasks.push({path: dataflowPath, type: DatafactoryTypes.Dataflow});
+                }
                 if (pipelinePath !== null) {
                     deployTasks.push({path: pipelinePath, type: DatafactoryTypes.Pipeline});
                 }
@@ -284,7 +297,7 @@ async function main(): Promise<boolean> {
                     deployTasks.push({path: triggerPath, type: DatafactoryTypes.Trigger});
                 }
                 Q.all(deployTasks.map(throat(1, (task) => {
-                        return deployItems(datafactoryOption, task.path, deployOptions, task.type); 
+                        return deployItems(datafactoryOption, taskOptions, task.path, task.type); 
                     })))
                     .catch((err) => {
                         hasError = true;

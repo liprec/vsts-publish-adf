@@ -71,28 +71,35 @@
         {
             "name": "ServicePath",
             "type": "filePath",
-            "label": "Path to Linked Services",
+            "label": "Path to Linked Service definitions",
+            "helpMarkDown": "",
+            "groupname": "adf"
+        },
+        {
+            "name": "DataflowPath",
+            "type": "filePath",
+            "label": "Path to Data flow definitions",
             "helpMarkDown": "",
             "groupname": "adf"
         },
         {
             "name": "DatasetPath",
             "type": "filePath",
-            "label": "Path to Datasets",
+            "label": "Path to Dataset definitions",
             "helpMarkDown": "",
             "groupname": "adf"
         },
         {
             "name": "PipelinePath",
             "type": "filePath",
-            "label": "Path to Pipelines",
+            "label": "Path to Pipeline definitions",
             "helpMarkDown": "",
             "groupname": "adf"
         },
         {
             "name": "TriggerPath",
             "type": "filePath",
-            "label": "Path to Triggers",
+            "label": "Path to Trigger definitions",
             "helpMarkDown": "",
             "groupname": "adf"
         },
@@ -113,6 +120,18 @@
             "required": false,
             "helpMarkDown": "Number of parallel actions, default is 5",
             "groupName": "advanced"
+        },
+        {
+            "name": "Sorting",
+            "type": "pickList",
+            "label": "Set sorting direction of the delete order",
+            "required": "true",
+            "defaultValue": "Ascending",
+            "groupname": "advanced",
+            "options": {
+                "start": "Ascending",
+                "stop": "Descending"
+            }
         }
     ],
     "dataSourceBindings": [

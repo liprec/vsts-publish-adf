@@ -1,7 +1,7 @@
 /*
- * VSTS Delete ADF Items Task
+ * Azure Pipelines Azure Datafactory Deploy Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 

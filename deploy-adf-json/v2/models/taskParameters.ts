@@ -1,7 +1,7 @@
 /*
- * VSTS Delete ADF Items Task
+ * Azure Pipelines Azure Datafactory Deploy Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -28,6 +28,11 @@
 
 import * as task from 'azure-pipelines-task-lib/task';
 
+export enum SortingDirection {
+    Ascending,
+    Descending
+}
+
 export class TaskParameters {
 
     private connectedServiceName: string;
@@ -37,10 +42,12 @@ export class TaskParameters {
     private servicePath: string;
     private pipelinePath: string;
     private datasetPath: string;
+    private dataflowPath: string;
     private triggerPath: string;
 
     private continue: boolean;
     private throttle: number;
+    private sorting: SortingDirection;
 
     constructor() {
         try {
@@ -53,56 +60,75 @@ export class TaskParameters {
             this.servicePath = task.getPathInput('ServicePath', false, true);
             this.pipelinePath = task.getPathInput('PipelinePath', false, true);
             this.datasetPath = task.getPathInput('DatasetPath', false, true);
+            this.dataflowPath = task.getPathInput('DataflowPath', false, true);
             this.triggerPath = task.getPathInput('TriggerPath', false, true);
             
             // Replace "" with null
             this.servicePath = this.servicePath.replace(rootPath, "") === "" ? null : this.servicePath;
             this.pipelinePath = this.pipelinePath.replace(rootPath, "") === "" ? null : this.pipelinePath;
             this.datasetPath = this.datasetPath.replace(rootPath, "") === "" ? null : this.datasetPath;
+            this.dataflowPath = this.dataflowPath.replace(rootPath, "") === "" ? null : this.dataflowPath;
             this.triggerPath = this.triggerPath.replace(rootPath, "") === "" ? null : this.triggerPath;
 
             this.continue = task.getBoolInput('Continue', false);
             this.throttle = Number.parseInt(task.getInput('Throttle', false));
             this.throttle = (this.throttle === NaN ? 5 : this.throttle);
+            let sorting = task.getInput('Sorting', true);
+            switch (sorting.toLowerCase()) {
+                case 'ascending':
+                    this.sorting = SortingDirection.Ascending
+                    break;
+                case 'descending':
+                    this.sorting = SortingDirection.Descending
+                    break;
+            }
         }
         catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
         }
     }
 
-    public getConnectedServiceName(): string {
+    public get ConnectedServiceName(): string {
         return this.connectedServiceName;
     }
 
-    public getResourceGroupName(): string {
+    public get ResourceGroupName(): string {
         return this.resourceGroupName;
     }
     
-    public getDatafactoryName(): string {
+    public get DatafactoryName(): string {
         return this.datafactoryName;
     }
 
-    public getServicePath(): string {
+    public get ServicePath(): string {
         return this.servicePath;
     }
 
-    public getPipelinePath(): string {
+    public get PipelinePath(): string {
         return this.pipelinePath;
     }
 
-    public getDatasetPath(): string {
+    public get DatasetPath(): string {
         return this.datasetPath;
     }
 
-    public getTriggerPath(): string {
+    public get DataflowPath(): string {
+        return this.dataflowPath;
+    }
+
+    public get TriggerPath(): string {
         return this.triggerPath;
     }
 
-    public getContinue(): boolean {
+    public get Continue(): boolean {
         return this.continue;
     }
 
-    public getThrottle(): number {
+    public get Throttle(): number {
         return this.throttle;
+    }
+
+    public get Sorting(): SortingDirection {
+        return this.sorting;
     }
 }
