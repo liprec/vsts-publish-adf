@@ -72,14 +72,21 @@
             "name": "ServiceFilter",
             "type": "string",
             "label": "Linked Service Filter",
-            "helpMarkDown": "Filter to determine which linked service to delete.\n-Empty string: *none* linked service will be deleted.\n-`*`: *all* linked service will be deleted.",
+            "helpMarkDown": "Filter to determine which linked service to delete.\n-Empty string: *none* linked services will be deleted.\n-`*`: *all* linked services will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "PipelineFilter",
             "type": "string",
             "label": "Pipeline Filter",
-            "helpMarkDown": "Filter to determine which pipeline to delete.\n-Empty string: *none* pipeline will be deleted.\n-`*`: *all* pipeline will be deleted.",
+            "helpMarkDown": "Filter to determine which pipeline to delete.\n-Empty string: *none* pipelines will be deleted.\n-`*`: *all* pipelines will be deleted.",
+            "groupname": "adf"
+        },
+        {
+            "name": "DataflowFilter",
+            "type": "string",
+            "label": "Data flow Filter",
+            "helpMarkDown": "Filter to determine which data flow to delete.\n-Empty string: *none* data flows will be deleted.\n-`*`: *all* data flows will be deleted.",
             "groupname": "adf"
         },
         {
@@ -93,7 +100,7 @@
             "name": "TriggerFilter",
             "type": "string",
             "label": "Trigger Filter",
-            "helpMarkDown": "Filter to determine which triggers to delete.\n-Empty string: *none* triggers will be deleted.\n-`*`: *all* triggers will be deleted.",
+            "helpMarkDown": "Filter to determine which trigger to delete.\n-Empty string: *none* triggers will be deleted.\n-`*`: *all* triggers will be deleted.",
             "groupname": "adf"
         },
         {

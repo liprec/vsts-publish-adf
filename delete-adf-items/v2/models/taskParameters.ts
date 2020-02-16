@@ -1,7 +1,7 @@
 /*
- * VSTS Delete ADF Items Task
+ * Azure Pipelines Azure Datafactory Delete Items Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -41,6 +41,7 @@ export class TaskParameters {
 
     private serviceFilter: string;
     private pipelineFilter: string;
+    private dataflowFilter: string;
     private datasetFilter: string;
     private triggerFilter: string;
 
@@ -56,6 +57,7 @@ export class TaskParameters {
 
             this.serviceFilter = task.getInput('ServiceFilter', false);
             this.pipelineFilter = task.getInput('PipelineFilter', false);
+            this.dataflowFilter = task.getInput('DataflowFilter', false);
             this.datasetFilter = task.getInput('DatasetFilter', false);
             this.triggerFilter = task.getInput('TriggerFilter', false);
 
@@ -96,6 +98,10 @@ export class TaskParameters {
 
     public get PipelineFilter(): string {
         return this.pipelineFilter;
+    }
+
+    public get DataflowFilter(): string {
+        return this.dataflowFilter;
     }
 
     public get DatasetFilter(): string {

@@ -13,10 +13,11 @@
     "demands": [
         "azureps"
     ],
+    "deprecated": true,
     "version": {
         "Major": "1",
         "Minor": "1",
-        "Patch": "11"
+        "Patch": "12"
     },
     "minimumAgentVersion": "1.95.0",
     "groups": [

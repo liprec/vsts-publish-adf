@@ -1,7 +1,7 @@
 /*
- * VSTS Delete ADF Items Task
+ * Azure Pipelines Azure Datafactory Delete Items Task
  * 
- * Copyright (c) 2018 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
  * 
  * All rights reserved.
  * 
@@ -41,6 +41,7 @@ task.setResourcePath(path.join(__dirname, '../task.json'));
 
 enum DatafactoryTypes {
     Pipeline = 'pipeline',
+    Dataflow = 'dataflow',
     Dataset = 'dataset',
     Trigger = 'trigger',
     LinkedService = 'linked service'
@@ -94,7 +95,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
                 reject(task.loc("Generic_CheckDataFactory", err));
             }
             if (response.statusCode!==200) {
-                task.debug(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
                 reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
@@ -114,6 +115,9 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
             case DatafactoryTypes.Dataset:
                 objectType = "datasets";
                 break;
+            case DatafactoryTypes.Dataflow:
+                    objectType = "dataflows";
+                    break;
             case DatafactoryTypes.Pipeline:
                 objectType = "pipelines";
                 break;
@@ -130,7 +134,7 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
             serializationMapper: null,
             deserializationMapper: null
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        let request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
                 task.error(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
                 reject(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
@@ -140,13 +144,36 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
             } else {
                 let objects = JSON.parse(JSON.stringify(result));
                 let items = objects.value;
-                items = items.filter((item) => { return wildcardFilter(item.name, filter); })
+                let nextLink = objects.nextLink;
+                while (nextLink !== undefined) {
+                    let result = await processNextLink(datafactoryOption, nextLink);
+                    objects = JSON.parse(JSON.stringify(result));
+                    items = items.concat(objects.value);
+                    nextLink = objects.nextLink;
+                }
+                if (filter) items = items.filter((item) => { return wildcardFilter(item.name, filter); });
                 taskOptions.sorting === SortingDirection.Ascending
                     ? items.sort((item1, item2) =>  <any>(item1.name > item2.name) - <any>(item1.name < item2.name))
                     : items.sort((item1, item2) =>  <any>(item2.name > item1.name) - <any>(item2.name < item1.name))
                 console.log(`Found ${items.length} ${datafactoryType}(s).`);
                 resolve(items.map((value) => { return { name: value.name, type: datafactoryType }; }));
             }
+        });
+    });
+}
+
+function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
+    const azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        options: UrlBasedRequestPrepareOptions = {
+            method: 'GET',
+            url: nextLink,
+            serializationMapper: null,
+            deserializationMapper: null
+        };
+    task.debug(`Following next link`);
+    return new Promise<any>((resolve, reject) => {
+        azureClient.sendRequest(options, (err, result, request, response) => {
+            resolve(result);
         });
     });
 }
@@ -162,6 +189,9 @@ function deleteItem(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
         switch (item.type) {
             case DatafactoryTypes.Dataset:
                 objectType = "datasets";
+                break;
+            case DatafactoryTypes.Dataflow:
+                objectType = "dataflows";
                 break;
             case DatafactoryTypes.Pipeline:
                 objectType = "pipelines";
@@ -217,7 +247,7 @@ function deleteItems(datafactoryOption: DatafactoryOptions, taskOptions: Datafac
                     });
             })
             .catch((err) => {
-                task.debug(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
+                task.error(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
                 reject(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
             });
     });
@@ -237,7 +267,7 @@ function processItems(datafactoryOption: DatafactoryOptions, taskOptions: Datafa
                 firstError = firstError || err;
             })
             .done((results: any) => {
-                task.debug(`${totalItems} ${datafactoryType}(s) deleted.`); 
+                console.log(`${totalItems} ${datafactoryType}(s) deleted.`); 
                 if (hasError) {
                     reject(firstError);
                 } else {
@@ -269,6 +299,7 @@ async function main(): Promise<boolean> {
 
             let serviceFilter = taskParameters.ServiceFilter;
             let pipelineFilter = taskParameters.PipelineFilter;
+            let dataflowFilter = taskParameters.DataflowFilter;
             let datasetFilter = taskParameters.DatasetFilter;
             let triggerFilter = taskParameters.TriggerFilter;
             
@@ -303,6 +334,9 @@ async function main(): Promise<boolean> {
                 }
                 if (pipelineFilter !== null) {
                     deleteTasks.push({filter: pipelineFilter, type: DatafactoryTypes.Pipeline});
+                }
+                if (dataflowFilter !== null) {
+                    deleteTasks.push({filter: dataflowFilter, type: DatafactoryTypes.Dataflow});
                 }
                 if (datasetFilter !== null) {
                     deleteTasks.push({filter: datasetFilter, type: DatafactoryTypes.Dataset});
