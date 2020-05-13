@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "2.2.1",
+    "version": "2.2.2",
     "name": "Azure Data Factory (Preview)",
     "publisher": "liprec",
     "public": false,
@@ -15,21 +15,10 @@
         "default": "images/logo.png",
         "large": "images/logolarge.png"
     },
-    "screenshots": [
-        { "path": "images/screenshot-1.png" }
-    ],
-    "categories": [
-        "Build and release"
-    ],
-    "tags": [
-        "azure",
-        "deployment",
-        "adf",
-        "data factory"
-    ],
-    "scopes": [
-        "vso.release"
-    ],
+    "screenshots": [{ "path": "images/screenshot-1.png" }],
+    "categories": ["Build and release"],
+    "tags": ["azure", "deployment", "adf", "data factory"],
+    "scopes": ["vso.release"],
     "branding": {
         "color": "rgb(87, 32, 31)",
         "theme": "dark"
@@ -61,51 +50,41 @@
         {
             "id": "deploy-adf-json",
             "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
+            "targets": ["ms.vss-distributed-task.tasks"],
             "properties": {
-                "name" : "deploy-adf-json"
+                "name": "deploy-adf-json"
             }
         },
         {
             "id": "suspend-adf-pipeline",
             "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
+            "targets": ["ms.vss-distributed-task.tasks"],
             "properties": {
-                "name" : "suspend-adf-pipeline"
+                "name": "suspend-adf-pipeline"
             }
         },
         {
             "id": "toggle-adf-trigger",
             "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
+            "targets": ["ms.vss-distributed-task.tasks"],
             "properties": {
-                "name" : "toggle-adf-trigger"
+                "name": "toggle-adf-trigger"
             }
         },
         {
             "id": "delete-adf-items",
             "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
+            "targets": ["ms.vss-distributed-task.tasks"],
             "properties": {
-                "name" : "delete-adf-items"
+                "name": "delete-adf-items"
             }
         },
         {
             "id": "trigger-adf-pipeline",
             "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
+            "targets": ["ms.vss-distributed-task.tasks"],
             "properties": {
-                "name" : "trigger-adf-pipeline"
+                "name": "trigger-adf-pipeline"
             }
         }
     ],

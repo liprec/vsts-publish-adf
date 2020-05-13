@@ -60,6 +60,12 @@ export class TaskParameters {
             this.datasetFilter = task.getInput("DatasetFilter", false);
             this.triggerFilter = task.getInput("TriggerFilter", false);
 
+            this.serviceFilter = this.serviceFilter === "" ? null : this.serviceFilter;
+            this.pipelineFilter = this.pipelineFilter === "" ? null : this.pipelineFilter;
+            this.dataflowFilter = this.dataflowFilter === "" ? null : this.dataflowFilter;
+            this.datasetFilter = this.datasetFilter === "" ? null : this.datasetFilter;
+            this.triggerFilter = this.triggerFilter === "" ? null : this.triggerFilter;
+
             this.continue = task.getBoolInput("Continue", false);
             this.throttle = Number.parseInt(task.getInput("Throttle", false));
             this.throttle = this.throttle === NaN ? 5 : this.throttle;
