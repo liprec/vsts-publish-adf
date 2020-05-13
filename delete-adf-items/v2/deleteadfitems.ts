@@ -1,22 +1,22 @@
 /*
  * Azure Pipelines Azure Datafactory Delete Items Task
- * 
+ *
  * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
- * 
+ *
  * All rights reserved.
- * 
+ *
  * MIT License.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  *  all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,43 +26,43 @@
  *  THE SOFTWARE.
  */
 
-import * as Q from 'q';
-import throat from 'throat';
-import * as task from 'azure-pipelines-task-lib/task';
-import * as path from 'path';
-import * as msRestAzure from 'ms-rest-azure';
-import { TaskParameters, SortingDirection } from './models/taskParameters';
-import { AzureModels } from './models/azureModels';
+import * as Q from "q";
+import throat from "throat";
+import * as task from "azure-pipelines-task-lib/task";
+import * as path from "path";
+import * as msRestAzure from "ms-rest-azure";
+import { TaskParameters, SortingDirection } from "./models/taskParameters";
+import { AzureModels } from "./models/azureModels";
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
-import { UrlBasedRequestPrepareOptions } from './node_modules/ms-rest';
+import { UrlBasedRequestPrepareOptions } from "./node_modules/ms-rest";
 
-task.setResourcePath(path.join(__dirname, '../task.json'));
+task.setResourcePath(path.join(__dirname, "../task.json"));
 
 enum DatafactoryTypes {
-    Pipeline = 'pipeline',
-    Dataflow = 'dataflow',
-    Dataset = 'dataset',
-    Trigger = 'trigger',
-    LinkedService = 'linked service'
+    Pipeline = "pipeline",
+    Dataflow = "dataflow",
+    Dataset = "dataset",
+    Trigger = "trigger",
+    LinkedService = "linked service",
 }
 
 interface DatafactoryOptions {
-    azureClient?: AzureServiceClient,
-    subscriptionId: string,
-    resourceGroup: string,
-    dataFactoryName: string
+    azureClient?: AzureServiceClient;
+    subscriptionId: string;
+    resourceGroup: string;
+    dataFactoryName: string;
 }
 
 interface DatafactoryTaskOptions {
-    continue: boolean,
-    throttle: number,
-    sorting: SortingDirection,
+    continue: boolean;
+    throttle: number;
+    sorting: SortingDirection;
 }
 
 interface DatafactoryObject {
-    name: string,
-    type: DatafactoryTypes
+    name: string;
+    type: DatafactoryTypes;
 }
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
@@ -75,7 +75,7 @@ function loginAzure(clientId: string, key: string, tenantID: string): Promise<Az
             resolve(new AzureServiceClient(credentials, {}));
         });
     });
-};
+}
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
@@ -84,27 +84,32 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         let options: UrlBasedRequestPrepareOptions = {
-            method: 'GET',
+            method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
             serializationMapper: null,
-            deserializationMapper: null
-        }
+            deserializationMapper: null,
+        };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
                 task.error(task.loc("Generic_CheckDataFactory", err));
                 reject(task.loc("Generic_CheckDataFactory", err));
             }
-            if (response.statusCode!==200) {
+            if (response.statusCode !== 200) {
                 task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
                 reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
             }
-        })
+        });
     });
 }
 
-function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, datafactoryType: DatafactoryTypes, filter: string): Promise<DatafactoryObject[]> {
+function getObjects(
+    datafactoryOption: DatafactoryOptions,
+    taskOptions: DatafactoryTaskOptions,
+    datafactoryType: DatafactoryTypes,
+    filter: string
+): Promise<DatafactoryObject[]> {
     return new Promise<DatafactoryObject[]>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
@@ -116,8 +121,8 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
                 objectType = "datasets";
                 break;
             case DatafactoryTypes.Dataflow:
-                    objectType = "dataflows";
-                    break;
+                objectType = "dataflows";
+                break;
             case DatafactoryTypes.Pipeline:
                 objectType = "pipelines";
                 break;
@@ -129,16 +134,16 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
                 break;
         }
         let options: UrlBasedRequestPrepareOptions = {
-            method: 'GET',
+            method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}?api-version=2018-06-01`,
             serializationMapper: null,
-            deserializationMapper: null
+            deserializationMapper: null,
         };
         let request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
                 task.error(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
                 reject(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
-            } else if (response.statusCode!==200) {
+            } else if (response.statusCode !== 200) {
                 task.debug(task.loc("DeleteAdfItems_GetObjects2", datafactoryType));
                 reject(task.loc("DeleteAdfItems_GetObjects2", datafactoryType));
             } else {
@@ -151,12 +156,19 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
                     items = items.concat(objects.value);
                     nextLink = objects.nextLink;
                 }
-                if (filter) items = items.filter((item) => { return wildcardFilter(item.name, filter); });
+                if (filter)
+                    items = items.filter((item) => {
+                        return wildcardFilter(item.name, filter);
+                    });
                 taskOptions.sorting === SortingDirection.Ascending
-                    ? items.sort((item1, item2) =>  <any>(item1.name > item2.name) - <any>(item1.name < item2.name))
-                    : items.sort((item1, item2) =>  <any>(item2.name > item1.name) - <any>(item2.name < item1.name))
+                    ? items.sort((item1, item2) => <any>(item1.name > item2.name) - <any>(item1.name < item2.name))
+                    : items.sort((item1, item2) => <any>(item2.name > item1.name) - <any>(item2.name < item1.name));
                 console.log(`Found ${items.length} ${datafactoryType}(s).`);
-                resolve(items.map((value) => { return { name: value.name, type: datafactoryType }; }));
+                resolve(
+                    items.map((value) => {
+                        return { name: value.name, type: datafactoryType };
+                    })
+                );
             }
         });
     });
@@ -165,10 +177,10 @@ function getObjects(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
 function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
     const azureClient: AzureServiceClient = datafactoryOption.azureClient,
         options: UrlBasedRequestPrepareOptions = {
-            method: 'GET',
+            method: "GET",
             url: nextLink,
             serializationMapper: null,
-            deserializationMapper: null
+            deserializationMapper: null,
         };
     task.debug(`Following next link`);
     return new Promise<any>((resolve, reject) => {
@@ -178,7 +190,11 @@ function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string
     });
 }
 
-function deleteItem(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, item: DatafactoryObject): Promise<boolean> {
+function deleteItem(
+    datafactoryOption: DatafactoryOptions,
+    taskOptions: DatafactoryTaskOptions,
+    item: DatafactoryObject
+): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         let azureClient: AzureServiceClient = datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
@@ -204,16 +220,16 @@ function deleteItem(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
                 break;
         }
         let options: UrlBasedRequestPrepareOptions = {
-            method: 'DELETE',
+            method: "DELETE",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
             serializationMapper: null,
-            deserializationMapper: null
+            deserializationMapper: null,
         };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if ((err) && (!taskOptions.continue)) {
+            if (err && !taskOptions.continue) {
                 task.error(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
                 reject(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
-            } else if (response.statusCode===400) {
+            } else if (response.statusCode === 400) {
                 if (taskOptions.continue) {
                     task.warning(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
@@ -221,10 +237,10 @@ function deleteItem(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
                     task.error(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                     reject(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                 }
-            } else if (response.statusCode===204) {
+            } else if (response.statusCode === 204) {
                 task.debug(`'${item.name}' not found.`);
                 resolve(true);
-            } else if (response.statusCode===200) {
+            } else if (response.statusCode === 200) {
                 resolve(true);
             } else {
                 resolve(false);
@@ -233,8 +249,15 @@ function deleteItem(datafactoryOption: DatafactoryOptions, taskOptions: Datafact
     });
 }
 
-function deleteItems(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, filter:string, datafactoryType: DatafactoryTypes): Promise<boolean> {
-    if (hasError) { return } // Some error occurred, so returning
+function deleteItems(
+    datafactoryOption: DatafactoryOptions,
+    taskOptions: DatafactoryTaskOptions,
+    filter: string,
+    datafactoryType: DatafactoryTypes
+): Promise<boolean> {
+    if (hasError) {
+        return;
+    } // Some error occurred, so returning
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryOption, taskOptions, datafactoryType, filter)
             .then((items: DatafactoryObject[]) => {
@@ -253,33 +276,44 @@ function deleteItems(datafactoryOption: DatafactoryOptions, taskOptions: Datafac
     });
 }
 
-function processItems(datafactoryOption: DatafactoryOptions, taskOptions: DatafactoryTaskOptions, datafactoryType: DatafactoryTypes, items: DatafactoryObject[]): Promise<boolean> {
-    let firstError; 
+function processItems(
+    datafactoryOption: DatafactoryOptions,
+    taskOptions: DatafactoryTaskOptions,
+    datafactoryType: DatafactoryTypes,
+    items: DatafactoryObject[]
+): Promise<boolean> {
+    let firstError;
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = items.length;
 
-        let process = Q.all(items.map(throat(taskOptions.throttle, (item) => {
-                console.log(`Delete ${datafactoryType} '${item.name}'.`);
-                return deleteItem(datafactoryOption, taskOptions, item); 
-            })))
+        let process = Q.all(
+            items.map(
+                throat(taskOptions.throttle, (item) => {
+                    console.log(`Delete ${datafactoryType} '${item.name}'.`);
+                    return deleteItem(datafactoryOption, taskOptions, item);
+                })
+            )
+        )
             .catch((err) => {
                 hasError = true;
                 firstError = firstError || err;
             })
             .done((results: any) => {
-                console.log(`${totalItems} ${datafactoryType}(s) deleted.`); 
+                console.log(`${totalItems} ${datafactoryType}(s) deleted.`);
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    let issues = results.filter((result) => { return !result; }).length;
+                    let issues = results.filter((result) => {
+                        return !result;
+                    }).length;
                     if (issues > 0) {
                         resolve(false);
                     } else {
                         resolve(true);
                     }
                 }
-            });  
-        });
+            });
+    });
 }
 
 async function main(): Promise<boolean> {
@@ -288,10 +322,10 @@ async function main(): Promise<boolean> {
         let azureModels: AzureModels;
 
         try {
-            let debugMode: string = task.getVariable('System.Debug');
-            let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != 'false' : false;
+            let debugMode: string = task.getVariable("System.Debug");
+            let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
-            task.debug('Task execution started ...');
+            task.debug("Task execution started ...");
             taskParameters = new TaskParameters();
             let connectedServiceName = taskParameters.ConnectedServiceName;
             let resourceGroup = taskParameters.ResourceGroupName;
@@ -302,13 +336,13 @@ async function main(): Promise<boolean> {
             let dataflowFilter = taskParameters.DataflowFilter;
             let datasetFilter = taskParameters.DatasetFilter;
             let triggerFilter = taskParameters.TriggerFilter;
-            
+
             let taskOptions = {
                 continue: taskParameters.Continue,
                 throttle: taskParameters.Throttle,
                 sorting: taskParameters.Sorting,
-            }
-            
+            };
+
             azureModels = new AzureModels(connectedServiceName);
             let clientId = azureModels.getServicePrincipalClientId();
             let key = azureModels.getServicePrincipalKey();
@@ -319,55 +353,62 @@ async function main(): Promise<boolean> {
                 dataFactoryName: dataFactoryName,
             };
             let firstError;
-            task.debug('Parsed task inputs');
-            
+            task.debug("Parsed task inputs");
+
             loginAzure(clientId, key, tenantID)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     task.debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
-            }).then((result) => {
-                task.debug(`Datafactory '${dataFactoryName}' exist`);
-                let deleteTasks = [];
-                if (triggerFilter !== null) {
-                    deleteTasks.push({filter: triggerFilter, type: DatafactoryTypes.Trigger});
-                }
-                if (pipelineFilter !== null) {
-                    deleteTasks.push({filter: pipelineFilter, type: DatafactoryTypes.Pipeline});
-                }
-                if (dataflowFilter !== null) {
-                    deleteTasks.push({filter: dataflowFilter, type: DatafactoryTypes.Dataflow});
-                }
-                if (datasetFilter !== null) {
-                    deleteTasks.push({filter: datasetFilter, type: DatafactoryTypes.Dataset});
-                }
-                if (serviceFilter !== null) {
-                    deleteTasks.push({filter: serviceFilter, type: DatafactoryTypes.LinkedService});
-                }
-                Q.all(deleteTasks.map(throat(1, (task) => {
-                        return deleteItems(datafactoryOption, taskOptions, task.filter, task.type);
-                    })))
-                    .catch((err) => {
-                        hasError = true;
-                        firstError = firstError || err;
-                    })
-                    .done((results: any) => {
-                        if (hasError) {
-                            reject(firstError);
-                        } else {
-                            let issues = results.filter((result) => { return !result; }).length;
-                            if (issues > 0) {
-                                resolve(false);
+                })
+                .then((result) => {
+                    task.debug(`Datafactory '${dataFactoryName}' exist`);
+                    let deleteTasks = [];
+                    if (triggerFilter !== null) {
+                        deleteTasks.push({ filter: triggerFilter, type: DatafactoryTypes.Trigger });
+                    }
+                    if (pipelineFilter !== null) {
+                        deleteTasks.push({ filter: pipelineFilter, type: DatafactoryTypes.Pipeline });
+                    }
+                    if (dataflowFilter !== null) {
+                        deleteTasks.push({ filter: dataflowFilter, type: DatafactoryTypes.Dataflow });
+                    }
+                    if (datasetFilter !== null) {
+                        deleteTasks.push({ filter: datasetFilter, type: DatafactoryTypes.Dataset });
+                    }
+                    if (serviceFilter !== null) {
+                        deleteTasks.push({ filter: serviceFilter, type: DatafactoryTypes.LinkedService });
+                    }
+                    Q.all(
+                        deleteTasks.map(
+                            throat(1, (task) => {
+                                return deleteItems(datafactoryOption, taskOptions, task.filter, task.type);
+                            })
+                        )
+                    )
+                        .catch((err) => {
+                            hasError = true;
+                            firstError = firstError || err;
+                        })
+                        .done((results: any) => {
+                            if (hasError) {
+                                reject(firstError);
                             } else {
-                                resolve(true);
+                                let issues = results.filter((result) => {
+                                    return !result;
+                                }).length;
+                                if (issues > 0) {
+                                    resolve(false);
+                                } else {
+                                    resolve(true);
+                                }
                             }
-                        }
-                    });
-            }).catch((err) => {
-                reject(err.message);
-            })
-        }
-        catch (exception) {
+                        });
+                })
+                .catch((err) => {
+                    reject(err.message);
+                });
+        } catch (exception) {
             reject(exception);
         }
     });
@@ -385,6 +426,6 @@ main()
     .then((result) => {
         task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
     })
-    .catch((err) => { 
-        task.setResult(task.TaskResult.Failed, err); 
+    .catch((err) => {
+        task.setResult(task.TaskResult.Failed, err);
     });

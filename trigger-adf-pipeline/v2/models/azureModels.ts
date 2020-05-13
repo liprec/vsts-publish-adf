@@ -1,22 +1,22 @@
 /*
  * Azure Pipelines Azure Datafactory Pipeline Task
- * 
+ *
  * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
- * 
+ *
  * All rights reserved.
- * 
+ *
  * MIT License.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  *  all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,10 +26,15 @@
  *  THE SOFTWARE.
  */
 
-import { getInput, getEndpointDataParameter, getEndpointAuthorizationParameter, getEndpointUrl, loc } from 'azure-pipelines-task-lib/task';
+import {
+    getInput,
+    getEndpointDataParameter,
+    getEndpointAuthorizationParameter,
+    getEndpointUrl,
+    loc,
+} from "azure-pipelines-task-lib/task";
 
 export class AzureModels {
-
     private connectedServiceName: string;
     private subscriptionId: string;
     private subscriptionName: string;
@@ -42,25 +47,37 @@ export class AzureModels {
     constructor(connectedServiceName: string) {
         try {
             this.connectedServiceName = connectedServiceName;
-            if (this.connectedServiceName==='local') { // local debug
-                this.subscriptionId = getInput('subscriptionid', true);
-                this.subscriptionName = getInput('subscriptionname', true);
-                this.servicePrincipalClientId = getInput('serviceprincipalid', true);
-                this.servicePrincipalKey = getInput('serviceprincipalkey', true);
-                this.environmentAuthorityUrl = getInput('environmentAuthorityUrl', true);
-                this.tenantId = getInput('tenantid', true);
-                this.url = getInput('connectedServiceNameUrl', true);
+            if (this.connectedServiceName === "local") {
+                // local debug
+                this.subscriptionId = getInput("subscriptionid", true);
+                this.subscriptionName = getInput("subscriptionname", true);
+                this.servicePrincipalClientId = getInput("serviceprincipalid", true);
+                this.servicePrincipalKey = getInput("serviceprincipalkey", true);
+                this.environmentAuthorityUrl = getInput("environmentAuthorityUrl", true);
+                this.tenantId = getInput("tenantid", true);
+                this.url = getInput("connectedServiceNameUrl", true);
             } else {
-                this.subscriptionId = getEndpointDataParameter(this.connectedServiceName, 'subscriptionid', true);
-                this.subscriptionName = getEndpointDataParameter(this.connectedServiceName, 'subscriptionname', true);
-                this.servicePrincipalClientId = getEndpointAuthorizationParameter(this.connectedServiceName, 'serviceprincipalid', true);
-                this.servicePrincipalKey = getEndpointAuthorizationParameter(this.connectedServiceName, 'serviceprincipalkey', true);
-                this.environmentAuthorityUrl = getEndpointDataParameter(this.connectedServiceName, 'environmentAuthorityUrl', true);
-                this.tenantId = getEndpointAuthorizationParameter(this.connectedServiceName, 'tenantid', false);
+                this.subscriptionId = getEndpointDataParameter(this.connectedServiceName, "subscriptionid", true);
+                this.subscriptionName = getEndpointDataParameter(this.connectedServiceName, "subscriptionname", true);
+                this.servicePrincipalClientId = getEndpointAuthorizationParameter(
+                    this.connectedServiceName,
+                    "serviceprincipalid",
+                    true
+                );
+                this.servicePrincipalKey = getEndpointAuthorizationParameter(
+                    this.connectedServiceName,
+                    "serviceprincipalkey",
+                    true
+                );
+                this.environmentAuthorityUrl = getEndpointDataParameter(
+                    this.connectedServiceName,
+                    "environmentAuthorityUrl",
+                    true
+                );
+                this.tenantId = getEndpointAuthorizationParameter(this.connectedServiceName, "tenantid", false);
                 this.url = getEndpointUrl(this.connectedServiceName, true);
             }
-        }
-        catch(err) {
+        } catch (err) {
             throw new Error(loc("AzureModels_ConstructorFailed", err.message));
         }
     }

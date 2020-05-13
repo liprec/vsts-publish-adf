@@ -1,22 +1,22 @@
 /*
  * Azure Pipelines Azure Datafactory Pipeline Task
- * 
+ *
  * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
- * 
+ *
  * All rights reserved.
- * 
+ *
  * MIT License.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  *  all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,23 +26,22 @@
  *  THE SOFTWARE.
  */
 
-import { getInput, getBoolInput, loc, getPathInput, getVariable } from 'azure-pipelines-task-lib/task';
+import { getInput, getBoolInput, loc, getPathInput, getVariable } from "azure-pipelines-task-lib/task";
 
 export enum PipelineParameterType {
     Inline,
-    Path
+    Path,
 }
 
 export class TaskParameters {
-
     private connectedServiceName: string;
     private resourceGroupName: string;
     private datafactoryName: string;
 
     private pipelineFilter: string;
     private pipelineParameterType: PipelineParameterType;
-    private pipelineParameter: string
-    private pipelineParameterPath: string
+    private pipelineParameter: string;
+    private pipelineParameterPath: string;
 
     private continue: boolean;
     private throttle: number;
@@ -52,32 +51,36 @@ export class TaskParameters {
         try {
             const rootPath = getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = getInput('ConnectedServiceName', true);
-            this.resourceGroupName = getInput('ResourceGroupName', true);
-            this.datafactoryName = getInput('DatafactoryName', true);
+            this.connectedServiceName = getInput("ConnectedServiceName", true);
+            this.resourceGroupName = getInput("ResourceGroupName", true);
+            this.datafactoryName = getInput("DatafactoryName", true);
 
-            this.pipelineFilter = getInput('PipelineFilter', false);
-            const pipelineParameterType = getInput('PipelineParameterType', false);
-            this.pipelineParameter = getInput('PipelineParameter', false);
-            this.pipelineParameterPath = getPathInput('PipelineParameterPath', false, pipelineParameterType.toLowerCase() === 'path');
+            this.pipelineFilter = getInput("PipelineFilter", false);
+            const pipelineParameterType = getInput("PipelineParameterType", false);
+            this.pipelineParameter = getInput("PipelineParameter", false);
+            this.pipelineParameterPath = getPathInput(
+                "PipelineParameterPath",
+                false,
+                pipelineParameterType.toLowerCase() === "path"
+            );
 
-            this.continue = getBoolInput('Continue', false);
-            this.throttle = Number.parseInt(getInput('Throttle', false));
+            this.continue = getBoolInput("Continue", false);
+            this.throttle = Number.parseInt(getInput("Throttle", false));
             this.deploymentOutputs = getInput("deploymentOutputs", false);
-            this.throttle = (this.throttle === NaN ? 5 : this.throttle);
+            this.throttle = this.throttle === NaN ? 5 : this.throttle;
 
-            this.pipelineParameterPath = this.pipelineParameterPath.replace(rootPath, "") === "" ? null : this.pipelineParameterPath
+            this.pipelineParameterPath =
+                this.pipelineParameterPath.replace(rootPath, "") === "" ? null : this.pipelineParameterPath;
             switch (pipelineParameterType.toLowerCase()) {
-                case 'path':
+                case "path":
                     this.pipelineParameterType = PipelineParameterType.Path;
                     break;
-                case 'inline':
+                case "inline":
                 default:
                     this.pipelineParameterType = PipelineParameterType.Inline;
                     break;
             }
-        }
-        catch (err) {
+        } catch (err) {
             throw new Error(loc("TaskParameters_ConstructorFailed", err.message));
         }
     }
@@ -89,7 +92,7 @@ export class TaskParameters {
     public get ResourceGroupName(): string {
         return this.resourceGroupName;
     }
-    
+
     public get DatafactoryName(): string {
         return this.datafactoryName;
     }

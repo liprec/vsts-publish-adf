@@ -1,22 +1,22 @@
 /*
  * Azure Pipelines Azure Datafactory Deploy Task
- * 
+ *
  * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
- * 
+ *
  * All rights reserved.
- * 
+ *
  * MIT License.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  *  all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,15 +26,14 @@
  *  THE SOFTWARE.
  */
 
-import * as task from 'azure-pipelines-task-lib/task';
+import * as task from "azure-pipelines-task-lib/task";
 
 export enum SortingDirection {
     Ascending,
-    Descending
+    Descending,
 }
 
 export class TaskParameters {
-
     private connectedServiceName: string;
     private resourceGroupName: string;
     private datafactoryName: string;
@@ -53,16 +52,16 @@ export class TaskParameters {
         try {
             let rootPath = task.getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = task.getInput('ConnectedServiceName', true);
-            this.resourceGroupName = task.getInput('ResourceGroupName', true);
-            this.datafactoryName = task.getInput('DatafactoryName', true);
+            this.connectedServiceName = task.getInput("ConnectedServiceName", true);
+            this.resourceGroupName = task.getInput("ResourceGroupName", true);
+            this.datafactoryName = task.getInput("DatafactoryName", true);
 
-            this.servicePath = task.getPathInput('ServicePath', false, true);
-            this.pipelinePath = task.getPathInput('PipelinePath', false, true);
-            this.datasetPath = task.getPathInput('DatasetPath', false, true);
-            this.dataflowPath = task.getPathInput('DataflowPath', false, true);
-            this.triggerPath = task.getPathInput('TriggerPath', false, true);
-            
+            this.servicePath = task.getPathInput("ServicePath", false, true);
+            this.pipelinePath = task.getPathInput("PipelinePath", false, true);
+            this.datasetPath = task.getPathInput("DatasetPath", false, true);
+            this.dataflowPath = task.getPathInput("DataflowPath", false, true);
+            this.triggerPath = task.getPathInput("TriggerPath", false, true);
+
             // Replace "" with null
             this.servicePath = this.servicePath.replace(rootPath, "") === "" ? null : this.servicePath;
             this.pipelinePath = this.pipelinePath.replace(rootPath, "") === "" ? null : this.pipelinePath;
@@ -70,20 +69,19 @@ export class TaskParameters {
             this.dataflowPath = this.dataflowPath.replace(rootPath, "") === "" ? null : this.dataflowPath;
             this.triggerPath = this.triggerPath.replace(rootPath, "") === "" ? null : this.triggerPath;
 
-            this.continue = task.getBoolInput('Continue', false);
-            this.throttle = Number.parseInt(task.getInput('Throttle', false));
-            this.throttle = (this.throttle === NaN ? 5 : this.throttle);
-            let sorting = task.getInput('Sorting', true);
+            this.continue = task.getBoolInput("Continue", false);
+            this.throttle = Number.parseInt(task.getInput("Throttle", false));
+            this.throttle = this.throttle === NaN ? 5 : this.throttle;
+            let sorting = task.getInput("Sorting", true);
             switch (sorting.toLowerCase()) {
-                case 'ascending':
-                    this.sorting = SortingDirection.Ascending
+                case "ascending":
+                    this.sorting = SortingDirection.Ascending;
                     break;
-                case 'descending':
-                    this.sorting = SortingDirection.Descending
+                case "descending":
+                    this.sorting = SortingDirection.Descending;
                     break;
             }
-        }
-        catch (err) {
+        } catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
         }
     }
@@ -95,7 +93,7 @@ export class TaskParameters {
     public get ResourceGroupName(): string {
         return this.resourceGroupName;
     }
-    
+
     public get DatafactoryName(): string {
         return this.datafactoryName;
     }
