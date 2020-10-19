@@ -1,12 +1,17 @@
-[![Build Status](https://dev.azure.com/datascenarios/GitHub%20Projects/_apis/build/status/vsts-publish-adf?branchName=master)](https://dev.azure.com/datascenarios/GitHub%20Projects/_build/latest?definitionId=23&branchName=master)
-
 # Azure Data Factory
 
 This extension adds release tasks related to Azure Data Factory (V1 and V2) to release pipelines of Azure DevOps.
 
+## Build status
+
+| Branch  | status                                                                                                                                                                                                                                    |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main    | [![Build and test](https://dev.azure.com/datascenarios/GitHub%20Projects/_apis/build/status/vsts-publish-adf?branchName=main)](https://dev.azure.com/datascenarios/GitHub%20Projects/_build/latest?definitionId=23&branchName=main)       |
+| Develop | [![Build and test](https://dev.azure.com/datascenarios/GitHub%20Projects/_apis/build/status/vsts-publish-adf?branchName=develop)](https://dev.azure.com/datascenarios/GitHub%20Projects/_build/latest?definitionId=23&branchName=develop) |
+
 ## Azure Data Factory Deployment
 
-Azure DevOps release task that will deploy JSON files with definition of Linked Services, Datasets, Pipelines and/or Triggers (V2) to an existing Azure Data Factory. 
+Azure DevOps release task that will deploy JSON files with definition of Linked Services, Datasets, Pipelines and/or Triggers (V2) to an existing Azure Data Factory.
 ![](images/screenshot-2.png)
 
 [More information](deploy-adf-json/README.md)
@@ -43,26 +48,31 @@ Azure DevOps release task to either suspend or resume all pipelines of an Azure 
 
 **2.2**
 
-- Added support for deploy Data flows definition files
-- Added paging support for data factories with more than 50 objects
-- Adding support for trigger parameter files
+-   Added support for deploy Data flows definition files
+-   Added paging support for data factories with more than 50 objects
+-   Adding support for trigger parameter files
 
 **2.0.0**
-- Added new task: Delete Items
-- Added new task: Toggle Pipeline
-- Rewrite to platform independent version by using NodeJS and REST APIs
-- This version only support Azure Data Factory v2
-- Readme updated to version 2 functionality
+
+-   Added new task: Delete Items
+-   Added new task: Toggle Pipeline
+-   Rewrite to platform independent version by using NodeJS and REST APIs
+-   This version only support Azure Data Factory v2
+-   Readme updated to version 2 functionality
 
 **1.5.7**
-- Added support for V2 deployments
-- Added trigger start/stop task (V2)
+
+-   Added support for V2 deployments
+-   Added trigger start/stop task (V2)
 
 **1.0.7**
-- Add extra error logging
+
+-   Add extra error logging
 
 **1.0.5**
-- [Bug] Fixed suspend/resume logic
+
+-   [Bug] Fixed suspend/resume logic
 
 **1.0.0**
-- Initial public release
+
+-   Initial public release
