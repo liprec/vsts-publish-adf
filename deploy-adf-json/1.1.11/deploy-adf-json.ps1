@@ -35,19 +35,22 @@ $parallel = Get-VstsInput -Name "parallel"
 # This is a hack since the agent passes this as a string.
 if ($overwrite -eq "true") {
     $overwrite = $true
-} else {
+}
+else {
     $overwrite = $false
 }
 
 if ($continue -eq "true") {
     $continue = $true
-} else {
+}
+else {
     $continue = $false
 }
 
 if ($clear -eq "true") {
     $clear = $true
-} else {
+}
+else {
     $clear = $false
 }
 
@@ -84,3 +87,5 @@ $deployType = 3 #trigger
 $result = deploy -DataFactory $adf -Version $adfversion -DeployType $deployType -Path $pathToTriggers -Overwrite $overwrite -Continue $continue -Parallel $parallel
 
 Write-Host "Deploy JSON files to $adfname complete"
+
+Write-Host  "##vso[task.LogIssue type=warning;]Please be adviced that this task version (v1) is deprecated and will be removed in a future release. Please update your pipeline to use the V2 version of this task."

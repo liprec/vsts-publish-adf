@@ -19,3 +19,5 @@ $adf = getAzureDataFactory -ResourceGroupName $resourceGroupName -DataFactoryNam
 $result = setPipelineStatus -DataFactory $adf -PipelineStatus $pipelineStatus -Parallel $p
 
 Write-Host "Set pipelines to '$pipelineStatus' complete"
+
+Write-Host  "##vso[task.LogIssue type=warning;]Please be adviced that this task version (v1) is deprecated and will be removed in a future release."
