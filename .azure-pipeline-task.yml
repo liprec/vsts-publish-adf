@@ -2,13 +2,12 @@ parameters:
   vstsTasks: []
 
 steps:
-- ${{ each vstsTask in parameters.vstsTasks }}:
-  - script: |
-      npm install --production
-    workingDirectory: ${{ vstsTask }}/v2
-    displayName: ${{ vstsTask }} - npm install
-
-  - script: |
-      npm run build
-    workingDirectory: ${{ vstsTask }}/v2
-    displayName: ${{ vstsTask }} - npm run build
+  - ${{ each vstsTask in parameters.vstsTasks }}:
+      - script: |
+          npm install --production
+        workingDirectory: ${{ vstsTask }}/v2
+        displayName: ${{ vstsTask }} - npm install
+      - script: |
+          npm run build
+        workingDirectory: ${{ vstsTask }}/v2
+        displayName: ${{ vstsTask }} - npm run build
