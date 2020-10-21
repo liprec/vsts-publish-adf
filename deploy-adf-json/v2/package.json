@@ -13,10 +13,7 @@
   "dependencies": {
     "azure-pipelines-task-lib": "^2.11.3",
     "ms-rest-azure": "^3.0.0",
-    "q": "1.5.1",
     "throat": "^5.0.0"
   },
-  "devDependencies": {
-    "@types/q": "^1.5.4"
-  }
+  "devDependencies": {}
 }

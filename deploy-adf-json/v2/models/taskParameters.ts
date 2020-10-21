@@ -47,6 +47,7 @@ export class TaskParameters {
     private continue: boolean;
     private throttle: number;
     private sorting: SortingDirection;
+    private detectDependency: boolean;
 
     constructor() {
         try {
@@ -72,6 +73,7 @@ export class TaskParameters {
             this.continue = task.getBoolInput("Continue", false);
             this.throttle = Number.parseInt(task.getInput("Throttle", false));
             this.throttle = this.throttle === NaN ? 5 : this.throttle;
+            this.detectDependency = task.getBoolInput("detectDependency", false);
             let sorting = task.getInput("Sorting", true);
             switch (sorting.toLowerCase()) {
                 case "ascending":
@@ -128,5 +130,9 @@ export class TaskParameters {
 
     public get Sorting(): SortingDirection {
         return this.sorting;
+    }
+
+    public get DetectDependency(): boolean {
+        return this.detectDependency;
     }
 }

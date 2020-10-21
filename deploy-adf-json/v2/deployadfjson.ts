@@ -26,7 +26,6 @@
  *  THE SOFTWARE.
  */
 
-import * as Q from "q";
 import throat from "throat";
 import * as task from "azure-pipelines-task-lib/task";
 import * as path from "path";
@@ -59,12 +58,16 @@ interface DatafactoryTaskOptions {
     continue: boolean;
     throttle: number;
     sorting: SortingDirection;
+    detectDependency: boolean;
 }
 
 interface DatafactoryDeployObject {
     name: string;
     json: string;
+    size: number;
     type: DatafactoryTypes;
+    dependency: string[];
+    bucket: number;
 }
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
@@ -133,15 +136,45 @@ function getObjects(
                     let data = fs.readFileSync(file, "utf8");
                     let json = JSON.parse(data);
                     let name = json.name || path.parse(file).name.replace(" ", "_");
+                    const size = data.length;
+                    let dependency;
+                    switch (datafactoryType) {
+                        case DatafactoryTypes.LinkedService:
+                            dependency = taskOptions.detectDependency
+                                ? findDependency(json, "LinkedServiceReference")
+                                : [];
+                            break;
+                        case DatafactoryTypes.Pipeline:
+                            dependency = taskOptions.detectDependency ? findDependency(json, "PipelineReference") : [];
+                            break;
+                        default:
+                            dependency = [];
+                            break;
+                    }
+
                     return {
-                        name: name,
+                        name,
                         json: JSON.stringify(json),
                         type: datafactoryType,
+                        size,
+                        dependency,
+                        bucket: dependency.length === 0 ? 0 : -1,
                     };
                 })
             );
         }
     });
+}
+
+function findDependency(json: any, type: string): string[] {
+    let refs: string[] = [];
+    if (json.referenceName && json.type === type) {
+        return [json.referenceName];
+    }
+    for (const key in json) {
+        if (typeof json[key] === typeof [Object]) refs = refs.concat(findDependency(json[key], type));
+    }
+    return refs.filter((current: string, index: number, array: string[]) => array.indexOf(current) === index);
 }
 
 function deployItem(
@@ -196,6 +229,7 @@ function deployItem(
                     reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                 }
             } else {
+                console.log(`Deployed ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
                 resolve(true);
             }
         });
@@ -214,7 +248,25 @@ function deployItems(
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryType, taskOptions, folder)
             .then((items: DatafactoryDeployObject[]) => {
-                processItems(datafactoryOption, taskOptions, datafactoryType, items)
+                const numberOfBuckets = splitBuckets(taskOptions.detectDependency, items);
+                const invalidItems = items.filter((item: DatafactoryDeployObject) => item.bucket === -1);
+                if (invalidItems.length !== 0) {
+                    task.debug(
+                        task.loc(
+                            "DeployAdfJson_Depencency",
+                            datafactoryType,
+                            invalidItems.map((item: DatafactoryDeployObject) => item.name).join(", ")
+                        )
+                    );
+                    reject(
+                        task.loc(
+                            "DeployAdfJson_Depencency",
+                            datafactoryType,
+                            invalidItems.map((item: DatafactoryDeployObject) => item.name).join(", ")
+                        )
+                    );
+                }
+                processItems(datafactoryOption, taskOptions, datafactoryType, items, numberOfBuckets)
                     .catch((err) => {
                         reject(err);
                     })
@@ -229,34 +281,95 @@ function deployItems(
     });
 }
 
+function splitBuckets(detectDependency: boolean, items: DatafactoryDeployObject[]): number {
+    let loop = detectDependency;
+    let change = true;
+    let numberOfBuckets = 1;
+    while (loop || change) {
+        loop = false;
+        change = false;
+        const loopItems = items.filter((item: DatafactoryDeployObject) => item.bucket === -1);
+        loopItems.forEach((item: DatafactoryDeployObject) => {
+            const pBucket = item.bucket;
+            const buckets = item.dependency.map((i) => items.find((item) => item.name === i).bucket);
+            if (Math.min(...buckets) !== -1) {
+                numberOfBuckets++;
+                change = true;
+                item.bucket = Math.max(...buckets) + 1;
+            }
+            loop = pBucket !== item.bucket;
+        });
+    }
+    return numberOfBuckets;
+}
+
+function getReadableFileSize(fileSizeInBytes: number): string {
+    var i = 0;
+    var byteUnits = [" bytes", " kB", " MB", " GB", " TB", "PB", "EB", "ZB", "YB"];
+    while (fileSizeInBytes > 1024) {
+        fileSizeInBytes = fileSizeInBytes / 1024;
+        i++;
+    }
+
+    return Math.max(fileSizeInBytes, 0.1).toFixed(1) + byteUnits[i];
+}
+
+function getReadableInterval(interval: number): string {
+    let x = interval / 1000;
+    const seconds = x % 60;
+    x /= 60;
+    const minutes = Math.floor(x % 60);
+    x /= 60;
+    const hours = Math.floor(x % 24);
+    let r = "";
+    if (hours !== 0) r += hours + " hours ";
+    if (minutes !== 0) r += (minutes < 10 ? "0" : "") + minutes + " minutes ";
+    return r + seconds + " seconds";
+}
+
 function processItems(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
     datafactoryType: DatafactoryTypes,
-    items: DatafactoryDeployObject[]
+    items: DatafactoryDeployObject[],
+    numberOfBuckets: number
 ): Promise<boolean> {
     let firstError;
     return new Promise<boolean>((resolve, reject) => {
-        let totalItems = items.length;
-
-        let process = Q.all(
-            items.map(
-                throat(taskOptions.throttle, (item) => {
-                    console.log(`Deploy ${datafactoryType} '${item.name}'.`);
-                    return deployItem(datafactoryOption, taskOptions, item);
-                })
-            )
-        )
-            .catch((err) => {
-                hasError = true;
-                firstError = firstError || err;
-            })
-            .done((results: any) => {
-                task.debug(`${totalItems} ${datafactoryType}(s) deployed.`);
+        let totalItems = 0;
+        let size = 0;
+        let start: number = Date.now();
+        const runs: DatafactoryDeployObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
+            items.filter((item: DatafactoryDeployObject) => item.bucket === index)
+        );
+        console.log(
+            `Start deploying ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
+        );
+        runs.reduce((promiseChain, currentTask) => {
+            return promiseChain.then((chainResults) =>
+                Promise.all(
+                    currentTask.map(
+                        throat(taskOptions.throttle, (item) => {
+                            size += item.size;
+                            totalItems++;
+                            return deployItem(datafactoryOption, taskOptions, item);
+                        })
+                    )
+                ).then((currentResult) => [...chainResults, currentResult])
+            );
+        }, Promise.resolve([]))
+            .then((arrayOfResults: any) => {
+                const duration = Date.now() - start;
+                console.log(`${totalItems} ${datafactoryType}(s) deployed.\n\nStats:`);
+                console.log(`======`);
+                console.log(`Total size:\t${getReadableFileSize(size)}.`);
+                console.log(`Duration:\t${getReadableInterval(duration)}.`);
+                console.log(`Performance:\t${getReadableFileSize(size / (duration / 1000))}/sec.`);
+                console.log(`\t\t${(totalItems / (duration / 1000)).toFixed(1)} items/sec.`);
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    let issues = results.filter((result) => {
+                    let issues = arrayOfResults.flat().filter((result) => {
                         return !result;
                     }).length;
                     if (issues > 0) {
@@ -265,6 +378,10 @@ function processItems(
                         resolve(true);
                     }
                 }
+            })
+            .catch((err) => {
+                hasError = true;
+                firstError = firstError || err;
             });
     });
 }
@@ -294,6 +411,7 @@ async function main(): Promise<boolean> {
                 continue: taskParameters.Continue,
                 throttle: taskParameters.Throttle,
                 sorting: taskParameters.Sorting,
+                detectDependency: taskParameters.DetectDependency,
             };
 
             azureModels = new AzureModels(connectedServiceName);
@@ -332,7 +450,7 @@ async function main(): Promise<boolean> {
                     if (triggerPath !== null) {
                         deployTasks.push({ path: triggerPath, type: DatafactoryTypes.Trigger });
                     }
-                    Q.all(
+                    Promise.all(
                         deployTasks.map(
                             throat(1, (task) => {
                                 return deployItems(datafactoryOption, taskOptions, task.path, task.type);
@@ -343,7 +461,7 @@ async function main(): Promise<boolean> {
                             hasError = true;
                             firstError = firstError || err;
                         })
-                        .done((results: any) => {
+                        .then((results: any) => {
                             if (hasError) {
                                 reject(firstError);
                             } else {
