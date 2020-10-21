@@ -1,12 +1,20 @@
 {
     "compilerOptions": {
+        "alwaysStrict": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
         "module": "commonjs",
         "moduleResolution": "node",
-        "noImplicitAny": false,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
         "outDir": "dist",
+        "removeComments": true,
         "rootDir": ".",
+        "skipLibCheck": true,
         "sourceMap": false,
+        "strict": true,
         "target": "es6"
     },
-    "exclude": ["node_modules"]
+    "include": ["**/*.ts"],
+    "exclude": ["node_modules", "**/*.spec.ts"]
 }
