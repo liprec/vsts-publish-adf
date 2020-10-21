@@ -26,6 +26,9 @@
  *  THE SOFTWARE.
  */
 
+"use sctrict";
+
+import * as Q from "q";
 import throat from "throat";
 import * as task from "azure-pipelines-task-lib/task";
 import * as path from "path";
