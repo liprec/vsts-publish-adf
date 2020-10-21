@@ -53,6 +53,11 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12
+      - name: install modclean
+        run: |
+          npm install modclean
+        env:
+          CI: true
       - name: npm install
         run: |
           npm install
@@ -65,6 +70,9 @@ jobs:
         working-directory: ${{ matrix.task }}/v2
         env:
           CI: true
+      - name: npx modclean
+        run: |
+          ./node_modules/.bin/modclean -n default:safe,default:caution
       - name: store task artifacts
         uses: actions/upload-artifact@v2
         with:
