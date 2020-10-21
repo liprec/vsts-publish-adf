@@ -1,21 +1,12 @@
 {
     "compilerOptions": {
-        "alwaysStrict": true,
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
         "module": "commonjs",
         "moduleResolution": "node",
-        "noImplicitAny": true,
-        "noImplicitThis": true,
+        "noImplicitAny": false,
         "outDir": "dist",
-        "removeComments": true,
         "rootDir": ".",
-        "skipLibCheck": true,
         "sourceMap": false,
-        "strict": true,
-        "target": "es6",
-        "types": ["node", "mocha"]
+        "target": "es6"
     },
-    "include": ["**/*.ts"],
-    "exclude": ["node_modules", "**/*.spec.ts"]
+    "exclude": ["node_modules"]
 }
