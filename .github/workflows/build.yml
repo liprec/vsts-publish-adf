@@ -91,3 +91,28 @@ jobs:
           name: ${{ matrix.task }}
           path: |
             ${{ matrix.task }}/v2/
+  pack:
+    name: Pack 'vsts-publish-adf'
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: install tfx-cli
+        run: |
+          npm install tfx-cli
+          export PATH=./node_modules/.bin:$PATH
+        env:
+          CI: true
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v2
+      - name: restore build artifacts
+        run: |
+          files=./**/*.zip
+          for file in $files
+          do
+            echo "Processing $file file..."
+            folder=$(basename -s .zip $file)
+            unzip $file ./$folder/v2
+          done
+      - name: run tfx-cli
+        run: |
+          tfx extension create --manifest-globs ./vss-extension.json
