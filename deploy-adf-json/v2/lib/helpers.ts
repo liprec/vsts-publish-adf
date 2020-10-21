@@ -52,13 +52,13 @@ export function getReadableFileSize(fileSizeInBytes: number): string {
 
 export function getReadableInterval(interval: number): string {
     let x = interval / 1000;
-    const seconds = x % 60;
+    const seconds = (x % 60).toFixed(3);
     x /= 60;
     const minutes = Math.floor(x % 60);
     x /= 60;
     const hours = Math.floor(x % 24);
     let r = "";
-    if (hours !== 0) r += hours + " hours ";
-    if (minutes !== 0) r += (minutes < 10 ? "0" : "") + minutes + " minutes ";
-    return r + seconds + " seconds";
+    if (hours !== 0) r += hours + " hour(s) ";
+    if (minutes !== 0) r += (minutes < 10 && hours > 0 ? "0" : "") + minutes + " minute(s) ";
+    return r + seconds + " second(s)";
 }

@@ -10,13 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        task:
-          [
-            delete-adf-items,
+        task: [
+            # delete-adf-items,
             deploy-adf-json,
-            toggle-adf-trigger,
-            trigger-adf-pipeline,
           ]
+    # toggle-adf-trigger,
+    # trigger-adf-pipeline,
     steps:
       - uses: actions/checkout@v2
       - name: Setup NodeJS
@@ -37,6 +36,7 @@ jobs:
           CI: true
   build:
     name: Build task ${{ matrix.task }}
+    needs: [test]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -70,5 +70,4 @@ jobs:
         with:
           name: ${{ matrix.task }}
           path: |
-            ${{ matrix.task }}/v2/dist/
-            ${{ matrix.task }}/v2/node_modules/
+            ${{ matrix.task }}/v2/

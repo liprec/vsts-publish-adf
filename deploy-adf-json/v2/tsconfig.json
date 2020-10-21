@@ -1,6 +1,8 @@
 {
     "compilerOptions": {
         "alwaysStrict": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
         "module": "commonjs",
         "moduleResolution": "node",
         "noImplicitAny": true,
@@ -8,10 +10,11 @@
         "outDir": "dist",
         "removeComments": true,
         "rootDir": ".",
+        "skipLibCheck": true,
         "sourceMap": false,
         "strict": true,
         "target": "es6"
     },
-    "files": ["deployadfjson.ts"],
-    "exclude": ["node_modules", "**/*.spec.ts"]
+    "include": ["**/*.ts"],
+    "exclude": ["**/*.spec.ts"]
 }
