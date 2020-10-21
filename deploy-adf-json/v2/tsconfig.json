@@ -1,14 +1,17 @@
 {
     "compilerOptions": {
+        "alwaysStrict": true,
         "module": "commonjs",
-        "target": "es6",
-        "noImplicitAny": false,
+        "moduleResolution": "node",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
         "outDir": "dist",
+        "removeComments": true,
         "rootDir": ".",
         "sourceMap": false,
-        "moduleResolution": "node"
+        "strict": true,
+        "target": "es6"
     },
-    "exclude": [
-        "node_modules"
-    ]
+    "files": ["deployadfjson.ts"],
+    "exclude": ["node_modules", "**/*.spec.ts"]
 }

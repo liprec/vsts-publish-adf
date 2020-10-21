@@ -35,17 +35,11 @@ import { TaskParameters, SortingDirection } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
-import { UrlBasedRequestPrepareOptions } from "ms-rest";
+import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
+import { DatafactoryTypes } from "./lib/enums";
+import { addSummary } from "./lib/helpers";
 
 task.setResourcePath(path.join(__dirname, "../task.json"));
-
-enum DatafactoryTypes {
-    Pipeline = "pipeline",
-    Dataflow = "dataflow",
-    Dataset = "dataset",
-    Trigger = "trigger",
-    LinkedService = "linked service",
-}
 
 interface DatafactoryOptions {
     azureClient?: AzureServiceClient;
@@ -84,22 +78,22 @@ function loginAzure(clientId: string, key: string, tenantID: string): Promise<Az
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
                 task.error(task.loc("Generic_CheckDataFactory", err));
                 reject(task.loc("Generic_CheckDataFactory", err));
             }
-            if (response.statusCode !== 200) {
+            if (response && response.statusCode !== 200) {
                 task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
                 reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
@@ -115,9 +109,9 @@ function getObjects(
     folder: string
 ): Promise<DatafactoryDeployObject[]> {
     return new Promise<DatafactoryDeployObject[]>((resolve, reject) => {
-        let sourceFolder = path.normalize(folder);
-        let allPaths: string[] = task.find(sourceFolder); // default find options (follow sym links)
-        let matchedFiles: string[] = allPaths.filter((itemPath: string) => !task.stats(itemPath).isDirectory()); // filter-out directories
+        const sourceFolder = path.normalize(folder);
+        const allPaths: string[] = task.find(sourceFolder); // default find options (follow sym links)
+        const matchedFiles: string[] = allPaths.filter((itemPath: string) => !task.stats(itemPath).isDirectory()); // filter-out directories
         if (matchedFiles.length > 0) {
             taskOptions.sorting === SortingDirection.Ascending
                 ? matchedFiles.sort(
@@ -133,11 +127,11 @@ function getObjects(
             console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
             resolve(
                 matchedFiles.map((file: string) => {
-                    let data = fs.readFileSync(file, "utf8");
-                    let json = JSON.parse(data);
-                    let name = json.name || path.parse(file).name.replace(" ", "_");
+                    const data = fs.readFileSync(file, "utf8");
+                    const json = JSON.parse(data);
+                    const name = json.name || path.parse(file).name.replace(" ", "_");
                     const size = data.length;
-                    let dependency;
+                    let dependency: string[];
                     switch (datafactoryType) {
                         case DatafactoryTypes.LinkedService:
                             dependency = taskOptions.detectDependency
@@ -183,11 +177,11 @@ function deployItem(
     item: DatafactoryDeployObject
 ): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let objectName = item.name;
+        const objectName = item.name;
         let objectType;
         switch (item.type) {
             case DatafactoryTypes.Dataflow:
@@ -206,22 +200,22 @@ function deployItem(
                 objectType = "linkedservices";
                 break;
         }
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: UrlBasedRequestPrepareOptions = {
             method: "PUT",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
             headers: {
                 "Content-Type": "application/json",
             },
             body: item.json,
             disableJsonStringifyOnBody: true,
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err && !taskOptions.continue) {
                 task.error(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
                 reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
-            } else if (response.statusCode !== 200) {
+            } else if (response && response.statusCode !== 200) {
                 if (taskOptions.continue) {
                     task.warning(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
@@ -243,12 +237,16 @@ function deployItems(
     datafactoryType: DatafactoryTypes
 ): Promise<boolean> {
     if (hasError) {
-        return;
+        return Promise.reject(true);
     } // Some error occurred, so returning
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryType, taskOptions, folder)
             .then((items: DatafactoryDeployObject[]) => {
                 const numberOfBuckets = splitBuckets(taskOptions.detectDependency, items);
+                if (numberOfBuckets === -1) {
+                    task.debug(task.loc("DeployAdfJson_Depencency2", datafactoryType));
+                    reject(task.loc("DeployAdfJson_Depencency2", datafactoryType));
+                }
                 const invalidItems = items.filter((item: DatafactoryDeployObject) => item.bucket === -1);
                 if (invalidItems.length !== 0) {
                     task.debug(
@@ -270,8 +268,8 @@ function deployItems(
                     .catch((err) => {
                         reject(err);
                     })
-                    .then((result: boolean) => {
-                        resolve(result);
+                    .then((result: boolean | void) => {
+                        resolve(<boolean>result);
                     });
             })
             .catch((err) => {
@@ -291,7 +289,11 @@ function splitBuckets(detectDependency: boolean, items: DatafactoryDeployObject[
         const loopItems = items.filter((item: DatafactoryDeployObject) => item.bucket === -1);
         loopItems.forEach((item: DatafactoryDeployObject) => {
             const pBucket = item.bucket;
-            const buckets = item.dependency.map((i) => items.find((item) => item.name === i).bucket);
+            const buckets = item.dependency.map((i) => {
+                const findItem = items.find((item) => item.name === i);
+                if (!findItem) return -1;
+                return findItem.bucket;
+            });
             if (Math.min(...buckets) !== -1) {
                 numberOfBuckets++;
                 change = true;
@@ -303,30 +305,6 @@ function splitBuckets(detectDependency: boolean, items: DatafactoryDeployObject[
     return numberOfBuckets;
 }
 
-function getReadableFileSize(fileSizeInBytes: number): string {
-    var i = 0;
-    var byteUnits = [" bytes", " kB", " MB", " GB", " TB", "PB", "EB", "ZB", "YB"];
-    while (fileSizeInBytes > 1024) {
-        fileSizeInBytes = fileSizeInBytes / 1024;
-        i++;
-    }
-
-    return Math.max(fileSizeInBytes, 0.1).toFixed(1) + byteUnits[i];
-}
-
-function getReadableInterval(interval: number): string {
-    let x = interval / 1000;
-    const seconds = x % 60;
-    x /= 60;
-    const minutes = Math.floor(x % 60);
-    x /= 60;
-    const hours = Math.floor(x % 24);
-    let r = "";
-    if (hours !== 0) r += hours + " hours ";
-    if (minutes !== 0) r += (minutes < 10 ? "0" : "") + minutes + " minutes ";
-    return r + seconds + " seconds";
-}
-
 function processItems(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
@@ -334,18 +312,18 @@ function processItems(
     items: DatafactoryDeployObject[],
     numberOfBuckets: number
 ): Promise<boolean> {
-    let firstError;
+    let firstError: boolean;
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = 0;
         let size = 0;
-        let start: number = Date.now();
+        const start: number = Date.now();
         const runs: DatafactoryDeployObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
             items.filter((item: DatafactoryDeployObject) => item.bucket === index)
         );
         console.log(
             `Start deploying ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
         );
-        runs.reduce((promiseChain, currentTask) => {
+        runs.reduce((promiseChain: Promise<any>, currentTask: DatafactoryDeployObject[]) => {
             return promiseChain.then((chainResults) =>
                 Promise.all(
                     currentTask.map(
@@ -360,16 +338,11 @@ function processItems(
         }, Promise.resolve([]))
             .then((arrayOfResults: any) => {
                 const duration = Date.now() - start;
-                console.log(`${totalItems} ${datafactoryType}(s) deployed.\n\nStats:`);
-                console.log(`======`);
-                console.log(`Total size:\t${getReadableFileSize(size)}.`);
-                console.log(`Duration:\t${getReadableInterval(duration)}.`);
-                console.log(`Performance:\t${getReadableFileSize(size / (duration / 1000))}/sec.`);
-                console.log(`\t\t${(totalItems / (duration / 1000)).toFixed(1)} items/sec.`);
+                addSummary(totalItems, datafactoryType, size, duration);
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    let issues = arrayOfResults.flat().filter((result) => {
+                    const issues = arrayOfResults.flat().filter((result: any) => {
                         return !result;
                     }).length;
                     if (issues > 0) {
@@ -387,27 +360,28 @@ function processItems(
 }
 
 async function main(): Promise<boolean> {
-    let promise = new Promise<boolean>(async (resolve, reject) => {
+    const promise = new Promise<boolean>(async (resolve, reject) => {
         let taskParameters: TaskParameters;
         let azureModels: AzureModels;
+        let firstError: boolean;
 
         try {
-            let debugMode: string = task.getVariable("System.Debug");
-            let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
+            const debugMode: string = <string>task.getVariable("System.Debug");
+            const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
             task.debug("Task execution started ...");
             taskParameters = new TaskParameters();
-            let connectedServiceName = taskParameters.ConnectedServiceName;
-            let resourceGroup = taskParameters.ResourceGroupName;
-            let dataFactoryName = taskParameters.DatafactoryName;
+            const connectedServiceName = taskParameters.ConnectedServiceName;
+            const resourceGroup = taskParameters.ResourceGroupName;
+            const dataFactoryName = taskParameters.DatafactoryName;
 
-            let servicePath = taskParameters.ServicePath;
-            let pipelinePath = taskParameters.PipelinePath;
-            let datasetPath = taskParameters.DatasetPath;
-            let dataflowPath = taskParameters.DataflowPath;
-            let triggerPath = taskParameters.TriggerPath;
+            const servicePath = taskParameters.ServicePath;
+            const pipelinePath = taskParameters.PipelinePath;
+            const datasetPath = taskParameters.DatasetPath;
+            const dataflowPath = taskParameters.DataflowPath;
+            const triggerPath = taskParameters.TriggerPath;
 
-            let taskOptions = {
+            const taskOptions = {
                 continue: taskParameters.Continue,
                 throttle: taskParameters.Throttle,
                 sorting: taskParameters.Sorting,
@@ -415,15 +389,14 @@ async function main(): Promise<boolean> {
             };
 
             azureModels = new AzureModels(connectedServiceName);
-            let clientId = azureModels.getServicePrincipalClientId();
-            let key = azureModels.getServicePrincipalKey();
-            let tenantID = azureModels.getTenantId();
-            let datafactoryOption: DatafactoryOptions = {
+            const clientId = azureModels.getServicePrincipalClientId();
+            const key = azureModels.getServicePrincipalKey();
+            const tenantID = azureModels.getTenantId();
+            const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.getSubscriptionId(),
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            let firstError;
             task.debug("Parsed task inputs");
 
             loginAzure(clientId, key, tenantID)
@@ -434,7 +407,7 @@ async function main(): Promise<boolean> {
                 })
                 .then(() => {
                     task.debug(`Datafactory '${dataFactoryName}' exist`);
-                    let deployTasks = [];
+                    const deployTasks: any[] = [];
                     if (servicePath !== null) {
                         deployTasks.push({ path: servicePath, type: DatafactoryTypes.LinkedService });
                     }
@@ -465,7 +438,7 @@ async function main(): Promise<boolean> {
                             if (hasError) {
                                 reject(firstError);
                             } else {
-                                let issues = results.filter((result) => {
+                                const issues = results.filter((result: any) => {
                                     return !result;
                                 }).length;
                                 if (issues > 0) {

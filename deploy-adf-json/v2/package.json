@@ -15,5 +15,7 @@
     "ms-rest-azure": "^3.0.0",
     "throat": "^5.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/q": "^1.5.4"
+  }
 }

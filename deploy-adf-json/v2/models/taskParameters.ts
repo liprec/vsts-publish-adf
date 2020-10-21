@@ -38,30 +38,30 @@ export class TaskParameters {
     private resourceGroupName: string;
     private datafactoryName: string;
 
-    private servicePath: string;
-    private pipelinePath: string;
-    private datasetPath: string;
-    private dataflowPath: string;
-    private triggerPath: string;
+    private servicePath: string | null;
+    private pipelinePath: string | null;
+    private datasetPath: string | null;
+    private dataflowPath: string | null;
+    private triggerPath: string | null;
 
     private continue: boolean;
     private throttle: number;
-    private sorting: SortingDirection;
+    private sorting: SortingDirection = SortingDirection.Ascending;
     private detectDependency: boolean;
 
     constructor() {
         try {
             let rootPath = task.getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = task.getInput("ConnectedServiceName", true);
-            this.resourceGroupName = task.getInput("ResourceGroupName", true);
-            this.datafactoryName = task.getInput("DatafactoryName", true);
+            this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
+            this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
+            this.datafactoryName = <string>task.getInput("DatafactoryName", true);
 
-            this.servicePath = task.getPathInput("ServicePath", false, true);
-            this.pipelinePath = task.getPathInput("PipelinePath", false, true);
-            this.datasetPath = task.getPathInput("DatasetPath", false, true);
-            this.dataflowPath = task.getPathInput("DataflowPath", false, true);
-            this.triggerPath = task.getPathInput("TriggerPath", false, true);
+            this.servicePath = <string>task.getPathInput("ServicePath", false, true);
+            this.pipelinePath = <string>task.getPathInput("PipelinePath", false, true);
+            this.datasetPath = <string>task.getPathInput("DatasetPath", false, true);
+            this.dataflowPath = <string>task.getPathInput("DataflowPath", false, true);
+            this.triggerPath = <string>task.getPathInput("TriggerPath", false, true);
 
             // Replace "" with null
             this.servicePath = this.servicePath.replace(rootPath, "") === "" ? null : this.servicePath;
@@ -71,10 +71,10 @@ export class TaskParameters {
             this.triggerPath = this.triggerPath.replace(rootPath, "") === "" ? null : this.triggerPath;
 
             this.continue = task.getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(task.getInput("Throttle", false));
+            this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
             this.throttle = this.throttle === NaN ? 5 : this.throttle;
             this.detectDependency = task.getBoolInput("detectDependency", false);
-            let sorting = task.getInput("Sorting", true);
+            let sorting = <string>task.getInput("Sorting", true);
             switch (sorting.toLowerCase()) {
                 case "ascending":
                     this.sorting = SortingDirection.Ascending;
@@ -100,23 +100,23 @@ export class TaskParameters {
         return this.datafactoryName;
     }
 
-    public get ServicePath(): string {
+    public get ServicePath(): string | null {
         return this.servicePath;
     }
 
-    public get PipelinePath(): string {
+    public get PipelinePath(): string | null {
         return this.pipelinePath;
     }
 
-    public get DatasetPath(): string {
+    public get DatasetPath(): string | null {
         return this.datasetPath;
     }
 
-    public get DataflowPath(): string {
+    public get DataflowPath(): string | null {
         return this.dataflowPath;
     }
 
-    public get TriggerPath(): string {
+    public get TriggerPath(): string | null {
         return this.triggerPath;
     }
 
