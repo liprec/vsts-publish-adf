@@ -90,7 +90,7 @@ jobs:
         with:
           name: ${{ matrix.task }}
           path: |
-            ${{ matrix.task }}/v2/
+            ${{ matrix.task }}/v2/dist
   pack:
     name: Pack 'vsts-publish-adf'
     needs: [build]
@@ -99,11 +99,10 @@ jobs:
       - name: install tfx-cli
         run: |
           npm install tfx-cli
-          export PATH=./node_modules/.bin:$PATH
         env:
           CI: true
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v2
       - name: run tfx-cli
         run: |
-          tfx extension create --manifest-globs ./vss-extension.json
+          ./node_modules/.bin/tfx extension create --manifest-globs ./vss-extension.json
