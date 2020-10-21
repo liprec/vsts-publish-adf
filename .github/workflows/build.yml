@@ -1,0 +1,75 @@
+name: Build and test
+
+on:
+  push:
+    branches: [develop, main]
+
+jobs:
+  test:
+    name: Test task ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task:
+          [
+            delete-adf-items,
+            deploy-adf-json,
+            toggle-adf-trigger,
+            trigger-adf-pipeline,
+          ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: npm install
+        run: |
+          npm install
+        working-directory: ${{ matrix.task }}/v2
+        env:
+          CI: true
+      - name: npm run test
+        run: |
+          npm run test
+        working-directory: ${{ matrix.task }}/v2
+        env:
+          CI: true
+  build:
+    name: Build task ${{ matrix.task }}
+    needs: [test]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task:
+          [
+            delete-adf-items,
+            deploy-adf-json,
+            toggle-adf-trigger,
+            trigger-adf-pipeline,
+          ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: npm install
+        run: |
+          npm install --production
+        working-directory: ${{ matrix.task }}/v2
+        env:
+          CI: true
+      - name: npm run build
+        run: |
+          npm run build
+        working-directory: ${{ matrix.task }}/v2
+        env:
+          CI: true
+      - name: store task artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.task }}
+          path: |
+            ${{ matrix.task }}/v2/dist/
+            ${{ matrix.task }}/v2/node_modules/
