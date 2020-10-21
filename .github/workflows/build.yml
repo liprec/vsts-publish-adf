@@ -55,7 +55,7 @@ jobs:
           node-version: 12
       - name: npm install
         run: |
-          npm install --production
+          npm install
         working-directory: ${{ matrix.task }}/v2
         env:
           CI: true
