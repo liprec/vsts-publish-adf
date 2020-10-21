@@ -70,9 +70,21 @@ jobs:
         working-directory: ${{ matrix.task }}/v2
         env:
           CI: true
+      - name: rm node_modules
+        run: |
+          rm -Rf node_modules
+        working-directory: ${{ matrix.task }}/v2
+        env:
+          CI: true
+      - name: npm install --production
+        run: |
+          npm install --production
+        working-directory: ${{ matrix.task }}/v2
+        env:
+          CI: true
       - name: npx modclean
         run: |
-          ./node_modules/.bin/modclean -n default:safe,default:caution
+          ./node_modules/.bin/modclean -r -n default:safe,default:caution
       - name: store task artifacts
         uses: actions/upload-artifact@v2
         with:
