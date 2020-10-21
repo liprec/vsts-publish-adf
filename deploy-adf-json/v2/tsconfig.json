@@ -14,7 +14,7 @@
         "sourceMap": false,
         "strict": true,
         "target": "es6",
-        "types": ["node"]
+        "types": ["node", "mocha"]
     },
     "include": ["**/*.ts"],
     "exclude": ["node_modules", "**/*.spec.ts"]
