@@ -37,7 +37,6 @@ jobs:
           CI: true
   build:
     name: Build task ${{ matrix.task }}
-    needs: [test]
     runs-on: ubuntu-latest
     strategy:
       matrix:
