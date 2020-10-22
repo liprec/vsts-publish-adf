@@ -71,4 +71,4 @@ jobs:
           CI: true
       - name: run tfx-cli
         run: |
-          ~/node_modules/.bin/tfx extension create --manifest-globs ~/vss-extension.json
+          $GITHUB_WORKSPACE/node_modules/.bin/tfx extension create --manifest-globs ~/vss-extension.json
