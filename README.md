@@ -4,10 +4,10 @@ This extension adds release tasks related to Azure Data Factory (V1 and V2) to r
 
 ## Build status
 
-| Branch  | status                                                                                                                                                                                                                                    |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main    | [![Build and test](https://dev.azure.com/datascenarios/GitHub%20Projects/_apis/build/status/vsts-publish-adf?branchName=main)](https://dev.azure.com/datascenarios/GitHub%20Projects/_build/latest?definitionId=23&branchName=main)       |
-| Develop | [![Build and test](https://dev.azure.com/datascenarios/GitHub%20Projects/_apis/build/status/vsts-publish-adf?branchName=develop)](https://dev.azure.com/datascenarios/GitHub%20Projects/_build/latest?definitionId=23&branchName=develop) |
+| Branch  | status                                                                                                                                                                                                                           |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main    | [![Build and test](https://github.com/liprec/vsts-publish-adf/workflows/Build%20and%20test/badge.svg?branch=main)](https://github.com/liprec/vsts-publish-adf/actions?query=branch%3Amain+workflow%3A%22Build+and+test%22)       |
+| Develop | [![Build and test](https://github.com/liprec/vsts-publish-adf/workflows/Build%20and%20test/badge.svg?branch=develop)](https://github.com/liprec/vsts-publish-adf/actions?query=branch%3Adevelop+workflow%3A%22Build+and+test%22) |
 
 ## Azure Data Factory Deployment
 
