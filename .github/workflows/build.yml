@@ -55,7 +55,7 @@ jobs:
           for task in $tasks
           do
             echo Build $task
-            cd task
+            cd $task
             npm install
             npm run build
             echo Prepare 'node_modules' of $task
