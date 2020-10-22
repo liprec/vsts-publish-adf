@@ -79,6 +79,6 @@ jobs:
       - name: store extension
         uses: actions/upload-artifact@v2
         with:
-          name: liprec.vsts-publish-adf-${{extensionversion}}
+          name: liprec.vsts-publish-adf-${{ steps.extract_version.outputs.version }}
           path: |
-            liprec.vsts-publish-adf-${{extensionversion}}.vsix
+            liprec.vsts-publish-adf-${{ steps.extract_version.outputs.version }}.vsix
