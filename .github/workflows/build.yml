@@ -72,3 +72,13 @@ jobs:
       - name: run tfx-cli
         run: |
           $GITHUB_WORKSPACE/node_modules/.bin/tfx extension create --manifest-globs $GITHUB_WORKSPACE/vss-extension.json
+      - name: extract version name
+        id: extract_version
+        run: |
+          node -e "const v = require('./vss-extension.json').version;console.log('::set-output name=version::' + v);"
+      - name: store extension
+        uses: actions/upload-artifact@v2
+        with:
+          name: liprec.vsts-publish-adf-${{extensionversion}}
+          path: |
+            liprec.vsts-publish-adf-${{extensionversion}}.vsix
