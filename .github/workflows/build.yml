@@ -35,18 +35,9 @@ jobs:
         env:
           CI: true
   build:
-    name: Build task ${{ matrix.task }}
+    name: Build and pack tasks
     needs: [test]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        task:
-          [
-            delete-adf-items,
-            deploy-adf-json,
-            toggle-adf-trigger,
-            trigger-adf-pipeline,
-          ]
     steps:
       - uses: actions/checkout@v2
       - name: Setup NodeJS
@@ -58,52 +49,26 @@ jobs:
           npm install modclean
         env:
           CI: true
-      - name: npm install
+      - name: build tasks
         run: |
-          npm install
-        working-directory: ${{ matrix.task }}/v2
-        env:
-          CI: true
-      - name: npm run build
-        run: |
-          npm run build
-        working-directory: ${{ matrix.task }}/v2
-        env:
-          CI: true
-      - name: rm node_modules
-        run: |
-          rm -Rf node_modules
-        working-directory: ${{ matrix.task }}/v2
-        env:
-          CI: true
-      - name: npm install --production
-        run: |
-          npm install --production
-        working-directory: ${{ matrix.task }}/v2
-        env:
-          CI: true
-      - name: npx modclean
-        run: |
-          ./node_modules/.bin/modclean -r -n default:safe,default:caution
-      - name: store task artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.task }}
-          path: |
-            ${{ matrix.task }}/v2/dist
-  pack:
-    name: Pack 'vsts-publish-adf'
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+          tasks=./**/v2
+          for task in $tasks
+          do
+            echo Build $task
+            cd task
+            npm install
+            npm run build
+            echo Prepare 'node_modules' of $task
+            rm -Rf node_modules
+            npm install --production
+            ~/node_modules/.bin/modclean -r -n default:safe,default:caution
+            cd ~
+          done
       - name: install tfx-cli
         run: |
           npm install tfx-cli
         env:
           CI: true
-      - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v2
       - name: run tfx-cli
         run: |
-          ./node_modules/.bin/tfx extension create --manifest-globs ./vss-extension.json
+          ~/node_modules/.bin/tfx extension create --manifest-globs ~/vss-extension.json
