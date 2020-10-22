@@ -61,8 +61,8 @@ jobs:
             echo Prepare 'node_modules' of $task
             rm -Rf node_modules
             npm install --production
-            ~/node_modules/.bin/modclean -r -n default:safe,default:caution
-            cd ~
+            $GITHUB_WORKSPACE/node_modules/.bin/modclean -r -n default:safe,default:caution
+            cd $GITHUB_WORKSPACE
           done
       - name: install tfx-cli
         run: |
