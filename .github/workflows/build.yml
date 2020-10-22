@@ -5,38 +5,8 @@ on:
     branches: [develop, main]
 
 jobs:
-  test:
-    name: Test task ${{ matrix.task }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        task: [
-            # delete-adf-items,
-            deploy-adf-json,
-          ]
-    # toggle-adf-trigger,
-    # trigger-adf-pipeline,
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup NodeJS
-        uses: actions/setup-node@v1
-        with:
-          node-version: 12
-      - name: npm install
-        run: |
-          npm install
-        working-directory: ${{ matrix.task }}/v2
-        env:
-          CI: true
-      - name: npm run test
-        run: |
-          npm run test
-        working-directory: ${{ matrix.task }}/v2
-        env:
-          CI: true
   build:
-    name: Build and pack tasks
-    needs: [test]
+    name: Build, test and pack tasks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -54,10 +24,10 @@ jobs:
           tasks=./**/v2
           for task in $tasks
           do
-            echo Build $task
+            echo Build and test $task
             cd $task
             npm install
-            npm run build
+            npm run test
             echo Prepare 'node_modules' of $task
             rm -Rf node_modules
             npm install --production
@@ -69,16 +39,37 @@ jobs:
           npm install tfx-cli
         env:
           CI: true
-      - name: run tfx-cli
+      # Production package
+      - name: run tfx-cli - production version
+        if: ${{ endsWith(github.ref, 'main') }}
         run: |
           $GITHUB_WORKSPACE/node_modules/.bin/tfx extension create --manifest-globs $GITHUB_WORKSPACE/vss-extension.json
-      - name: extract version name
+      - name: extract version name - production version
+        if: ${{ endsWith(github.ref, 'main') }}
         id: extract_version
         run: |
           node -e "const v = require('./vss-extension.json').version;console.log('::set-output name=version::' + v);"
-      - name: store extension
+      - name: store extension - production version
+        if: ${{ endsWith(github.ref, 'main') }}
         uses: actions/upload-artifact@v2
         with:
           name: liprec.vsts-publish-adf-${{ steps.extract_version.outputs.version }}
           path: |
             liprec.vsts-publish-adf-${{ steps.extract_version.outputs.version }}.vsix
+      # Preview package
+      - name: run tfx-cli - preview version
+        if: ${{ endsWith(github.ref, 'develop') }}
+        run: |
+          $GITHUB_WORKSPACE/node_modules/.bin/tfx extension create --manifest-globs $GITHUB_WORKSPACE/vss-extension-preview.json
+      - name: extract version name - preview version
+        if: ${{ endsWith(github.ref, 'develop') }}
+        id: extract_version_preview
+        run: |
+          node -e "const v = require('./vss-extension-preview.json').version;console.log('::set-output name=version::' + v);"
+      - name: store extension - preview version
+        if: ${{ endsWith(github.ref, 'develop') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: liprec.vsts-publish-adf-preview-${{ steps.extract_version.outputs.version }}
+          path: |
+            liprec.vsts-publish-adf-preview-${{ steps.extract_version.outputs.version }}.vsix
