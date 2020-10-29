@@ -27,32 +27,31 @@
  */
 
 import * as task from "azure-pipelines-task-lib/task";
+import { exit } from "process";
 
-export enum SortingDirection {
-    Ascending,
-    Descending,
-}
+import { SortingDirection } from "../lib/enums";
 
 export class TaskParameters {
     private connectedServiceName: string;
     private resourceGroupName: string;
     private datafactoryName: string;
 
-    private serviceFilter: string;
-    private pipelineFilter: string;
-    private dataflowFilter: string;
-    private datasetFilter: string;
-    private triggerFilter: string;
+    private serviceFilter: string | undefined;
+    private pipelineFilter: string | undefined;
+    private dataflowFilter: string | undefined;
+    private datasetFilter: string | undefined;
+    private triggerFilter: string | undefined;
 
     private continue: boolean;
     private throttle: number;
-    private sorting: SortingDirection;
+    private sorting: SortingDirection = SortingDirection.Ascending;
+    private detectDependency: boolean;
 
     constructor() {
         try {
-            this.connectedServiceName = task.getInput("ConnectedServiceName", true);
-            this.resourceGroupName = task.getInput("ResourceGroupName", true);
-            this.datafactoryName = task.getInput("DatafactoryName", true);
+            this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
+            this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
+            this.datafactoryName = <string>task.getInput("DatafactoryName", true);
 
             this.serviceFilter = task.getInput("ServiceFilter", false);
             this.pipelineFilter = task.getInput("PipelineFilter", false);
@@ -60,17 +59,17 @@ export class TaskParameters {
             this.datasetFilter = task.getInput("DatasetFilter", false);
             this.triggerFilter = task.getInput("TriggerFilter", false);
 
-            this.serviceFilter = this.serviceFilter === "" ? null : this.serviceFilter;
-            this.pipelineFilter = this.pipelineFilter === "" ? null : this.pipelineFilter;
-            this.dataflowFilter = this.dataflowFilter === "" ? null : this.dataflowFilter;
-            this.datasetFilter = this.datasetFilter === "" ? null : this.datasetFilter;
-            this.triggerFilter = this.triggerFilter === "" ? null : this.triggerFilter;
+            this.serviceFilter = this.serviceFilter === "" ? undefined : this.serviceFilter;
+            this.pipelineFilter = this.pipelineFilter === "" ? undefined : this.pipelineFilter;
+            this.dataflowFilter = this.dataflowFilter === "" ? undefined : this.dataflowFilter;
+            this.datasetFilter = this.datasetFilter === "" ? undefined : this.datasetFilter;
+            this.triggerFilter = this.triggerFilter === "" ? undefined : this.triggerFilter;
 
             this.continue = task.getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(task.getInput("Throttle", false));
+            this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
             this.throttle = this.throttle === NaN ? 5 : this.throttle;
-
-            let sorting = task.getInput("Sorting", true);
+            this.detectDependency = task.getBoolInput("detectDependency", false);
+            let sorting = <string>task.getInput("Sorting", true);
             switch (sorting.toLowerCase()) {
                 case "ascending":
                     this.sorting = SortingDirection.Ascending;
@@ -96,23 +95,23 @@ export class TaskParameters {
         return this.datafactoryName;
     }
 
-    public get ServiceFilter(): string {
+    public get ServiceFilter(): string | undefined {
         return this.serviceFilter;
     }
 
-    public get PipelineFilter(): string {
+    public get PipelineFilter(): string | undefined {
         return this.pipelineFilter;
     }
 
-    public get DataflowFilter(): string {
+    public get DataflowFilter(): string | undefined {
         return this.dataflowFilter;
     }
 
-    public get DatasetFilter(): string {
+    public get DatasetFilter(): string | undefined {
         return this.datasetFilter;
     }
 
-    public get TriggerFilter(): string {
+    public get TriggerFilter(): string | undefined {
         return this.triggerFilter;
     }
 
@@ -126,5 +125,9 @@ export class TaskParameters {
 
     public get Sorting(): SortingDirection {
         return this.sorting;
+    }
+
+    public get DetectDependency(): boolean {
+        return this.detectDependency;
     }
 }

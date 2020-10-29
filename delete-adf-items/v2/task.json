@@ -12,8 +12,8 @@
     "demands": [],
     "version": {
         "Major": "2",
-        "Minor": "2",
-        "Patch": "2"
+        "Minor": "3",
+        "Patch": "0"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -127,6 +127,15 @@
                 "ascending": "Ascending",
                 "descending": "Descending"
             }
+        },
+        {
+            "name": "detectDependancy",
+            "type": "boolean",
+            "label": "Detect object dependancy",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Option to scan deployment files to detect dependancy between the same objects types. This dependancy is used to sort the deploy order.",
+            "groupName": "advanced"
         }
     ],
     "dataSourceBindings": [
@@ -149,6 +158,8 @@
         "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
         "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
         "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "DeleteAdfJson_Depencency": "Error detecting dependencies: circular reference in %s(s): %s.",
+        "DeleteAdfJson_Depencency2": "Found missing reference in %s(s).",
         "DeleteAdfItems_GetObjects": "Error calling DataFactory/%s API. Error: %s.",
         "DeleteAdfItems_GetObjects2": "No %s found.",
         "DeleteAdfItems_DeleteItem": "Error calling DELETE DataFactory/%s API. Error: %s.",
