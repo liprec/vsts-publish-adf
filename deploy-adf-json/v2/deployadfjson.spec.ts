@@ -32,4 +32,4 @@ import { strict as assert } from "assert";
 
 import * as ttm from "azure-pipelines-task-lib/mock-test";
 
-describe("Sample task tests", function () {});
+describe("deploy-adf-json tests", function () {});

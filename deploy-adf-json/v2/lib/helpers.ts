@@ -29,13 +29,20 @@
 "use strict";
 
 import { DatafactoryTypes } from "./enums";
+import { DatafactoryTaskObject } from "./interfaces";
 
-export function addSummary(totalItems: number, datafactoryType: DatafactoryTypes, size: number, duration: number) {
-    console.log(`${totalItems} ${datafactoryType}(s) deployed.\n\nStats:`);
+export function addSummary(
+    totalItems: number,
+    datafactoryType: DatafactoryTypes,
+    action: string,
+    size: number | undefined,
+    duration: number
+) {
+    console.log(`${totalItems} ${datafactoryType}(s) ${action}.\n\nStats:`);
     console.log(`======`);
-    console.log(`Total size:\t${getReadableFileSize(size)}.`);
+    if (size) console.log(`Total size:\t${getReadableFileSize(size)}.`);
     console.log(`Duration:\t${getReadableInterval(duration)}.`);
-    console.log(`Performance:\t${getReadableFileSize(size / (duration / 1000))}/sec.`);
+    if (size) console.log(`Performance:\t${getReadableFileSize(size / (duration / 1000))}/sec.`);
     console.log(`\t\t${(totalItems / (duration / 1000)).toFixed(1)} items/sec.`);
 }
 
@@ -61,4 +68,41 @@ export function getReadableInterval(interval: number): string {
     if (hours !== 0) r += hours + " hour(s) ";
     if (minutes !== 0) r += (minutes < 10 && hours > 0 ? "0" : "") + minutes + " minute(s) ";
     return r + seconds + " second(s)";
+}
+
+export function splitBuckets(detectDependency: boolean, items: DatafactoryTaskObject[]): number {
+    let loop = detectDependency;
+    let change = true;
+    let numberOfBuckets = 1;
+    while (loop || change) {
+        loop = false;
+        change = false;
+        const loopItems = items.filter((item: DatafactoryTaskObject) => item.bucket === -1);
+        loopItems.forEach((item: DatafactoryTaskObject) => {
+            const pBucket = item.bucket;
+            const buckets = item.dependency.map((i) => {
+                const findItem = items.find((item) => item.name === i);
+                if (!findItem) return -1;
+                return findItem.bucket;
+            });
+            if (Math.min(...buckets) !== -1) {
+                numberOfBuckets++;
+                change = true;
+                item.bucket = Math.max(...buckets) + 1;
+            }
+            loop = pBucket !== item.bucket;
+        });
+    }
+    return numberOfBuckets;
+}
+
+export function findDependency(json: any, type: string): string[] {
+    let refs: string[] = [];
+    if (json.referenceName && json.type === type) {
+        return [json.referenceName];
+    }
+    for (const key in json) {
+        if (typeof json[key] === typeof [Object]) refs = refs.concat(findDependency(json[key], type));
+    }
+    return refs.filter((current: string, index: number, array: string[]) => array.indexOf(current) === index);
 }

@@ -33,38 +33,17 @@ import * as task from "azure-pipelines-task-lib/task";
 import * as path from "path";
 import * as fs from "fs";
 import * as msRestAzure from "ms-rest-azure";
-import { TaskParameters, SortingDirection } from "./models/taskParameters";
-import { AzureModels } from "./models/azureModels";
+import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
 
 import AzureServiceClient = msRestAzure.AzureServiceClient;
-import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
-import { DatafactoryTypes } from "./lib/enums";
-import { addSummary } from "./lib/helpers";
+
+import { TaskParameters } from "./models/taskParameters";
+import { AzureModels } from "./models/azureModels";
+import { DatafactoryTypes, SortingDirection } from "./lib/enums";
+import { addSummary, findDependency, splitBuckets } from "./lib/helpers";
+import { DatafactoryTaskObject, DatafactoryOptions, DatafactoryTaskOptions } from "./lib/interfaces";
 
 task.setResourcePath(path.join(__dirname, "../task.json"));
-
-interface DatafactoryOptions {
-    azureClient?: AzureServiceClient;
-    subscriptionId: string;
-    resourceGroup: string;
-    dataFactoryName: string;
-}
-
-interface DatafactoryTaskOptions {
-    continue: boolean;
-    throttle: number;
-    sorting: SortingDirection;
-    detectDependency: boolean;
-}
-
-interface DatafactoryDeployObject {
-    name: string;
-    json: string;
-    size: number;
-    type: DatafactoryTypes;
-    dependency: string[];
-    bucket: number;
-}
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
@@ -109,8 +88,8 @@ function getObjects(
     datafactoryType: DatafactoryTypes,
     taskOptions: DatafactoryTaskOptions,
     folder: string
-): Promise<DatafactoryDeployObject[]> {
-    return new Promise<DatafactoryDeployObject[]>((resolve, reject) => {
+): Promise<DatafactoryTaskObject[]> {
+    return new Promise<DatafactoryTaskObject[]>((resolve, reject) => {
         const sourceFolder = path.normalize(folder);
         const allPaths: string[] = task.find(sourceFolder); // default find options (follow sym links)
         const matchedFiles: string[] = allPaths.filter((itemPath: string) => !task.stats(itemPath).isDirectory()); // filter-out directories
@@ -162,21 +141,10 @@ function getObjects(
     });
 }
 
-function findDependency(json: any, type: string): string[] {
-    let refs: string[] = [];
-    if (json.referenceName && json.type === type) {
-        return [json.referenceName];
-    }
-    for (const key in json) {
-        if (typeof json[key] === typeof [Object]) refs = refs.concat(findDependency(json[key], type));
-    }
-    return refs.filter((current: string, index: number, array: string[]) => array.indexOf(current) === index);
-}
-
 function deployItem(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
-    item: DatafactoryDeployObject
+    item: DatafactoryTaskObject
 ): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
@@ -222,6 +190,7 @@ function deployItem(
                     task.warning(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
+                    task.error(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                     reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                 }
             } else {
@@ -238,31 +207,30 @@ function deployItems(
     folder: string,
     datafactoryType: DatafactoryTypes
 ): Promise<boolean> {
-    if (hasError) {
-        return Promise.reject(true);
-    } // Some error occurred, so returning
+    // Some error occurred, so returning
+    if (hasError) return Promise.reject(true);
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryType, taskOptions, folder)
-            .then((items: DatafactoryDeployObject[]) => {
+            .then((items: DatafactoryTaskObject[]) => {
                 const numberOfBuckets = splitBuckets(taskOptions.detectDependency, items);
                 if (numberOfBuckets === -1) {
                     task.debug(task.loc("DeployAdfJson_Depencency2", datafactoryType));
                     reject(task.loc("DeployAdfJson_Depencency2", datafactoryType));
                 }
-                const invalidItems = items.filter((item: DatafactoryDeployObject) => item.bucket === -1);
+                const invalidItems = items.filter((item: DatafactoryTaskObject) => item.bucket === -1);
                 if (invalidItems.length !== 0) {
                     task.debug(
                         task.loc(
                             "DeployAdfJson_Depencency",
                             datafactoryType,
-                            invalidItems.map((item: DatafactoryDeployObject) => item.name).join(", ")
+                            invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
                         )
                     );
                     reject(
                         task.loc(
                             "DeployAdfJson_Depencency",
                             datafactoryType,
-                            invalidItems.map((item: DatafactoryDeployObject) => item.name).join(", ")
+                            invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
                         )
                     );
                 }
@@ -281,51 +249,26 @@ function deployItems(
     });
 }
 
-function splitBuckets(detectDependency: boolean, items: DatafactoryDeployObject[]): number {
-    let loop = detectDependency;
-    let change = true;
-    let numberOfBuckets = 1;
-    while (loop || change) {
-        loop = false;
-        change = false;
-        const loopItems = items.filter((item: DatafactoryDeployObject) => item.bucket === -1);
-        loopItems.forEach((item: DatafactoryDeployObject) => {
-            const pBucket = item.bucket;
-            const buckets = item.dependency.map((i) => {
-                const findItem = items.find((item) => item.name === i);
-                if (!findItem) return -1;
-                return findItem.bucket;
-            });
-            if (Math.min(...buckets) !== -1) {
-                numberOfBuckets++;
-                change = true;
-                item.bucket = Math.max(...buckets) + 1;
-            }
-            loop = pBucket !== item.bucket;
-        });
-    }
-    return numberOfBuckets;
-}
-
 function processItems(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
     datafactoryType: DatafactoryTypes,
-    items: DatafactoryDeployObject[],
+    items: DatafactoryTaskObject[],
     numberOfBuckets: number
 ): Promise<boolean> {
     let firstError: boolean;
     return new Promise<boolean>((resolve, reject) => {
+        if (items.length === 0) return Promise.resolve(true);
         let totalItems = 0;
         let size = 0;
         const start: number = Date.now();
-        const runs: DatafactoryDeployObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
-            items.filter((item: DatafactoryDeployObject) => item.bucket === index)
+        const runs: DatafactoryTaskObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
+            items.filter((item: DatafactoryTaskObject) => item.bucket === index)
         );
         console.log(
             `Start deploying ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
         );
-        runs.reduce((promiseChain: Promise<any>, currentTask: DatafactoryDeployObject[]) => {
+        runs.reduce((promiseChain: Promise<any>, currentTask: DatafactoryTaskObject[]) => {
             return promiseChain.then((chainResults) =>
                 Promise.all(
                     currentTask.map(
@@ -340,7 +283,7 @@ function processItems(
         }, Promise.resolve([]))
             .then((arrayOfResults: any) => {
                 const duration = Date.now() - start;
-                addSummary(totalItems, datafactoryType, size, duration);
+                addSummary(totalItems, datafactoryType, "deployed", size, duration);
                 if (hasError) {
                     reject(firstError);
                 } else {
@@ -410,19 +353,19 @@ async function main(): Promise<boolean> {
                 .then(() => {
                     task.debug(`Datafactory '${dataFactoryName}' exist`);
                     const deployTasks: any[] = [];
-                    if (servicePath !== null) {
+                    if (servicePath) {
                         deployTasks.push({ path: servicePath, type: DatafactoryTypes.LinkedService });
                     }
-                    if (datasetPath !== null) {
+                    if (datasetPath) {
                         deployTasks.push({ path: datasetPath, type: DatafactoryTypes.Dataset });
                     }
-                    if (dataflowPath !== null) {
+                    if (dataflowPath) {
                         deployTasks.push({ path: dataflowPath, type: DatafactoryTypes.Dataflow });
                     }
-                    if (pipelinePath !== null) {
+                    if (pipelinePath) {
                         deployTasks.push({ path: pipelinePath, type: DatafactoryTypes.Pipeline });
                     }
-                    if (triggerPath !== null) {
+                    if (triggerPath) {
                         deployTasks.push({ path: triggerPath, type: DatafactoryTypes.Trigger });
                     }
                     Promise.all(
@@ -436,11 +379,11 @@ async function main(): Promise<boolean> {
                             hasError = true;
                             firstError = firstError || err;
                         })
-                        .then((results: any) => {
+                        .then((results: boolean[] | void) => {
                             if (hasError) {
                                 reject(firstError);
                             } else {
-                                const issues = results.filter((result: any) => {
+                                const issues = (<boolean[]>results).filter((result: boolean) => {
                                     return !result;
                                 }).length;
                                 if (issues > 0) {

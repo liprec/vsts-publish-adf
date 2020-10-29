@@ -28,15 +28,31 @@
 
 "use strict";
 
-export enum SortingDirection {
-    Ascending,
-    Descending,
+import * as msRestAzure from "ms-rest-azure";
+
+import AzureServiceClient = msRestAzure.AzureServiceClient;
+
+import { SortingDirection, DatafactoryTypes } from "./enums";
+
+export interface DatafactoryOptions {
+    azureClient?: AzureServiceClient;
+    subscriptionId: string;
+    resourceGroup: string;
+    dataFactoryName: string;
 }
 
-export enum DatafactoryTypes {
-    Pipeline = "pipeline",
-    Dataflow = "dataflow",
-    Dataset = "dataset",
-    Trigger = "trigger",
-    LinkedService = "linked service",
+export interface DatafactoryTaskOptions {
+    continue: boolean;
+    throttle: number;
+    sorting: SortingDirection;
+    detectDependency: boolean;
+}
+
+export interface DatafactoryTaskObject {
+    name: string;
+    json: string;
+    size: number;
+    type: DatafactoryTypes;
+    dependency: string[];
+    bucket: number;
 }

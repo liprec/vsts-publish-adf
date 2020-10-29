@@ -28,21 +28,18 @@
 
 import * as task from "azure-pipelines-task-lib/task";
 
-export enum SortingDirection {
-    Ascending,
-    Descending,
-}
+import { SortingDirection } from "../lib/enums";
 
 export class TaskParameters {
     private connectedServiceName: string;
     private resourceGroupName: string;
     private datafactoryName: string;
 
-    private servicePath: string | null;
-    private pipelinePath: string | null;
-    private datasetPath: string | null;
-    private dataflowPath: string | null;
-    private triggerPath: string | null;
+    private servicePath: string | undefined;
+    private pipelinePath: string | undefined;
+    private datasetPath: string | undefined;
+    private dataflowPath: string | undefined;
+    private triggerPath: string | undefined;
 
     private continue: boolean;
     private throttle: number;
@@ -64,11 +61,16 @@ export class TaskParameters {
             this.triggerPath = <string>task.getPathInput("TriggerPath", false, true);
 
             // Replace "" with null
-            this.servicePath = this.servicePath.replace(rootPath, "") === "" ? null : this.servicePath;
-            this.pipelinePath = this.pipelinePath.replace(rootPath, "") === "" ? null : this.pipelinePath;
-            this.datasetPath = this.datasetPath.replace(rootPath, "") === "" ? null : this.datasetPath;
-            this.dataflowPath = this.dataflowPath.replace(rootPath, "") === "" ? null : this.dataflowPath;
-            this.triggerPath = this.triggerPath.replace(rootPath, "") === "" ? null : this.triggerPath;
+            this.servicePath =
+                (this.servicePath && this.servicePath.replace(rootPath, "")) === "" ? undefined : this.servicePath;
+            this.pipelinePath =
+                (this.servicePath && this.pipelinePath.replace(rootPath, "")) === "" ? undefined : this.pipelinePath;
+            this.datasetPath =
+                (this.servicePath && this.datasetPath.replace(rootPath, "")) === "" ? undefined : this.datasetPath;
+            this.dataflowPath =
+                (this.servicePath && this.dataflowPath.replace(rootPath, "")) === "" ? undefined : this.dataflowPath;
+            this.triggerPath =
+                (this.servicePath && this.triggerPath.replace(rootPath, "")) === "" ? undefined : this.triggerPath;
 
             this.continue = task.getBoolInput("Continue", false);
             this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
@@ -100,23 +102,23 @@ export class TaskParameters {
         return this.datafactoryName;
     }
 
-    public get ServicePath(): string | null {
+    public get ServicePath(): string | undefined {
         return this.servicePath;
     }
 
-    public get PipelinePath(): string | null {
+    public get PipelinePath(): string | undefined {
         return this.pipelinePath;
     }
 
-    public get DatasetPath(): string | null {
+    public get DatasetPath(): string | undefined {
         return this.datasetPath;
     }
 
-    public get DataflowPath(): string | null {
+    public get DataflowPath(): string | undefined {
         return this.dataflowPath;
     }
 
-    public get TriggerPath(): string | null {
+    public get TriggerPath(): string | undefined {
         return this.triggerPath;
     }
 
