@@ -60,17 +60,17 @@ export class TaskParameters {
             this.dataflowPath = <string>task.getPathInput("DataflowPath", false, true);
             this.triggerPath = <string>task.getPathInput("TriggerPath", false, true);
 
-            // Replace "" with null
+            // Replace "" with undefined
             this.servicePath =
                 (this.servicePath && this.servicePath.replace(rootPath, "")) === "" ? undefined : this.servicePath;
             this.pipelinePath =
-                (this.servicePath && this.pipelinePath.replace(rootPath, "")) === "" ? undefined : this.pipelinePath;
+                (this.pipelinePath && this.pipelinePath.replace(rootPath, "")) === "" ? undefined : this.pipelinePath;
             this.datasetPath =
-                (this.servicePath && this.datasetPath.replace(rootPath, "")) === "" ? undefined : this.datasetPath;
+                (this.datasetPath && this.datasetPath.replace(rootPath, "")) === "" ? undefined : this.datasetPath;
             this.dataflowPath =
-                (this.servicePath && this.dataflowPath.replace(rootPath, "")) === "" ? undefined : this.dataflowPath;
+                (this.dataflowPath && this.dataflowPath.replace(rootPath, "")) === "" ? undefined : this.dataflowPath;
             this.triggerPath =
-                (this.servicePath && this.triggerPath.replace(rootPath, "")) === "" ? undefined : this.triggerPath;
+                (this.triggerPath && this.triggerPath.replace(rootPath, "")) === "" ? undefined : this.triggerPath;
 
             this.continue = task.getBoolInput("Continue", false);
             this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
