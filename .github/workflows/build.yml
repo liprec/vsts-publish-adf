@@ -70,6 +70,6 @@ jobs:
         if: ${{ endsWith(github.ref, 'develop') }}
         uses: actions/upload-artifact@v2
         with:
-          name: liprec.vsts-publish-adf-preview-${{ steps.extract_version.outputs.version }}
+          name: liprec.vsts-publish-adf-preview-${{ steps.extract_version_preview.outputs.version }}
           path: |
-            liprec.vsts-publish-adf-preview-${{ steps.extract_version.outputs.version }}.vsix
+            liprec.vsts-publish-adf-preview-${{ steps.extract_version_preview.outputs.version }}.vsix
