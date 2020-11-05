@@ -67,7 +67,8 @@
             "name": "TriggerFilter",
             "type": "string",
             "label": "Trigger Filter",
-            "helpMarkDown": "Filter to determine which triggers to delete.\n-Empty string: *none* triggers will be deleted.\n-`*`: *all* triggers will be deleted.",
+            "defaultValue": "*",
+            "helpMarkDown": "Filter to determine which triggers to toggle.\n-Empty string: *none* triggers will be toggled.\n-`*`: *all* triggers will be toggled.",
             "groupname": "adf"
         },
         {

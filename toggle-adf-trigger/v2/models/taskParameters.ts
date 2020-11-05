@@ -48,6 +48,7 @@ export class TaskParameters {
             this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
             this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
             this.datafactoryName = <string>task.getInput("DatafactoryName", true);
+            this.triggerFilter = task.getInput("TriggerFilter", false);
 
             this.triggerFilter = this.triggerFilter === "" ? undefined : this.triggerFilter;
 

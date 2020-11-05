@@ -49,32 +49,28 @@ export class AzureModels {
             this.connectedServiceName = connectedServiceName;
             if (this.connectedServiceName === "local") {
                 // local debug
-                this.subscriptionId = getInput("subscriptionid", true);
-                this.subscriptionName = getInput("subscriptionname", true);
-                this.servicePrincipalClientId = getInput("serviceprincipalid", true);
-                this.servicePrincipalKey = getInput("serviceprincipalkey", true);
-                this.environmentAuthorityUrl = getInput("environmentAuthorityUrl", true);
-                this.tenantId = getInput("tenantid", true);
-                this.url = getInput("connectedServiceNameUrl", true);
+                this.subscriptionId = <string>getInput("subscriptionid", true);
+                this.subscriptionName = <string>getInput("subscriptionname", true);
+                this.servicePrincipalClientId = <string>getInput("serviceprincipalid", true);
+                this.servicePrincipalKey = <string>getInput("serviceprincipalkey", true);
+                this.environmentAuthorityUrl = <string>getInput("environmentAuthorityUrl", true);
+                this.tenantId = <string>getInput("tenantid", true);
+                this.url = <string>getInput("connectedServiceNameUrl", true);
             } else {
                 this.subscriptionId = getEndpointDataParameter(this.connectedServiceName, "subscriptionid", true);
                 this.subscriptionName = getEndpointDataParameter(this.connectedServiceName, "subscriptionname", true);
-                this.servicePrincipalClientId = getEndpointAuthorizationParameter(
-                    this.connectedServiceName,
-                    "serviceprincipalid",
-                    true
+                this.servicePrincipalClientId = <string>(
+                    getEndpointAuthorizationParameter(this.connectedServiceName, "serviceprincipalid", true)
                 );
-                this.servicePrincipalKey = getEndpointAuthorizationParameter(
-                    this.connectedServiceName,
-                    "serviceprincipalkey",
-                    true
+                this.servicePrincipalKey = <string>(
+                    getEndpointAuthorizationParameter(this.connectedServiceName, "serviceprincipalkey", true)
                 );
                 this.environmentAuthorityUrl = getEndpointDataParameter(
                     this.connectedServiceName,
                     "environmentAuthorityUrl",
                     true
                 );
-                this.tenantId = getEndpointAuthorizationParameter(this.connectedServiceName, "tenantid", false);
+                this.tenantId = <string>getEndpointAuthorizationParameter(this.connectedServiceName, "tenantid", false);
                 this.url = getEndpointUrl(this.connectedServiceName, true);
             }
         } catch (err) {

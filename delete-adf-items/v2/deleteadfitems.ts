@@ -27,27 +27,34 @@
  */
 
 import throat from "throat";
-import * as task from "azure-pipelines-task-lib/task";
-import * as path from "path";
-import * as msRestAzure from "ms-rest-azure";
+import {
+    error,
+    warning,
+    loc,
+    setResourcePath,
+    debug,
+    getVariable,
+    TaskResult,
+    setResult,
+} from "azure-pipelines-task-lib/task";
+import { join } from "path";
+import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
 import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
 
 import { TaskParameters } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
 import { addSummary, findDependency, splitBuckets } from "./lib/helpers";
 import { DatafactoryOptions, DatafactoryTaskOptions, DatafactoryTaskObject } from "./lib/interfaces";
-
-import AzureServiceClient = msRestAzure.AzureServiceClient;
 import { DatafactoryTypes, SortingDirection } from "./lib/enums";
 
-task.setResourcePath(path.join(__dirname, "../task.json"));
+setResourcePath(join(__dirname, "../task.json"));
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        msRestAzure.loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
+        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
             if (err) {
-                task.error(task.loc("Generic_LoginAzure", err.message));
-                reject(task.loc("Generic_LoginAzure", err.message));
+                error(loc("Generic_LoginAzure", err.message));
+                reject(loc("Generic_LoginAzure", err.message));
             }
             resolve(new AzureServiceClient(credentials, {}));
         });
@@ -68,12 +75,12 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
         };
         const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("Generic_CheckDataFactory", err));
-                reject(task.loc("Generic_CheckDataFactory", err));
+                error(loc("Generic_CheckDataFactory", err));
+                reject(loc("Generic_CheckDataFactory", err));
             }
             if (response && response.statusCode !== 200) {
-                task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
             }
@@ -118,11 +125,11 @@ function getObjects(
         };
         const request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
-                reject(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
+                error(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
+                reject(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
             } else if (response && response.statusCode !== 200) {
-                task.debug(task.loc("DeleteAdfItems_GetObjects2", datafactoryType));
-                reject(task.loc("DeleteAdfItems_GetObjects2", datafactoryType));
+                debug(loc("DeleteAdfItems_GetObjects2", datafactoryType));
+                reject(loc("DeleteAdfItems_GetObjects2", datafactoryType));
             } else {
                 let objects = JSON.parse(JSON.stringify(result));
                 let items = objects.value;
@@ -184,7 +191,7 @@ function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string
             serializationMapper: <Mapper>(<unknown>undefined),
             deserializationMapper: <Mapper>(<unknown>undefined),
         };
-    task.debug(`Following next link`);
+    debug(`Following next link`);
     return new Promise<any>((resolve, reject) => {
         azureClient.sendRequest(options, (err, result, request, response) => {
             resolve(result);
@@ -229,18 +236,18 @@ function deleteItem(
         };
         const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err && !taskOptions.continue) {
-                task.error(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
-                reject(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
+                error(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
+                reject(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
             } else if (response && (response.statusCode === 400 || response.statusCode === 429)) {
                 if (taskOptions.continue) {
-                    task.warning(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
-                    task.error(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
-                    reject(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                 }
             } else if (response && response.statusCode === 204) {
-                task.debug(`'${item.name}' not found.`);
+                debug(`'${item.name}' not found.`);
                 resolve(true);
             } else if (response && response.statusCode === 200) {
                 console.log(`Deleted ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
@@ -265,20 +272,20 @@ function deleteItems(
             .then((items: DatafactoryTaskObject[]) => {
                 const numberOfBuckets = splitBuckets(taskOptions.detectDependency, items);
                 if (numberOfBuckets === -1) {
-                    task.debug(task.loc("DeleteAdfJson_Depencency2", datafactoryType));
-                    reject(task.loc("DeleteAdfJson_Depencency2", datafactoryType));
+                    debug(loc("DeleteAdfJson_Depencency2", datafactoryType));
+                    reject(loc("DeleteAdfJson_Depencency2", datafactoryType));
                 }
                 const invalidItems = items.filter((item: DatafactoryTaskObject) => item.bucket === -1);
                 if (invalidItems.length !== 0) {
-                    task.debug(
-                        task.loc(
+                    debug(
+                        loc(
                             "DeleteAdfJson_Depencency",
                             datafactoryType,
                             invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
                         )
                     );
                     reject(
-                        task.loc(
+                        loc(
                             "DeleteAdfJson_Depencency",
                             datafactoryType,
                             invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
@@ -294,8 +301,8 @@ function deleteItems(
                     });
             })
             .catch((err) => {
-                task.error(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
-                reject(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
+                error(loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
+                reject(loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
             });
     });
 }
@@ -361,10 +368,10 @@ async function main(): Promise<boolean> {
         let firstError: boolean;
 
         try {
-            const debugMode: string = <string>task.getVariable("System.Debug");
+            const debugMode: string = <string>getVariable("System.Debug");
             const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
-            task.debug("Task execution started ...");
+            debug("Task execution started ...");
             taskParameters = new TaskParameters();
             const connectedServiceName = taskParameters.ConnectedServiceName;
             const resourceGroup = taskParameters.ResourceGroupName;
@@ -392,16 +399,16 @@ async function main(): Promise<boolean> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            task.debug("Parsed task inputs");
+            debug("Parsed task inputs");
 
             loginAzure(clientId, key, tenantID)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
-                    task.debug("Azure client retrieved.");
+                    debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
                 })
                 .then((result) => {
-                    task.debug(`Datafactory '${dataFactoryName}' exist`);
+                    debug(`Datafactory '${dataFactoryName}' exist`);
                     const deleteTasks = [];
                     if (triggerFilter) {
                         deleteTasks.push({ filter: triggerFilter, type: DatafactoryTypes.Trigger });
@@ -463,8 +470,8 @@ let hasError = false;
 
 main()
     .then((result) => {
-        task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
+        setResult(result ? TaskResult.Succeeded : TaskResult.SucceededWithIssues, "");
     })
     .catch((err) => {
-        task.setResult(task.TaskResult.Failed, err);
+        setResult(TaskResult.Failed, err);
     });

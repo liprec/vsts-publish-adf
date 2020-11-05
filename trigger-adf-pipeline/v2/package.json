@@ -1,22 +1,27 @@
 {
-  "name": "trigger-adf-piepline",
-  "version": "2.2.0",
-  "description": "Trigger ADFv2 items",
-  "main": "tasks.js",
-  "scripts": {
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Jan Pieter Posthuma",
-  "license": "MIT",
-  "repository": {},
-  "dependencies": {
-    "azure-pipelines-task-lib": "^2.11.3",
-    "ms-rest-azure": "^3.0.0",
-    "q": "1.5.1",
-    "throat": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/q": "^1.5.4"
-  }
+    "name": "trigger-adf-piepline",
+    "version": "2.2.0",
+    "description": "Trigger ADFv2 items",
+    "main": "tasks.js",
+    "scripts": {
+        "build": "tsc",
+        "test": "npm run build && mocha"
+    },
+    "author": "Jan Pieter Posthuma",
+    "license": "MIT",
+    "repository": {},
+    "dependencies": {
+        "azure-pipelines-task-lib": "^2.11.3",
+        "ms-rest-azure": "^3.0.0",
+        "throat": "^5.0.0"
+    },
+    "devDependencies": {
+        "@types/mocha": "^8.0.3",
+        "@types/node": "^12.12.70",
+        "@types/q": "^1.5.4",
+        "mocha": "^8.2.0",
+        "sync-request": "^6.1.0",
+        "ts-node": "^9.0.0",
+        "typescript": "^4.0.3"
+    }
 }

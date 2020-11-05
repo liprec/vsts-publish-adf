@@ -7,17 +7,12 @@
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
     "preview": false,
-    "visibility": [
-        "Build",
-        "Release"
-    ],
-    "runsOn": [
-        "Agent"
-    ],
+    "visibility": ["Build", "Release"],
+    "runsOn": ["Agent"],
     "demands": [],
     "version": {
         "Major": "2",
-        "Minor": "2",
+        "Minor": "3",
         "Patch": "0"
     },
     "minimumAgentVersion": "1.100.0",

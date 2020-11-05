@@ -29,13 +29,22 @@
 "use sctrict";
 
 import throat from "throat";
-import * as task from "azure-pipelines-task-lib/task";
-import * as path from "path";
-import * as fs from "fs";
-import * as msRestAzure from "ms-rest-azure";
+import {
+    error,
+    warning,
+    loc,
+    setResourcePath,
+    debug,
+    getVariable,
+    TaskResult,
+    setResult,
+    find,
+    stats,
+} from "azure-pipelines-task-lib/task";
+import { basename, join, normalize, parse } from "path";
+import { readFileSync } from "fs";
+import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
 import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
-
-import AzureServiceClient = msRestAzure.AzureServiceClient;
 
 import { TaskParameters } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
@@ -43,14 +52,14 @@ import { DatafactoryTypes, SortingDirection } from "./lib/enums";
 import { addSummary, findDependency, splitBuckets } from "./lib/helpers";
 import { DatafactoryTaskObject, DatafactoryOptions, DatafactoryTaskOptions } from "./lib/interfaces";
 
-task.setResourcePath(path.join(__dirname, "../task.json"));
+setResourcePath(join(__dirname, "../task.json"));
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        msRestAzure.loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
+        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
             if (err) {
-                task.error(task.loc("Generic_LoginAzure", err.message));
-                reject(task.loc("Generic_LoginAzure", err.message));
+                error(loc("Generic_LoginAzure", err.message));
+                reject(loc("Generic_LoginAzure", err.message));
             }
             resolve(new AzureServiceClient(credentials, {}));
         });
@@ -71,12 +80,12 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
         };
         const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("Generic_CheckDataFactory", err));
-                reject(task.loc("Generic_CheckDataFactory", err));
+                error(loc("Generic_CheckDataFactory", err));
+                reject(loc("Generic_CheckDataFactory", err));
             }
             if (response && response.statusCode !== 200) {
-                task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+                error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
             }
@@ -90,27 +99,25 @@ function getObjects(
     folder: string
 ): Promise<DatafactoryTaskObject[]> {
     return new Promise<DatafactoryTaskObject[]>((resolve, reject) => {
-        const sourceFolder = path.normalize(folder);
-        const allPaths: string[] = task.find(sourceFolder); // default find options (follow sym links)
-        const matchedFiles: string[] = allPaths.filter((itemPath: string) => !task.stats(itemPath).isDirectory()); // filter-out directories
+        const sourceFolder = normalize(folder);
+        const allPaths: string[] = find(sourceFolder); // default find options (follow sym links)
+        const matchedFiles: string[] = allPaths.filter((itemPath: string) => !stats(itemPath).isDirectory()); // filter-out directories
         if (matchedFiles.length > 0) {
             taskOptions.sorting === SortingDirection.Ascending
                 ? matchedFiles.sort(
                       (item1, item2) =>
-                          <any>(path.basename(item1) > path.basename(item2)) -
-                          <any>(path.basename(item1) < path.basename(item2))
+                          <any>(basename(item1) > basename(item2)) - <any>(basename(item1) < basename(item2))
                   )
                 : matchedFiles.sort(
                       (item1, item2) =>
-                          <any>(path.basename(item2) > path.basename(item1)) -
-                          <any>(path.basename(item2) < path.basename(item1))
+                          <any>(basename(item2) > basename(item1)) - <any>(basename(item2) < basename(item1))
                   );
             console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
             resolve(
                 matchedFiles.map((file: string) => {
-                    const data = fs.readFileSync(file, "utf8");
+                    const data = readFileSync(file, "utf8");
                     const json = JSON.parse(data);
-                    const name = json.name || path.parse(file).name.replace(" ", "_");
+                    const name = json.name || parse(file).name.replace(" ", "_");
                     const size = data.length;
                     let dependency: string[];
                     switch (datafactoryType) {
@@ -183,15 +190,15 @@ function deployItem(
         };
         const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err && !taskOptions.continue) {
-                task.error(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
-                reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
+                error(loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
+                reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, err.message));
             } else if (response && response.statusCode !== 200) {
                 if (taskOptions.continue) {
-                    task.warning(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
+                    warning(loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
-                    task.error(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
-                    reject(task.loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
+                    error(loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
+                    reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
                 }
             } else {
                 console.log(`Deployed ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
@@ -214,20 +221,20 @@ function deployItems(
             .then((items: DatafactoryTaskObject[]) => {
                 const numberOfBuckets = splitBuckets(taskOptions.detectDependency, items);
                 if (numberOfBuckets === -1) {
-                    task.debug(task.loc("DeployAdfJson_Depencency2", datafactoryType));
-                    reject(task.loc("DeployAdfJson_Depencency2", datafactoryType));
+                    debug(loc("DeployAdfJson_Depencency2", datafactoryType));
+                    reject(loc("DeployAdfJson_Depencency2", datafactoryType));
                 }
                 const invalidItems = items.filter((item: DatafactoryTaskObject) => item.bucket === -1);
                 if (invalidItems.length !== 0) {
-                    task.debug(
-                        task.loc(
+                    debug(
+                        loc(
                             "DeployAdfJson_Depencency",
                             datafactoryType,
                             invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
                         )
                     );
                     reject(
-                        task.loc(
+                        loc(
                             "DeployAdfJson_Depencency",
                             datafactoryType,
                             invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
@@ -243,8 +250,8 @@ function deployItems(
                     });
             })
             .catch((err) => {
-                task.debug(task.loc("DeployAdfJson_DeployItems", folder, err.message));
-                reject(task.loc("DeployAdfJson_DeployItems", folder, err.message));
+                debug(loc("DeployAdfJson_DeployItems", folder, err.message));
+                reject(loc("DeployAdfJson_DeployItems", folder, err.message));
             });
     });
 }
@@ -311,10 +318,10 @@ async function main(): Promise<boolean> {
         let firstError: boolean;
 
         try {
-            const debugMode: string = <string>task.getVariable("System.Debug");
+            const debugMode: string = <string>getVariable("System.Debug");
             const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
-            task.debug("Task execution started ...");
+            debug("Task execution started ...");
             taskParameters = new TaskParameters();
             const connectedServiceName = taskParameters.ConnectedServiceName;
             const resourceGroup = taskParameters.ResourceGroupName;
@@ -342,16 +349,16 @@ async function main(): Promise<boolean> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            task.debug("Parsed task inputs");
+            debug("Parsed task inputs");
 
             loginAzure(clientId, key, tenantID)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
-                    task.debug("Azure client retrieved.");
+                    debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
                 })
                 .then(() => {
-                    task.debug(`Datafactory '${dataFactoryName}' exist`);
+                    debug(`Datafactory '${dataFactoryName}' exist`);
                     const deployTasks: any[] = [];
                     if (servicePath) {
                         deployTasks.push({ path: servicePath, type: DatafactoryTypes.LinkedService });
@@ -370,7 +377,7 @@ async function main(): Promise<boolean> {
                     }
                     Promise.all(
                         deployTasks.map(
-                            throat(1, (task) => {
+                            throat(1, (task: any) => {
                                 return deployItems(datafactoryOption, taskOptions, task.path, task.type);
                             })
                         )
@@ -409,8 +416,8 @@ let hasError = false;
 
 main()
     .then((result) => {
-        task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
+        setResult(result ? TaskResult.Succeeded : TaskResult.SucceededWithIssues, "");
     })
     .catch((err) => {
-        task.setResult(task.TaskResult.Failed, err);
+        setResult(TaskResult.Failed, err);
     });

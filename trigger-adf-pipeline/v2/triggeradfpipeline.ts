@@ -26,7 +26,8 @@
  *  THE SOFTWARE.
  */
 
-import { all } from "q";
+"use strict";
+
 import throat from "throat";
 import {
     error,
@@ -42,42 +43,18 @@ import {
 import { join } from "path";
 import { readFileSync } from "fs";
 import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
-import { UrlBasedRequestPrepareOptions } from "ms-rest";
+import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
 
+import {
+    DataFactoryDeployOptions,
+    DatafactoryOptions,
+    DatafactoryPipelineObject,
+    DataFactoryRunResult,
+} from "./lib/interfaces";
 import { TaskParameters, PipelineParameterType } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
 
 setResourcePath(join(__dirname, "../task.json"));
-
-enum DatafactoryTypes {
-    Pipeline = "Pipeline",
-    Dataset = "Dataset",
-    Trigger = "Trigger",
-    LinkedService = "Linked Service",
-}
-
-interface DatafactoryOptions {
-    azureClient?: AzureServiceClient;
-    subscriptionId: string;
-    resourceGroup: string;
-    dataFactoryName: string;
-}
-
-interface DataFactoryDeployOptions {
-    continue: boolean;
-    throttle: number;
-    deploymentOutputs: string;
-}
-
-interface DatafactoryPipelineObject {
-    pipelineName: string;
-    json?: string;
-}
-
-interface DataFactoryRunResult {
-    pipeline: string;
-    runId: string;
-}
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
@@ -93,22 +70,22 @@ function loginAzure(clientId: string, key: string, tenantID: string): Promise<Az
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        let azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         let options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
         let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
                 error(loc("Generic_CheckDataFactory", err));
                 reject(loc("Generic_CheckDataFactory", err));
             }
-            if (response.statusCode !== 200) {
+            if (response && response.statusCode !== 200) {
                 error(loc("Generic_CheckDataFactory2", dataFactoryName));
                 reject(loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
@@ -124,21 +101,21 @@ function getPipelines(
     parameter: string
 ): Promise<DatafactoryPipelineObject[]> {
     return new Promise<DatafactoryPipelineObject[]>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        let azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         let options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
         let request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
                 error(loc("TriggerAdfPipelines_GetPipelines", err.message));
                 reject(loc("TriggerAdfPipelines_GetPipelines", err.message));
-            } else if (response.statusCode !== 200) {
+            } else if (response && response.statusCode !== 200) {
                 debug(loc("TriggerAdfPipelines_GetPipelines2"));
                 reject(loc("TriggerAdfPipelines_GetPipelines2"));
             } else {
@@ -151,13 +128,13 @@ function getPipelines(
                     items = items.concat(objects.value);
                     nextLink = objects.nextLink;
                 }
-                items = items.filter((item) => {
+                items = items.filter((item: any) => {
                     return wildcardFilter(item.name, filter);
                 });
                 console.log(`Found ${items.length} pipeline(s).`);
                 resolve(
-                    items.map((value) => {
-                        return { pipelineName: value.name, json: parameter };
+                    items.map((item: any) => {
+                        return { pipelineName: item.name, json: parameter };
                     })
                 );
             }
@@ -166,12 +143,12 @@ function getPipelines(
 }
 
 function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
-    const azureClient: AzureServiceClient = datafactoryOption.azureClient,
+    const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
         options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: nextLink,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
     debug(`Following next link`);
     return new Promise<any>((resolve, reject) => {
@@ -187,7 +164,7 @@ function triggerPipeline(
     pipeline: DatafactoryPipelineObject
 ): Promise<DataFactoryRunResult> {
     return new Promise<DataFactoryRunResult>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        let azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
@@ -195,15 +172,15 @@ function triggerPipeline(
         let options: UrlBasedRequestPrepareOptions = {
             method: "POST",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines/${pipelineName}/createRun?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
             headers: {
                 "Content-Type": "application/json",
             },
             body: pipeline.json,
             disableJsonStringifyOnBody: true,
         };
-        let request = azureClient.sendRequest(options, (err, result: string, request, response) => {
+        let request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
                 if (deployOptions.continue) {
                     warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
@@ -212,7 +189,7 @@ function triggerPipeline(
                     error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
                     reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
                 }
-            } else if (response.statusCode !== 200 && response.statusCode !== 204) {
+            } else if (response && response.statusCode !== 200 && response.statusCode !== 204) {
                 if (deployOptions.continue) {
                     warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
                     resolve();
@@ -220,7 +197,7 @@ function triggerPipeline(
                     error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
                     reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
                 }
-            } else if (response.statusCode === 204) {
+            } else if (response && response.statusCode === 204) {
                 warning(`'${pipelineName}' not found.`);
                 resolve();
             } else {
@@ -248,8 +225,8 @@ function triggerPipelines(
                     .catch((err) => {
                         reject(err);
                     })
-                    .then((result: boolean) => {
-                        resolve(result);
+                    .then((result: boolean | void) => {
+                        resolve(<boolean>result);
                     });
             })
             .catch((err) => {
@@ -264,11 +241,11 @@ function processPipelines(
     deployOptions: DataFactoryDeployOptions,
     pipelines: DatafactoryPipelineObject[]
 ): Promise<boolean> {
-    let firstError;
+    let firstError: boolean;
     return new Promise<boolean>((resolve, reject) => {
         let totalItems = pipelines.length;
 
-        let process = all(
+        let process = Promise.all(
             pipelines.map(
                 throat(deployOptions.throttle, (pipeline) => {
                     // console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
@@ -280,7 +257,7 @@ function processPipelines(
                 hasError = true;
                 firstError = firstError || err;
             })
-            .done((results: any) => {
+            .then((results: any) => {
                 debug(`${totalItems} pipeline(s) triggered.`);
                 if (hasError) {
                     reject(firstError);
@@ -289,7 +266,7 @@ function processPipelines(
                         setVariable(deployOptions.deploymentOutputs, JSON.stringify(results));
                         console.log(loc("TriggerAdfPipelines_AddedOutputVariable", deployOptions.deploymentOutputs));
                     }
-                    let issues = results.filter((result) => {
+                    let issues = results.filter((result: any) => {
                         return result === "";
                     }).length;
                     if (issues > 0) {
@@ -308,7 +285,7 @@ async function main(): Promise<boolean> {
         let azureModels: AzureModels;
 
         try {
-            let debugMode: string = getVariable("System.Debug");
+            let debugMode: string = <string>getVariable("System.Debug");
             let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
             debug("Task execution started ...");
@@ -326,7 +303,7 @@ async function main(): Promise<boolean> {
                     pipelineParameter = taskParameters.PipelineParameter;
                     break;
                 case PipelineParameterType.Path:
-                    pipelineParameter = readFileSync(taskParameters.PipelineParameterPath, "utf8");
+                    pipelineParameter = readFileSync(<string>taskParameters.PipelineParameterPath, "utf8");
                     console.log(pipelineParameter);
                     break;
             }
