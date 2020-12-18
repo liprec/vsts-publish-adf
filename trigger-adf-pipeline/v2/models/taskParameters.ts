@@ -55,7 +55,7 @@ export class TaskParameters {
             this.resourceGroupName = <string>getInput("ResourceGroupName", true);
             this.datafactoryName = <string>getInput("DatafactoryName", true);
 
-            this.pipelineFilter = <string>getInput("PipelineFilter", false);
+            this.pipelineFilter = <string>getInput("PipelineFilter", false) || "";
             this.pipelineParameter = <string>getInput("PipelineParameter", false);
             const pipelineParameterType = <string>getInput("PipelineParameterType", false);
             switch ((pipelineParameterType && pipelineParameterType).toLowerCase()) {

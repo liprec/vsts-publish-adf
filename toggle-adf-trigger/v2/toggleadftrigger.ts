@@ -45,6 +45,7 @@ import { DatafactoryToggle } from "./lib/enums";
 import { DataFactoryDeployOptions, DatafactoryOptions, DatafactoryTriggerObject } from "./lib/interfaces";
 import { TaskParameters } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
+import { wildcardFilter } from "./lib/helpers";
 
 setResourcePath(join(__dirname, "../task.json"));
 
@@ -315,20 +316,18 @@ async function main(): Promise<boolean> {
                 .then((result) => {
                     debug(`Datafactory '${dataFactoryName}' exist`);
                     // Toggle Trigger logic
-                    if (triggerFilter) {
-                        toggleTriggers(datafactoryOption, deployOptions, triggerFilter, triggerStatus)
-                            .then((result: boolean) => {
-                                resolve(result);
-                            })
-                            .catch((err) => {
-                                if (!deployOptions.continue) {
-                                    debug("Cancelling toggle operation.");
-                                    reject(err);
-                                } else {
-                                    resolve();
-                                }
-                            });
-                    }
+                    toggleTriggers(datafactoryOption, deployOptions, triggerFilter, triggerStatus)
+                        .then((result: boolean) => {
+                            resolve(result);
+                        })
+                        .catch((err) => {
+                            if (!deployOptions.continue) {
+                                debug("Cancelling toggle operation.");
+                                reject(err);
+                            } else {
+                                resolve(true);
+                            }
+                        });
                 })
                 .catch((err) => {
                     reject(err.message);
@@ -338,10 +337,6 @@ async function main(): Promise<boolean> {
         }
     });
     return promise;
-}
-
-function wildcardFilter(value: string, rule: string) {
-    return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
 
 // Set generic error flag

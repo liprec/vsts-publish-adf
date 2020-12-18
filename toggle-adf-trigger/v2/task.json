@@ -67,8 +67,7 @@
             "name": "TriggerFilter",
             "type": "string",
             "label": "Trigger Filter",
-            "defaultValue": "*",
-            "helpMarkDown": "Filter to determine which triggers to toggle.\n-Empty string: *none* triggers will be toggled.\n-`*`: *all* triggers will be toggled.",
+            "helpMarkDown": "Regex filter to determine which triggers to toggle.\n-Empty string: *all* triggers will be toggled.",
             "groupname": "adf"
         },
         {

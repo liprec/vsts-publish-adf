@@ -68,7 +68,7 @@
             "type": "string",
             "label": "Pipeline Filter",
             "required": false,
-            "helpMarkDown": "Filter to determine which pipeline to trigger execution.\n`*`: *all* pipeline will be triggered.",
+            "helpMarkDown": "Regex filter to determine which triggers to toggle.\n-Empty string: *all* triggers will be toggled.",
             "groupname": "adf"
         },
         {

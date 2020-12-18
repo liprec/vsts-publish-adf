@@ -28,31 +28,7 @@
 
 "use strict";
 
-import * as msRestAzure from "ms-rest-azure";
-
-import AzureServiceClient = msRestAzure.AzureServiceClient;
-
-export interface DatafactoryOptions {
-    azureClient?: AzureServiceClient;
-    subscriptionId: string;
-    resourceGroup: string;
-    dataFactoryName: string;
+export function wildcardFilter(value: string, rule: string) {
+    if (RegExp(/\w\*.*/g).test(rule)) return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
+    else return new RegExp(rule).test(value);
 }
-
-export interface DataFactoryDeployOptions {
-    continue: boolean;
-    throttle: number;
-    deploymentOutputs: string;
-}
-
-export interface DatafactoryPipelineObject {
-    pipelineName: string;
-    json?: string;
-}
-
-interface DataFactoryRunResultInternal {
-    pipeline: string;
-    runId: string;
-}
-
-export type DataFactoryRunResult = DataFactoryRunResultInternal | undefined;

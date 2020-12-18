@@ -53,6 +53,7 @@ import {
 } from "./lib/interfaces";
 import { TaskParameters, PipelineParameterType } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
+import { wildcardFilter } from "./lib/helpers";
 
 setResourcePath(join(__dirname, "../task.json"));
 
@@ -184,7 +185,7 @@ function triggerPipeline(
             if (err) {
                 if (deployOptions.continue) {
                     warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
-                    resolve();
+                    resolve(undefined);
                 } else {
                     error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
                     reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
@@ -192,14 +193,14 @@ function triggerPipeline(
             } else if (response && response.statusCode !== 200 && response.statusCode !== 204) {
                 if (deployOptions.continue) {
                     warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
-                    resolve();
+                    resolve(undefined);
                 } else {
                     error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
                     reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
                 }
             } else if (response && response.statusCode === 204) {
                 warning(`'${pipelineName}' not found.`);
-                resolve();
+                resolve(undefined);
             } else {
                 const runId = (result as any).runId;
                 console.log(`Pipeline '${pipelineName}' triggered with run id: '${runId}'.`);
@@ -263,7 +264,10 @@ function processPipelines(
                     reject(firstError);
                 } else {
                     if (isNonEmpty(deployOptions.deploymentOutputs)) {
-                        setVariable(deployOptions.deploymentOutputs, JSON.stringify(results));
+                        setVariable(
+                            deployOptions.deploymentOutputs,
+                            JSON.stringify(results.filter((result: DataFactoryRunResult) => !result))
+                        );
                         console.log(loc("TriggerAdfPipelines_AddedOutputVariable", deployOptions.deploymentOutputs));
                     }
                     let issues = results.filter((result: any) => {
@@ -344,7 +348,7 @@ async function main(): Promise<boolean> {
                                     debug("Cancelling trigger operation.");
                                     reject(err);
                                 } else {
-                                    resolve();
+                                    resolve(true);
                                 }
                             });
                     }
@@ -357,10 +361,6 @@ async function main(): Promise<boolean> {
         }
     });
     return promise;
-}
-
-function wildcardFilter(value: string, rule: string) {
-    return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
 
 function isNonEmpty(str: string): boolean {

@@ -46,6 +46,7 @@ import { AzureModels } from "./models/azureModels";
 import { addSummary, findDependency, splitBuckets } from "./lib/helpers";
 import { DatafactoryOptions, DatafactoryTaskOptions, DatafactoryTaskObject } from "./lib/interfaces";
 import { DatafactoryTypes, SortingDirection } from "./lib/enums";
+import { wildcardFilter } from "./lib/helpers";
 
 setResourcePath(join(__dirname, "../task.json"));
 
@@ -318,6 +319,7 @@ function processItems(
     return new Promise<boolean>((resolve, reject) => {
         if (items.length === 0) return Promise.resolve(true);
         let totalItems = 0;
+        let issues = 0;
         const start: number = Date.now();
         const runs: DatafactoryTaskObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
             items.filter((item: DatafactoryTaskObject) => item.bucket === index)
@@ -338,25 +340,23 @@ function processItems(
                 ).then((currentResult) => [...chainResults, currentResult])
             );
         }, Promise.resolve([]))
+            .catch((err) => {
+                issues++;
+                hasError = true;
+                firstError = firstError || err;
+            })
             .then((arrayOfResults: any) => {
                 const duration = Date.now() - start;
-                addSummary(totalItems, datafactoryType, "deleted", undefined, duration);
+                addSummary(totalItems, issues, datafactoryType, "deleted", undefined, duration);
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    const issues = arrayOfResults.flat().filter((result: any) => {
-                        return !result;
-                    }).length;
                     if (issues > 0) {
                         resolve(false);
                     } else {
                         resolve(true);
                     }
                 }
-            })
-            .catch((err) => {
-                hasError = true;
-                firstError = firstError || err;
             });
     });
 }
@@ -459,10 +459,6 @@ async function main(): Promise<boolean> {
         }
     });
     return promise;
-}
-
-function wildcardFilter(value: string, rule: string) {
-    return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
 }
 
 // Set generic error flag

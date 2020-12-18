@@ -33,12 +33,15 @@ import { DatafactoryTaskObject } from "./interfaces";
 
 export function addSummary(
     totalItems: number,
+    issues: number,
     datafactoryType: DatafactoryTypes,
     action: string,
     size: number | undefined,
     duration: number
 ) {
-    console.log(`${totalItems} ${datafactoryType}(s) ${action}.\n\nStats:`);
+    console.log(``);
+    if (issues > 0) console.log(`${issues} ${datafactoryType}(s) failed`);
+    console.log(`${totalItems - issues} ${datafactoryType}(s) ${action}.\n\nStats:`);
     console.log(`======`);
     if (size) console.log(`Total size:\t${getReadableFileSize(size)}.`);
     console.log(`Duration:\t${getReadableInterval(duration)}.`);

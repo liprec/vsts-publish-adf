@@ -33,12 +33,15 @@ import { DatafactoryTaskObject } from "./interfaces";
 
 export function addSummary(
     totalItems: number,
+    issues: number,
     datafactoryType: DatafactoryTypes,
     action: string,
     size: number | undefined,
     duration: number
 ) {
-    console.log(`${totalItems} ${datafactoryType}(s) ${action}.\n\nStats:`);
+    console.log(``);
+    if (issues > 0) console.log(`${issues} ${datafactoryType}(s) failed`);
+    console.log(`${totalItems - issues} ${datafactoryType}(s) ${action}.\n\nStats:`);
     console.log(`======`);
     if (size) console.log(`Total size:\t${getReadableFileSize(size)}.`);
     console.log(`Duration:\t${getReadableInterval(duration)}.`);
@@ -105,4 +108,9 @@ export function findDependency(json: any, type: string): string[] {
         if (typeof json[key] === typeof [Object]) refs = refs.concat(findDependency(json[key], type));
     }
     return refs.filter((current: string, index: number, array: string[]) => array.indexOf(current) === index);
+}
+
+export function wildcardFilter(value: string, rule: string) {
+    if (RegExp(/\w\*.*/g).test(rule)) return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
+    else return new RegExp(rule).test(value);
 }

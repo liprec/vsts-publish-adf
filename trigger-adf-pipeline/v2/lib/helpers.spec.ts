@@ -31,41 +31,6 @@
 import { strict as assert } from "assert";
 
 import { wildcardFilter } from "./helpers";
-import { getReadableFileSize, getReadableInterval } from "./helpers";
-
-describe("Helpers", () => {
-    describe("getReadableInterval()", () => {
-        it("59000 => '59.000 second(s)'", () => {
-            assert.strictEqual(getReadableInterval(59000), "59.000 second(s)");
-        });
-
-        it("59001 => '59.001 second(s)'", () => {
-            assert.strictEqual(getReadableInterval(59001), "59.001 second(s)");
-        });
-
-        it("60001 => '1 minute(s) 0.001 seconds'", () => {
-            assert.strictEqual(getReadableInterval(60001), "1 minute(s) 0.001 second(s)");
-        });
-    });
-
-    describe("getReadableFileSize()", () => {
-        it("1000 => 1000 byte", () => {
-            assert.strictEqual(getReadableFileSize(1000), "1000.0 bytes");
-        });
-    });
-
-    describe("getReadableFileSize()", () => {
-        it("1024 => 1024.0 bytes", () => {
-            assert.strictEqual(getReadableFileSize(1024), "1024.0 bytes");
-        });
-    });
-
-    describe("getReadableFileSize()", () => {
-        it("1025 => 1.0 kB", () => {
-            assert.strictEqual(getReadableFileSize(1025), "1.0 kB");
-        });
-    });
-});
 
 describe("helpers.ts", function () {
     describe("wildcardFilter()", () => {

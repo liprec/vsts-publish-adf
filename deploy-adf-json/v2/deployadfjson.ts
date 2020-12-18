@@ -267,6 +267,7 @@ function processItems(
     return new Promise<boolean>((resolve, reject) => {
         if (items.length === 0) return Promise.resolve(true);
         let totalItems = 0;
+        let issues = 0;
         let size = 0;
         const start: number = Date.now();
         const runs: DatafactoryTaskObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
@@ -288,25 +289,23 @@ function processItems(
                 ).then((currentResult) => [...chainResults, currentResult])
             );
         }, Promise.resolve([]))
+            .catch((err) => {
+                issues++;
+                hasError = true;
+                firstError = firstError || err;
+            })
             .then((arrayOfResults: any) => {
                 const duration = Date.now() - start;
-                addSummary(totalItems, datafactoryType, "deployed", size, duration);
+                addSummary(totalItems, issues, datafactoryType, "deployed", size, duration);
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    const issues = arrayOfResults.flat().filter((result: any) => {
-                        return !result;
-                    }).length;
                     if (issues > 0) {
                         resolve(false);
                     } else {
                         resolve(true);
                     }
                 }
-            })
-            .catch((err) => {
-                hasError = true;
-                firstError = firstError || err;
             });
     });
 }

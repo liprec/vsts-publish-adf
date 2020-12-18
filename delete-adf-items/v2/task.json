@@ -67,28 +67,28 @@
             "name": "ServiceFilter",
             "type": "string",
             "label": "Linked Service Filter",
-            "helpMarkDown": "Filter to determine which linked service to delete.\n-Empty string: *none* linked services will be deleted.\n-`*`: *all* linked services will be deleted.",
+            "helpMarkDown": "Regex filter to determine which linked service to delete.\n-Empty string: *none* linked services will be deleted.\n-`*`: *all* linked services will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "PipelineFilter",
             "type": "string",
             "label": "Pipeline Filter",
-            "helpMarkDown": "Filter to determine which pipeline to delete.\n-Empty string: *none* pipelines will be deleted.\n-`*`: *all* pipelines will be deleted.",
+            "helpMarkDown": "Regex filter to determine which pipeline to delete.\n-Empty string: *none* pipelines will be deleted.\n-`*`: *all* pipelines will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "DataflowFilter",
             "type": "string",
             "label": "Data flow Filter",
-            "helpMarkDown": "Filter to determine which data flow to delete.\n-Empty string: *none* data flows will be deleted.\n-`*`: *all* data flows will be deleted.",
+            "helpMarkDown": "Regex filter to determine which data flow to delete.\n-Empty string: *none* data flows will be deleted.\n-`*`: *all* data flows will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "DatasetFilter",
             "type": "string",
             "label": "Dataset Filter",
-            "helpMarkDown": "Filter to determine which datasets to delete.\n-Empty string: *none* datasets will be deleted.\n-`*`: *all* datasets will be deleted.",
+            "helpMarkDown": "Regex filter to determine which datasets to delete.\n-Empty string: *none* datasets will be deleted.\n-`*`: *all* datasets will be deleted.",
             "groupname": "adf"
         },
         {

@@ -35,7 +35,7 @@ export class TaskParameters {
     private resourceGroupName: string;
     private datafactoryName: string;
 
-    private triggerFilter: string | undefined;
+    private triggerFilter: string;
     private triggerStatus: DatafactoryToggle = DatafactoryToggle.Stop;
 
     private continue: boolean;
@@ -48,9 +48,7 @@ export class TaskParameters {
             this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
             this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
             this.datafactoryName = <string>task.getInput("DatafactoryName", true);
-            this.triggerFilter = task.getInput("TriggerFilter", false);
-
-            this.triggerFilter = this.triggerFilter === "" ? undefined : this.triggerFilter;
+            this.triggerFilter = task.getInput("TriggerFilter", false) || "";
 
             let status = <string>task.getInput("TriggerStatus", true);
             switch (status.toLowerCase()) {
@@ -83,7 +81,7 @@ export class TaskParameters {
         return this.datafactoryName;
     }
 
-    public getTriggerFilter(): string | undefined {
+    public getTriggerFilter(): string {
         return this.triggerFilter;
     }
 
