@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "2.2.2",
+    "version": "2.4.0",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": true,
@@ -145,6 +145,12 @@
         },
         {
             "path": "trigger-adf-pipeline/v2/icon.png"
+        },
+        {
+            "path": "query-adf-run/task.json"
+        },
+        {
+            "path": "query-adf-run/icon.png"
         },
         {
             "path": "images/logo.png",

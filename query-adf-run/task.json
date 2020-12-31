@@ -13,9 +13,9 @@
     "runsOn": ["Server", "ServerGate"],
     "demands": [],
     "version": {
-        "Major": "0",
+        "Major": "2",
         "Minor": "3",
-        "Patch": "18"
+        "Patch": "2"
     },
     "instanceNameFormat": "Query Azure Data Factory runs",
     "groups": [
