@@ -1,0 +1,164 @@
+{
+    "id": "1e050229-db74-48fd-afad-811c199bde29",
+    "name": "query-adf-run",
+    "friendlyName": "Query Azure Data Factory runs",
+    "description": "Observe the configured Azure Data Factory runs for active ones",
+    "author": "Jan Pieter Posthuma",
+    "helpUrl": "https://azurebi-docs.jppp.org/vsts-extensions/azure-data-factory-query.html",
+    "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
+    "category": "Utility",
+    "preview": false,
+    "releaseNotes": "What's new in Version 2:<br/>&nbsp;Added support for query Azure Data Factory runs.",
+    "visibility": ["Build", "Release"],
+    "runsOn": ["Server", "ServerGate"],
+    "demands": [],
+    "version": {
+        "Major": "2",
+        "Minor": "3",
+        "Patch": "2"
+    },
+    "instanceNameFormat": "Query Azure Data Factory runs",
+    "groups": [
+        {
+            "name": "advanced",
+            "displayName": "Advanced",
+            "isExpanded": false
+        }
+    ],
+    "inputs": [
+        {
+            "name": "connectedServiceNameARM",
+            "aliases": ["azureSubscription"],
+            "type": "connectedService:AzureRM",
+            "label": "Azure Subscription",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "This is needed to connect to your Azure account.<br>To configure new service connection, select the Azure subscription from the list and click 'Authorize'.<br>If your subscription is not listed or if you want to use an existing Service Principal, you can setup an Azure service connection using 'Add' or 'Manage' button."
+        },
+        {
+            "name": "resourceGroupName",
+            "type": "pickList",
+            "label": "Resource group",
+            "required": true,
+            "helpMarkDown": "Provide the name of the resource group.",
+            "properties": {
+                "EditableOptions": "True"
+            }
+        },
+        {
+            "name": "datafactoryName",
+            "type": "string",
+            "label": "Azure Data Factory",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Name of the Azure Data Factory."
+        },
+        {
+            "name": "runType",
+            "type": "pickList",
+            "label": "Type of run",
+            "defaultValue": "pipeline",
+            "required": true,
+            "helpMarkDown": "Type of the Azure Data Factory run: Pipeline (default) or Trigger",
+            "options": {
+                "pipeline": "Pipeline",
+                "trigger": "Trigger"
+            }
+        },
+        {
+            "name": "name",
+            "type": "string",
+            "label": "Name(s) of the pipeline(s) or trigger(s).",
+            "required": false,
+            "helpMarkDown": "Name(s) of the pipeline(s) or trigger(s). Multiple names seperated by commas (,). If not provided all pipelines / triggers are queried"
+        },
+        {
+            "name": "statusPipeline",
+            "type": "pickList",
+            "label": "Pipeline filter for the run status",
+            "required": true,
+            "defaultValue": "Cancelled,Failed,InProgress,Queued",
+            "options": {
+                "Cancelled": "Cancelled",
+                "Failed": "Failed",
+                "InProgress": "InProgress",
+                "Queued": "Queued",
+                "Succeeded": "Succeeded"
+            },
+            "properties": {
+                "MultiSelectFlatList": "True",
+                "EditableOptions": "True"
+            },
+            "helpMarkDown": "Filter by pipeline status. Default value is all status except 'Succeeded'.",
+            "visibleRule": "runType = pipeline",
+            "groupName": "advanced"
+        },
+        {
+            "name": "statusTrigger",
+            "type": "pickList",
+            "label": "Trigger filter for the run status",
+            "required": true,
+            "defaultValue": "Cancelled,Failed,Running,Waiting,WaitingOnDependency",
+            "options": {
+                "Cancelled": "Cancelled",
+                "Failed": "Failed",
+                "Running": "Running",
+                "Succeeded": "Succeeded",
+                "Waiting": "Waiting",
+                "WaitingOnDependency": "WaitingOnDependency"
+            },
+            "properties": {
+                "MultiSelectFlatList": "True",
+                "EditableOptions": "True"
+            },
+            "helpMarkDown": "Filter by trigger status. Default value is all status except 'Succeeded'.",
+            "visibleRule": "runType = trigger",
+            "groupName": "advanced"
+        },
+        {
+            "name": "lastUpdatedAfter",
+            "type": "string",
+            "label": "Start time of the run event window",
+            "required": false,
+            "helpMarkDown": "The time at or after which the run event was updated in 'ISO 8601' format. Default value is Januari 1st, 2000.",
+            "groupName": "advanced"
+        },
+        {
+            "name": "lastUpdatedBefore",
+            "type": "string",
+            "label": "End time of the run event window",
+            "required": false,
+            "helpMarkDown": "The time at or before which the run event was updated in 'ISO 8601' format. Default value is December 31st, 2199",
+            "groupName": "advanced"
+        },
+        {
+            "name": "result",
+            "type": "boolean",
+            "label": "Expected results",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Option to determine if the result should contain result (runs). Default value: 'false'",
+            "groupName": "advanced"
+        }
+    ],
+    "dataSourceBindings": [
+        {
+            "target": "ResourceGroupName",
+            "endpointId": "$(connectedServiceNameARM)",
+            "dataSourceName": "AzureResourceGroups"
+        }
+    ],
+    "execution": {
+        "HttpRequest": {
+            "Execute": {
+                "EndpointId": "$(connectedServiceNameARM)",
+                "EndpointUrl": "$(endpoint.url)/subscriptions/{{subscriptionId}}/resourceGroups/{{resourceGroupName}}/providers/Microsoft.DataFactory/factories/{{datafactoryName}}/{{#equals '$(runType)' 'pipeline' 1}}queryPipelineRuns{{/equals}}{{#equals '$(runType)' 'trigger' 1}}queryTriggerRuns{{/equals}}?api-version=2018-06-01",
+                "Method": "POST",
+                "Body": "{\"filters\": [{\"operand\": \"Status\",\"operator\": \"In\",\"values\": [\"{{#equals '$(runType)' 'pipeline' 1}}{{ #stringReplace ',' '\",\"' statusPipeline }}{{/equals}}{{#equals '$(runType)' 'trigger' 1}}{{ #stringReplace ',' '\",\"' statusTrigger }}{{/equals}}\"]},{{#name}}{{#equals '$(runType)' 'pipeline' 1}}{ \"operand\": \"PipelineName\", \"operator\": \"In\", \"values\": [\"{{ #stringReplace ',' '\",\"' name }}\"] }{{/equals}}{{#equals '$(runType)' 'trigger' 1}}{ \"operand\": \"TriggerName\", \"operator\": \"In\", \"values\": [\"{{ #stringReplace ',' '\",\"' name }}\"] }{{/equals}}{{/name}}{{^name}}{ \"operand\": \"LatestOnly\", \"operator\": \"Equals\", \"values\": [true] }{{/name}}],\"lastUpdatedAfter\": \"{{#lastUpdatedAfter}}{{ lastUpdatedAfter }}{{/lastUpdatedAfter}}{{^lastUpdatedAfter}}2000-01-01T00:00:00.000Z{{/lastUpdatedAfter}}\",\"lastUpdatedBefore\": \"{{#lastUpdatedBefore}}{{ lastUpdatedBefore }}{{/lastUpdatedBefore}}{{^lastUpdatedBefore}}2199-12-31T00:00:00.000Z{{/lastUpdatedBefore}}\"}",
+                "Headers": "{\"Content-Type\":\"application/json\"}",
+                "WaitForCompletion": "false",
+                "Expression": "or(and(eq(count(jsonpath('$.value[*]')), 0), eq($(result), false)), and(ne(count(jsonpath('$.value[*]')), 0), eq($(result), true)))"
+            }
+        }
+    }
+}

@@ -26,51 +26,36 @@
  *  THE SOFTWARE.
  */
 
-import * as Q from "q";
 import throat from "throat";
-import * as task from "azure-pipelines-task-lib/task";
-import * as path from "path";
-import * as msRestAzure from "ms-rest-azure";
-import { TaskParameters, SortingDirection } from "./models/taskParameters";
+import {
+    error,
+    warning,
+    loc,
+    setResourcePath,
+    debug,
+    getVariable,
+    TaskResult,
+    setResult,
+} from "azure-pipelines-task-lib/task";
+import { join } from "path";
+import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
+import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
+
+import { TaskParameters } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
+import { addSummary, findDependency, splitBuckets } from "./lib/helpers";
+import { DatafactoryOptions, DatafactoryTaskOptions, DatafactoryTaskObject } from "./lib/interfaces";
+import { DatafactoryTypes, SortingDirection } from "./lib/enums";
+import { wildcardFilter } from "./lib/helpers";
 
-import AzureServiceClient = msRestAzure.AzureServiceClient;
-import { UrlBasedRequestPrepareOptions } from "./node_modules/ms-rest";
-
-task.setResourcePath(path.join(__dirname, "../task.json"));
-
-enum DatafactoryTypes {
-    Pipeline = "pipeline",
-    Dataflow = "dataflow",
-    Dataset = "dataset",
-    Trigger = "trigger",
-    LinkedService = "linked service",
-}
-
-interface DatafactoryOptions {
-    azureClient?: AzureServiceClient;
-    subscriptionId: string;
-    resourceGroup: string;
-    dataFactoryName: string;
-}
-
-interface DatafactoryTaskOptions {
-    continue: boolean;
-    throttle: number;
-    sorting: SortingDirection;
-}
-
-interface DatafactoryObject {
-    name: string;
-    type: DatafactoryTypes;
-}
+setResourcePath(join(__dirname, "../task.json"));
 
 function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        msRestAzure.loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
+        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
             if (err) {
-                task.error(task.loc("Generic_LoginAzure", err.message));
-                reject(task.loc("Generic_LoginAzure", err.message));
+                error(loc("Generic_LoginAzure", err.message));
+                reject(loc("Generic_LoginAzure", err.message));
             }
             resolve(new AzureServiceClient(credentials, {}));
         });
@@ -79,24 +64,24 @@ function loginAzure(clientId: string, key: string, tenantID: string): Promise<Az
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("Generic_CheckDataFactory", err));
-                reject(task.loc("Generic_CheckDataFactory", err));
+                error(loc("Generic_CheckDataFactory", err));
+                reject(loc("Generic_CheckDataFactory", err));
             }
-            if (response.statusCode !== 200) {
-                task.error(task.loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(task.loc("Generic_CheckDataFactory2", dataFactoryName));
+            if (response && response.statusCode !== 200) {
+                error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
             } else {
                 resolve(true);
             }
@@ -109,9 +94,9 @@ function getObjects(
     taskOptions: DatafactoryTaskOptions,
     datafactoryType: DatafactoryTypes,
     filter: string
-): Promise<DatafactoryObject[]> {
-    return new Promise<DatafactoryObject[]>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+): Promise<DatafactoryTaskObject[]> {
+    return new Promise<DatafactoryTaskObject[]>((resolve, reject) => {
+        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
@@ -133,40 +118,65 @@ function getObjects(
                 objectType = "linkedservices";
                 break;
         }
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        let request = azureClient.sendRequest(options, async (err, result, request, response) => {
+        const request = azureClient.sendRequest(options, async (err, result, request, response) => {
             if (err) {
-                task.error(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
-                reject(task.loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
-            } else if (response.statusCode !== 200) {
-                task.debug(task.loc("DeleteAdfItems_GetObjects2", datafactoryType));
-                reject(task.loc("DeleteAdfItems_GetObjects2", datafactoryType));
+                error(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
+                reject(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
+            } else if (response && response.statusCode !== 200) {
+                debug(loc("DeleteAdfItems_GetObjects2", datafactoryType));
+                reject(loc("DeleteAdfItems_GetObjects2", datafactoryType));
             } else {
                 let objects = JSON.parse(JSON.stringify(result));
                 let items = objects.value;
                 let nextLink = objects.nextLink;
                 while (nextLink !== undefined) {
-                    let result = await processNextLink(datafactoryOption, nextLink);
+                    const result = await processNextLink(datafactoryOption, nextLink);
                     objects = JSON.parse(JSON.stringify(result));
                     items = items.concat(objects.value);
                     nextLink = objects.nextLink;
                 }
                 if (filter)
-                    items = items.filter((item) => {
+                    items = items.filter((item: any) => {
                         return wildcardFilter(item.name, filter);
                     });
                 taskOptions.sorting === SortingDirection.Ascending
-                    ? items.sort((item1, item2) => <any>(item1.name > item2.name) - <any>(item1.name < item2.name))
-                    : items.sort((item1, item2) => <any>(item2.name > item1.name) - <any>(item2.name < item1.name));
+                    ? items.sort(
+                          (item1: any, item2: any) => <any>(item1.name > item2.name) - <any>(item1.name < item2.name)
+                      )
+                    : items.sort(
+                          (item1: any, item2: any) => <any>(item2.name > item1.name) - <any>(item2.name < item1.name)
+                      );
                 console.log(`Found ${items.length} ${datafactoryType}(s).`);
                 resolve(
-                    items.map((value) => {
-                        return { name: value.name, type: datafactoryType };
+                    items.map((item: any) => {
+                        let dependency: string[];
+                        switch (datafactoryType) {
+                            case DatafactoryTypes.LinkedService:
+                                dependency = taskOptions.detectDependency
+                                    ? findDependency(item, "LinkedServiceReference")
+                                    : [];
+                                break;
+                            case DatafactoryTypes.Pipeline:
+                                dependency = taskOptions.detectDependency
+                                    ? findDependency(item, "PipelineReference")
+                                    : [];
+                                break;
+                            default:
+                                dependency = [];
+                                break;
+                        }
+                        return {
+                            name: item.name,
+                            type: datafactoryType,
+                            dependency,
+                            bucket: dependency.length === 0 ? 0 : -1,
+                        };
                     })
                 );
             }
@@ -175,14 +185,14 @@ function getObjects(
 }
 
 function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
-    const azureClient: AzureServiceClient = datafactoryOption.azureClient,
+    const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
         options: UrlBasedRequestPrepareOptions = {
             method: "GET",
             url: nextLink,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-    task.debug(`Following next link`);
+    debug(`Following next link`);
     return new Promise<any>((resolve, reject) => {
         azureClient.sendRequest(options, (err, result, request, response) => {
             resolve(result);
@@ -193,14 +203,14 @@ function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string
 function deleteItem(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
-    item: DatafactoryObject
+    item: DatafactoryTaskObject
 ): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        let azureClient: AzureServiceClient = datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let objectName = item.name;
+        const objectName = item.name;
         let objectType;
         switch (item.type) {
             case DatafactoryTypes.Dataset:
@@ -219,28 +229,29 @@ function deleteItem(
                 objectType = "linkedservices";
                 break;
         }
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: UrlBasedRequestPrepareOptions = {
             method: "DELETE",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
-            serializationMapper: null,
-            deserializationMapper: null,
+            serializationMapper: <Mapper>(<unknown>undefined),
+            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
+        const request = azureClient.sendRequest(options, (err, result, request, response) => {
             if (err && !taskOptions.continue) {
-                task.error(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
-                reject(task.loc("DeleteAdfItems_DeleteItem", item.type, err.message));
-            } else if (response.statusCode === 400) {
+                error(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
+                reject(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
+            } else if (response && (response.statusCode === 400 || response.statusCode === 429)) {
                 if (taskOptions.continue) {
-                    task.warning(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                     resolve(false);
                 } else {
-                    task.error(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
-                    reject(task.loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
                 }
-            } else if (response.statusCode === 204) {
-                task.debug(`'${item.name}' not found.`);
+            } else if (response && response.statusCode === 204) {
+                debug(`'${item.name}' not found.`);
                 resolve(true);
-            } else if (response.statusCode === 200) {
+            } else if (response && response.statusCode === 200) {
+                console.log(`Deleted ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
                 resolve(true);
             } else {
                 resolve(false);
@@ -255,23 +266,44 @@ function deleteItems(
     filter: string,
     datafactoryType: DatafactoryTypes
 ): Promise<boolean> {
-    if (hasError) {
-        return;
-    } // Some error occurred, so returning
+    // Some error occurred, so returning
+    if (hasError) return Promise.reject(true);
     return new Promise<boolean>((resolve, reject) => {
         getObjects(datafactoryOption, taskOptions, datafactoryType, filter)
-            .then((items: DatafactoryObject[]) => {
-                processItems(datafactoryOption, taskOptions, datafactoryType, items)
+            .then((items: DatafactoryTaskObject[]) => {
+                const numberOfBuckets = splitBuckets(taskOptions.detectDependency, items);
+                if (numberOfBuckets === -1) {
+                    debug(loc("DeleteAdfJson_Depencency2", datafactoryType));
+                    reject(loc("DeleteAdfJson_Depencency2", datafactoryType));
+                }
+                const invalidItems = items.filter((item: DatafactoryTaskObject) => item.bucket === -1);
+                if (invalidItems.length !== 0) {
+                    debug(
+                        loc(
+                            "DeleteAdfJson_Depencency",
+                            datafactoryType,
+                            invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
+                        )
+                    );
+                    reject(
+                        loc(
+                            "DeleteAdfJson_Depencency",
+                            datafactoryType,
+                            invalidItems.map((item: DatafactoryTaskObject) => item.name).join(", ")
+                        )
+                    );
+                }
+                processItems(datafactoryOption, taskOptions, datafactoryType, items, numberOfBuckets)
                     .catch((err) => {
                         reject(err);
                     })
-                    .then((result: boolean) => {
-                        resolve(result);
+                    .then((result: boolean | void) => {
+                        resolve(<boolean>result);
                     });
             })
             .catch((err) => {
-                task.error(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
-                reject(task.loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
+                error(loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
+                reject(loc("DeleteAdfItems_DeleteItems", datafactoryType, err.message));
             });
     });
 }
@@ -280,32 +312,45 @@ function processItems(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
     datafactoryType: DatafactoryTypes,
-    items: DatafactoryObject[]
+    items: DatafactoryTaskObject[],
+    numberOfBuckets: number
 ): Promise<boolean> {
-    let firstError;
+    let firstError: boolean;
     return new Promise<boolean>((resolve, reject) => {
-        let totalItems = items.length;
+        if (items.length === 0) return Promise.resolve(true);
+        let totalItems = 0;
+        let issues = 0;
+        const start: number = Date.now();
+        const runs: DatafactoryTaskObject[][] = Array.from({ length: numberOfBuckets }, (_, index: number) =>
+            items.filter((item: DatafactoryTaskObject) => item.bucket === index)
+        ).reverse();
+        console.log(
+            `Start deleting ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
+        );
 
-        let process = Q.all(
-            items.map(
-                throat(taskOptions.throttle, (item) => {
-                    console.log(`Delete ${datafactoryType} '${item.name}'.`);
-                    return deleteItem(datafactoryOption, taskOptions, item);
-                })
-            )
-        )
+        runs.reduce((promiseChain: Promise<any>, currentTask: DatafactoryTaskObject[]) => {
+            return promiseChain.then((chainResults) =>
+                Promise.all(
+                    currentTask.map(
+                        throat(taskOptions.throttle, (item) => {
+                            totalItems++;
+                            return deleteItem(datafactoryOption, taskOptions, item);
+                        })
+                    )
+                ).then((currentResult) => [...chainResults, currentResult])
+            );
+        }, Promise.resolve([]))
             .catch((err) => {
+                issues++;
                 hasError = true;
                 firstError = firstError || err;
             })
-            .done((results: any) => {
-                console.log(`${totalItems} ${datafactoryType}(s) deleted.`);
+            .then((arrayOfResults: any) => {
+                const duration = Date.now() - start;
+                addSummary(totalItems, issues, datafactoryType, "deleted", undefined, duration);
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    let issues = results.filter((result) => {
-                        return !result;
-                    }).length;
                     if (issues > 0) {
                         resolve(false);
                     } else {
@@ -317,69 +362,70 @@ function processItems(
 }
 
 async function main(): Promise<boolean> {
-    let promise = new Promise<boolean>(async (resolve, reject) => {
+    const promise = new Promise<boolean>(async (resolve, reject) => {
         let taskParameters: TaskParameters;
         let azureModels: AzureModels;
+        let firstError: boolean;
 
         try {
-            let debugMode: string = task.getVariable("System.Debug");
-            let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
+            const debugMode: string = <string>getVariable("System.Debug");
+            const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
-            task.debug("Task execution started ...");
+            debug("Task execution started ...");
             taskParameters = new TaskParameters();
-            let connectedServiceName = taskParameters.ConnectedServiceName;
-            let resourceGroup = taskParameters.ResourceGroupName;
-            let dataFactoryName = taskParameters.DatafactoryName;
+            const connectedServiceName = taskParameters.ConnectedServiceName;
+            const resourceGroup = taskParameters.ResourceGroupName;
+            const dataFactoryName = taskParameters.DatafactoryName;
 
-            let serviceFilter = taskParameters.ServiceFilter;
-            let pipelineFilter = taskParameters.PipelineFilter;
-            let dataflowFilter = taskParameters.DataflowFilter;
-            let datasetFilter = taskParameters.DatasetFilter;
-            let triggerFilter = taskParameters.TriggerFilter;
+            const serviceFilter = taskParameters.ServiceFilter;
+            const pipelineFilter = taskParameters.PipelineFilter;
+            const dataflowFilter = taskParameters.DataflowFilter;
+            const datasetFilter = taskParameters.DatasetFilter;
+            const triggerFilter = taskParameters.TriggerFilter;
 
-            let taskOptions = {
+            const taskOptions = {
                 continue: taskParameters.Continue,
                 throttle: taskParameters.Throttle,
                 sorting: taskParameters.Sorting,
+                detectDependency: taskParameters.DetectDependency,
             };
 
             azureModels = new AzureModels(connectedServiceName);
-            let clientId = azureModels.getServicePrincipalClientId();
-            let key = azureModels.getServicePrincipalKey();
-            let tenantID = azureModels.getTenantId();
-            let datafactoryOption: DatafactoryOptions = {
+            const clientId = azureModels.getServicePrincipalClientId();
+            const key = azureModels.getServicePrincipalKey();
+            const tenantID = azureModels.getTenantId();
+            const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.getSubscriptionId(),
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            let firstError;
-            task.debug("Parsed task inputs");
+            debug("Parsed task inputs");
 
             loginAzure(clientId, key, tenantID)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
-                    task.debug("Azure client retrieved.");
+                    debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
                 })
                 .then((result) => {
-                    task.debug(`Datafactory '${dataFactoryName}' exist`);
-                    let deleteTasks = [];
-                    if (triggerFilter !== null) {
+                    debug(`Datafactory '${dataFactoryName}' exist`);
+                    const deleteTasks = [];
+                    if (triggerFilter) {
                         deleteTasks.push({ filter: triggerFilter, type: DatafactoryTypes.Trigger });
                     }
-                    if (pipelineFilter !== null) {
+                    if (pipelineFilter) {
                         deleteTasks.push({ filter: pipelineFilter, type: DatafactoryTypes.Pipeline });
                     }
-                    if (dataflowFilter !== null) {
+                    if (dataflowFilter) {
                         deleteTasks.push({ filter: dataflowFilter, type: DatafactoryTypes.Dataflow });
                     }
-                    if (datasetFilter !== null) {
+                    if (datasetFilter) {
                         deleteTasks.push({ filter: datasetFilter, type: DatafactoryTypes.Dataset });
                     }
-                    if (serviceFilter !== null) {
+                    if (serviceFilter) {
                         deleteTasks.push({ filter: serviceFilter, type: DatafactoryTypes.LinkedService });
                     }
-                    Q.all(
+                    Promise.all(
                         deleteTasks.map(
                             throat(1, (task) => {
                                 return deleteItems(datafactoryOption, taskOptions, task.filter, task.type);
@@ -390,11 +436,11 @@ async function main(): Promise<boolean> {
                             hasError = true;
                             firstError = firstError || err;
                         })
-                        .done((results: any) => {
+                        .then((results: boolean[] | void) => {
                             if (hasError) {
                                 reject(firstError);
                             } else {
-                                let issues = results.filter((result) => {
+                                const issues = (<boolean[]>results).filter((result: boolean) => {
                                     return !result;
                                 }).length;
                                 if (issues > 0) {
@@ -415,17 +461,13 @@ async function main(): Promise<boolean> {
     return promise;
 }
 
-function wildcardFilter(value: string, rule: string) {
-    return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
-}
-
 // Set generic error flag
 let hasError = false;
 
 main()
     .then((result) => {
-        task.setResult(result ? task.TaskResult.Succeeded : task.TaskResult.SucceededWithIssues, "");
+        setResult(result ? TaskResult.Succeeded : TaskResult.SucceededWithIssues, "");
     })
     .catch((err) => {
-        task.setResult(task.TaskResult.Failed, err);
+        setResult(TaskResult.Failed, err);
     });

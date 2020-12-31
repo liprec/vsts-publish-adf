@@ -21,10 +21,13 @@ $continue = Get-VstsInput -Name "continue" -Require
 
 if ($continue -eq "true") {
     $continue = $true
-} else {
+}
+else {
     $continue = $false
 }
 
 $result = setTriggerStatus -ResourceGroupName $resourceGroupName -DataFactoryName $adfName -TriggerName $triggerName -TriggerStatus $triggerStatus -Continue $continue
 
 Write-Host "'$result' trigger(s) in '$adfname' set to '$triggerStatus' complete"
+
+Write-Host  "##vso[task.LogIssue type=warning;]Please be adviced that this task version (v1) is deprecated and will be removed in a future release. Please update your pipeline to use the V2 version of this task."

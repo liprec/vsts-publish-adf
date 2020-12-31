@@ -1,0 +1,75 @@
+name: Build and test
+
+on:
+  push:
+    branches: [develop, main]
+
+jobs:
+  build:
+    name: Build, test and pack tasks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: install modclean
+        run: |
+          npm install modclean
+        env:
+          CI: true
+      - name: build tasks
+        run: |
+          tasks=./**/v2
+          for task in $tasks
+          do
+            echo Build and test $task
+            cd $task
+            npm install
+            npm run test
+            echo Prepare 'node_modules' of $task
+            rm -Rf node_modules
+            npm install --production
+            $GITHUB_WORKSPACE/node_modules/.bin/modclean -r -n default:safe,default:caution
+            cd $GITHUB_WORKSPACE
+          done
+      - name: install tfx-cli
+        run: |
+          npm install tfx-cli
+        env:
+          CI: true
+      # Production package
+      - name: run tfx-cli - production version
+        if: ${{ endsWith(github.ref, 'main') }}
+        run: |
+          $GITHUB_WORKSPACE/node_modules/.bin/tfx extension create --manifest-globs $GITHUB_WORKSPACE/vss-extension.json
+      - name: extract version name - production version
+        if: ${{ endsWith(github.ref, 'main') }}
+        id: extract_version
+        run: |
+          node -e "const v = require('./vss-extension.json').version;console.log('::set-output name=version::' + v);"
+      - name: store extension - production version
+        if: ${{ endsWith(github.ref, 'main') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: liprec.vsts-publish-adf-${{ steps.extract_version.outputs.version }}
+          path: |
+            liprec.vsts-publish-adf-${{ steps.extract_version.outputs.version }}.vsix
+      # Preview package
+      - name: run tfx-cli - preview version
+        if: ${{ endsWith(github.ref, 'develop') }}
+        run: |
+          $GITHUB_WORKSPACE/node_modules/.bin/tfx extension create --manifest-globs $GITHUB_WORKSPACE/vss-extension-preview.json
+      - name: extract version name - preview version
+        if: ${{ endsWith(github.ref, 'develop') }}
+        id: extract_version_preview
+        run: |
+          node -e "const v = require('./vss-extension-preview.json').version;console.log('::set-output name=version::' + v);"
+      - name: store extension - preview version
+        if: ${{ endsWith(github.ref, 'develop') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: liprec.vsts-publish-adf-preview-${{ steps.extract_version_preview.outputs.version }}
+          path: |
+            liprec.vsts-publish-adf-preview-${{ steps.extract_version_preview.outputs.version }}.vsix

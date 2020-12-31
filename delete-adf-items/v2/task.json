@@ -12,7 +12,7 @@
     "demands": [],
     "version": {
         "Major": "2",
-        "Minor": "2",
+        "Minor": "3",
         "Patch": "2"
     },
     "minimumAgentVersion": "1.100.0",
@@ -67,28 +67,28 @@
             "name": "ServiceFilter",
             "type": "string",
             "label": "Linked Service Filter",
-            "helpMarkDown": "Filter to determine which linked service to delete.\n-Empty string: *none* linked services will be deleted.\n-`*`: *all* linked services will be deleted.",
+            "helpMarkDown": "Regex filter to determine which linked service to delete.\n-Empty string: *none* linked services will be deleted.\n-`*`: *all* linked services will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "PipelineFilter",
             "type": "string",
             "label": "Pipeline Filter",
-            "helpMarkDown": "Filter to determine which pipeline to delete.\n-Empty string: *none* pipelines will be deleted.\n-`*`: *all* pipelines will be deleted.",
+            "helpMarkDown": "Regex filter to determine which pipeline to delete.\n-Empty string: *none* pipelines will be deleted.\n-`*`: *all* pipelines will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "DataflowFilter",
             "type": "string",
             "label": "Data flow Filter",
-            "helpMarkDown": "Filter to determine which data flow to delete.\n-Empty string: *none* data flows will be deleted.\n-`*`: *all* data flows will be deleted.",
+            "helpMarkDown": "Regex filter to determine which data flow to delete.\n-Empty string: *none* data flows will be deleted.\n-`*`: *all* data flows will be deleted.",
             "groupname": "adf"
         },
         {
             "name": "DatasetFilter",
             "type": "string",
             "label": "Dataset Filter",
-            "helpMarkDown": "Filter to determine which datasets to delete.\n-Empty string: *none* datasets will be deleted.\n-`*`: *all* datasets will be deleted.",
+            "helpMarkDown": "Regex filter to determine which datasets to delete.\n-Empty string: *none* datasets will be deleted.\n-`*`: *all* datasets will be deleted.",
             "groupname": "adf"
         },
         {
@@ -127,6 +127,15 @@
                 "ascending": "Ascending",
                 "descending": "Descending"
             }
+        },
+        {
+            "name": "detectDependancy",
+            "type": "boolean",
+            "label": "Detect object dependancy",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Option to scan deployment files to detect dependancy between the same objects types. This dependancy is used to sort the deploy order.",
+            "groupName": "advanced"
         }
     ],
     "dataSourceBindings": [
@@ -149,6 +158,8 @@
         "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
         "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
         "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "DeleteAdfJson_Depencency": "Error detecting dependencies: circular reference in %s(s): %s.",
+        "DeleteAdfJson_Depencency2": "Found missing reference in %s(s).",
         "DeleteAdfItems_GetObjects": "Error calling DataFactory/%s API. Error: %s.",
         "DeleteAdfItems_GetObjects2": "No %s found.",
         "DeleteAdfItems_DeleteItem": "Error calling DELETE DataFactory/%s API. Error: %s.",

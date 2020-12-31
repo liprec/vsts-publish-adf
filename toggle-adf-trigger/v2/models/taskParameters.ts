@@ -28,10 +28,7 @@
 
 import * as task from "azure-pipelines-task-lib/task";
 
-export enum DatafactoryToggle {
-    Start = "start",
-    Stop = "stop",
-}
+import { DatafactoryToggle } from "../lib/enums";
 
 export class TaskParameters {
     private connectedServiceName: string;
@@ -39,7 +36,7 @@ export class TaskParameters {
     private datafactoryName: string;
 
     private triggerFilter: string;
-    private triggerStatus: DatafactoryToggle;
+    private triggerStatus: DatafactoryToggle = DatafactoryToggle.Stop;
 
     private continue: boolean;
     private throttle: number;
@@ -48,23 +45,24 @@ export class TaskParameters {
         try {
             let rootPath = task.getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = task.getInput("ConnectedServiceName", true);
-            this.resourceGroupName = task.getInput("ResourceGroupName", true);
-            this.datafactoryName = task.getInput("DatafactoryName", true);
+            this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
+            this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
+            this.datafactoryName = <string>task.getInput("DatafactoryName", true);
+            this.triggerFilter = task.getInput("TriggerFilter", false) || "";
 
-            this.triggerFilter = task.getInput("TriggerFilter", true);
-            let status = task.getInput("TriggerStatus", true);
+            let status = <string>task.getInput("TriggerStatus", true);
             switch (status.toLowerCase()) {
                 case "start":
                     this.triggerStatus = DatafactoryToggle.Start;
                     break;
                 case "stop":
+                default:
                     this.triggerStatus = DatafactoryToggle.Stop;
                     break;
             }
 
             this.continue = task.getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(task.getInput("Throttle", false));
+            this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
             this.throttle = this.throttle === NaN ? 5 : this.throttle;
         } catch (err) {
             throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));

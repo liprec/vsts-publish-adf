@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "2.2.2",
+    "version": "2.3.2",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": true,
@@ -86,6 +86,14 @@
             "properties": {
                 "name": "trigger-adf-pipeline"
             }
+        },
+        {
+            "id": "query-adf-run",
+            "type": "ms.vss-distributed-task.task",
+            "targets": ["ms.vss-distributed-task.tasks"],
+            "properties": {
+                "name": "query-adf-run"
+            }
         }
     ],
     "files": [
@@ -145,6 +153,12 @@
         },
         {
             "path": "trigger-adf-pipeline/v2/icon.png"
+        },
+        {
+            "path": "query-adf-run/task.json"
+        },
+        {
+            "path": "query-adf-run/icon.png"
         },
         {
             "path": "images/logo.png",

@@ -7,18 +7,13 @@
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
     "preview": false,
-    "visibility": [
-        "Build",
-        "Release"
-    ],
-    "runsOn": [
-        "Agent"
-    ],
+    "visibility": ["Build", "Release"],
+    "runsOn": ["Agent"],
     "demands": [],
     "version": {
         "Major": "2",
-        "Minor": "2",
-        "Patch": "0"
+        "Minor": "3",
+        "Patch": "2"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -73,7 +68,7 @@
             "type": "string",
             "label": "Pipeline Filter",
             "required": false,
-            "helpMarkDown": "Filter to determine which pipeline to trigger execution.\n`*`: *all* pipeline will be triggered.",
+            "helpMarkDown": "Regex filter to determine which triggers to toggle.\n-Empty string: *all* triggers will be toggled.",
             "groupname": "adf"
         },
         {

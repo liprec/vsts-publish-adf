@@ -1,14 +1,20 @@
 {
     "compilerOptions": {
+        "alwaysStrict": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
         "module": "commonjs",
-        "target": "es6",
-        "noImplicitAny": false,
+        "moduleResolution": "node",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
         "outDir": "dist",
+        "removeComments": true,
         "rootDir": ".",
+        "skipLibCheck": true,
         "sourceMap": false,
-        "moduleResolution": "node"
+        "strict": true,
+        "target": "es6"
     },
-    "exclude": [
-        "node_modules"
-    ]
+    "files": ["deleteadfitems.ts"],
+    "exclude": ["node_modules", "**/*.spec.ts"]
 }

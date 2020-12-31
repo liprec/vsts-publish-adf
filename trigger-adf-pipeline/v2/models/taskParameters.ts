@@ -41,7 +41,7 @@ export class TaskParameters {
     private pipelineFilter: string;
     private pipelineParameterType: PipelineParameterType;
     private pipelineParameter: string;
-    private pipelineParameterPath: string;
+    private pipelineParameterPath: string | undefined;
 
     private continue: boolean;
     private throttle: number;
@@ -51,27 +51,14 @@ export class TaskParameters {
         try {
             const rootPath = getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = getInput("ConnectedServiceName", true);
-            this.resourceGroupName = getInput("ResourceGroupName", true);
-            this.datafactoryName = getInput("DatafactoryName", true);
+            this.connectedServiceName = <string>getInput("ConnectedServiceName", true);
+            this.resourceGroupName = <string>getInput("ResourceGroupName", true);
+            this.datafactoryName = <string>getInput("DatafactoryName", true);
 
-            this.pipelineFilter = getInput("PipelineFilter", false);
-            const pipelineParameterType = getInput("PipelineParameterType", false);
-            this.pipelineParameter = getInput("PipelineParameter", false);
-            this.pipelineParameterPath = getPathInput(
-                "PipelineParameterPath",
-                false,
-                pipelineParameterType.toLowerCase() === "path"
-            );
-
-            this.continue = getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(getInput("Throttle", false));
-            this.deploymentOutputs = getInput("deploymentOutputs", false);
-            this.throttle = this.throttle === NaN ? 5 : this.throttle;
-
-            this.pipelineParameterPath =
-                this.pipelineParameterPath.replace(rootPath, "") === "" ? null : this.pipelineParameterPath;
-            switch (pipelineParameterType.toLowerCase()) {
+            this.pipelineFilter = <string>getInput("PipelineFilter", false) || "";
+            this.pipelineParameter = <string>getInput("PipelineParameter", false);
+            const pipelineParameterType = <string>getInput("PipelineParameterType", false);
+            switch ((pipelineParameterType && pipelineParameterType).toLowerCase()) {
                 case "path":
                     this.pipelineParameterType = PipelineParameterType.Path;
                     break;
@@ -80,6 +67,19 @@ export class TaskParameters {
                     this.pipelineParameterType = PipelineParameterType.Inline;
                     break;
             }
+            this.pipelineParameterPath = <string>(
+                getPathInput("PipelineParameterPath", false, (<string>pipelineParameterType).toLowerCase() === "path")
+            );
+
+            this.continue = getBoolInput("Continue", false);
+            this.throttle = Number.parseInt(<string>getInput("Throttle", false));
+            this.throttle = this.throttle === NaN ? 5 : this.throttle;
+            this.deploymentOutputs = <string>getInput("deploymentOutputs", false);
+
+            this.pipelineParameterPath =
+                (this.pipelineParameterPath && this.pipelineParameterPath).replace(rootPath, "") === ""
+                    ? undefined
+                    : this.pipelineParameterPath;
         } catch (err) {
             throw new Error(loc("TaskParameters_ConstructorFailed", err.message));
         }
@@ -109,7 +109,7 @@ export class TaskParameters {
         return this.pipelineParameter;
     }
 
-    public get PipelineParameterPath(): string {
+    public get PipelineParameterPath(): string | undefined {
         return this.pipelineParameterPath;
     }
 

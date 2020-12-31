@@ -7,18 +7,13 @@
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
     "preview": false,
-    "visibility": [
-        "Build",
-        "Release"
-    ],
-    "runsOn": [
-        "Agent"
-    ],
+    "visibility": ["Build", "Release"],
+    "runsOn": ["Agent"],
     "demands": [],
     "version": {
         "Major": "2",
-        "Minor": "2",
-        "Patch": "1"
+        "Minor": "3",
+        "Patch": "2"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -132,6 +127,15 @@
                 "ascending": "Ascending",
                 "descending": "Descending"
             }
+        },
+        {
+            "name": "detectDependancy",
+            "type": "boolean",
+            "label": "Detect object dependancy",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Option to scan deployment files to detect dependancy between the same objects types. This dependancy is used to sort the deploy order.",
+            "groupName": "advanced"
         }
     ],
     "dataSourceBindings": [
@@ -154,6 +158,8 @@
         "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
         "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
         "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "DeployAdfJson_Depencency": "Error detecting dependencies: circular reference in %s(s): %s.",
+        "DeployAdfJson_Depencency2": "Found missing reference in %s(s).",
         "DeployAdfJson_DeployItems": "Error processing folder %s: Error: %s.",
         "DeployAdfJson_DeployItems2": "Error deploying '%s' %s : %s",
         "DeployAdfJson_GetObjects": "Error reading %s definition file %s. Error: %s.",
