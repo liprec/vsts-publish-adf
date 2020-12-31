@@ -9,42 +9,17 @@ This extension adds release tasks related to Azure Data Factory (V1 and V2) to r
 | Main    | [![Build and test](https://github.com/liprec/vsts-publish-adf/workflows/Build%20and%20test/badge.svg?branch=main)](https://github.com/liprec/vsts-publish-adf/actions?query=branch%3Amain+workflow%3A%22Build+and+test%22)       |
 | Develop | [![Build and test](https://github.com/liprec/vsts-publish-adf/workflows/Build%20and%20test/badge.svg?branch=develop)](https://github.com/liprec/vsts-publish-adf/actions?query=branch%3Adevelop+workflow%3A%22Build+and+test%22) |
 
-## Azure Data Factory Deployment
+## Azure Data Factory Azure DevOps tasks
 
-Azure DevOps release task that will deploy JSON files with definition of Linked Services, Datasets, Pipelines and/or Triggers (V2) to an existing Azure Data Factory.
-![](images/screenshot-2.png)
-
-[More information](deploy-adf-json/README.md)
-
-## Azure Data Factory Trigger
-
-Azure DevOps release task to either Start or Stop Azure Data Factory triggers.
-![](images/screenshot-4.png)
-
-[More information](toggle-adf-trigger/README.md)
-
-## Azure Data Factory Delete Items
-
-Azure DevOps release task to delete Azure Data Factory items, like triggers, pipelines, datasets and linked services.
-![](images/screenshot-5.png)
-
-[More information](delete-adf-items/README.md)
-
-## Azure Data Factory Trigger Pipelines
-
-Azure DevOps release task to trigger an Azure Data Factory pipeline to start.
-![](images/screenshot-6.png)
-
-[More information](trigger-adf-pipeline/README.md)
-
-## Azure Data Factory Pipelines Management (Deprecated)
-
-Azure DevOps release task to either suspend or resume all pipelines of an Azure Data Factory.
-![](images/screenshot-3.png)
-
-[More information](suspend-adf-pipeline/README.md)
+See https://azurebi-docs.jppp.org/vsts-extensions/azure-data-factory.html for the complete documentation.
 
 ## Release notes
+
+**2.3**
+
+-   Added support for dependencies between pipelines and linked services
+-   Added release gate (serverless task) for active runs
+-   Changed filters (trigger/delete task) to RegEx filters
 
 **2.2**
 

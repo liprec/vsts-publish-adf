@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf",
-    "version": "2.4.0",
+    "version": "2.3.2",
     "name": "Azure Data Factory",
     "publisher": "liprec",
     "public": true,
@@ -85,6 +85,14 @@
             "targets": ["ms.vss-distributed-task.tasks"],
             "properties": {
                 "name": "trigger-adf-pipeline"
+            }
+        },
+        {
+            "id": "query-adf-run",
+            "type": "ms.vss-distributed-task.task",
+            "targets": ["ms.vss-distributed-task.tasks"],
+            "properties": {
+                "name": "query-adf-run"
             }
         }
     ],
