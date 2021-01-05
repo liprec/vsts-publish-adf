@@ -29,6 +29,6 @@
 "use strict";
 
 export function wildcardFilter(value: string, rule: string) {
-    if (RegExp(/\w\*.*/g).test(rule)) return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
+    if (RegExp(/\*$|\w\*.*/g).test(rule)) return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
     else return new RegExp(rule).test(value);
 }

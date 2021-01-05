@@ -44,6 +44,12 @@ describe("helpers.ts", function () {
             });
         });
 
+        describe("old 'all' functionality", () => {
+            it("validate 'trigger' with rule '*' => true", () => {
+                assert.strictEqual(wildcardFilter("trigger", "*"), true);
+            });
+        });
+
         describe("new RegExp functionality", () => {
             it("validate 'triggetr' with rule 'trigge.r' => true", () => {
                 assert.strictEqual(wildcardFilter("triggetr", "trigge.r"), true);
