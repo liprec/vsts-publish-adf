@@ -266,7 +266,7 @@ function processPipelines(
                     if (isNonEmpty(deployOptions.deploymentOutputs)) {
                         setVariable(
                             deployOptions.deploymentOutputs,
-                            JSON.stringify(results.filter((result: DataFactoryRunResult) => !result))
+                            JSON.stringify(results.filter((result: DataFactoryRunResult) => !!result))
                         );
                         console.log(loc("TriggerAdfPipelines_AddedOutputVariable", deployOptions.deploymentOutputs));
                     }
