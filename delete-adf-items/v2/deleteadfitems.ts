@@ -265,13 +265,13 @@ function deleteItem(
             .then((result: HttpOperationResponse) => {
                 if (result && (result.status === 400 || result.status === 429)) {
                     const objects = JSON.parse(JSON.stringify(result));
-                    const error = objects.parsedBody.error;
+                    const cloudError = objects.parsedBody.error;
                     if (taskOptions.continue) {
-                        warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, error.message));
+                        warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, cloudError.message));
                         resolve(false);
                     } else {
-                        error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, error.message));
-                        reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, error.message));
+                        error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, cloudError.message));
+                        reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, cloudError.message));
                     }
                 } else if (result && result.status === 204) {
                     debug(`'${item.name}' not found.`);

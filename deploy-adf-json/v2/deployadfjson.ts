@@ -216,13 +216,13 @@ function deployItem(
             .then(async (result: HttpOperationResponse) => {
                 if (result && result.status !== 200) {
                     const objects = JSON.parse(JSON.stringify(result));
-                    const error = objects.parsedBody.error;
+                    const cloudError = objects.parsedBody.error;
                     if (taskOptions.continue) {
-                        warning(loc("DeployAdfJson_DeployItems2", item.name, item.type, error.message));
+                        warning(loc("DeployAdfJson_DeployItems2", item.name, item.type, cloudError.message));
                         resolve(false);
                     } else {
-                        error(loc("DeployAdfJson_DeployItems2", item.name, item.type, error.message));
-                        reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, error.message));
+                        error(loc("DeployAdfJson_DeployItems2", item.name, item.type, cloudError.message));
+                        reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, cloudError.message));
                     }
                 } else {
                     console.log(`Deployed ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
