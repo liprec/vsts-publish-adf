@@ -1,7 +1,7 @@
 /*
- * Azure Pipelines Azure Datafactory Trigger Task
+ * Azure Pipelines Azure Data Factory Trigger Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -26,9 +26,17 @@
  *  THE SOFTWARE.
  */
 
-import * as task from "azure-pipelines-task-lib/task";
+import {
+    getInput,
+    getEndpointDataParameter,
+    getEndpointAuthorizationParameter,
+    getEndpointUrl,
+    loc,
+    getEndpointAuthorizationScheme,
+} from "azure-pipelines-task-lib";
 
 export class AzureModels {
+    private authScheme?: string;
     private connectedServiceName: string;
     private subscriptionId: string;
     private subscriptionName: string;
@@ -43,66 +51,73 @@ export class AzureModels {
             this.connectedServiceName = connectedServiceName;
             if (this.connectedServiceName === "local") {
                 // local debug
-                this.subscriptionId = <string>task.getInput("subscriptionid", true);
-                this.subscriptionName = <string>task.getInput("subscriptionname", true);
-                this.servicePrincipalClientId = <string>task.getInput("serviceprincipalid", true);
-                this.servicePrincipalKey = <string>task.getInput("serviceprincipalkey", true);
-                this.environmentAuthorityUrl = <string>task.getInput("environmentAuthorityUrl", true);
-                this.tenantId = <string>task.getInput("tenantid", true);
-                this.url = <string>task.getInput("connectedServiceNameUrl", true);
+                this.subscriptionId = getInput("subscriptionid", true) as string;
+                this.subscriptionName = getInput("subscriptionname", true) as string;
+                this.servicePrincipalClientId = getInput("serviceprincipalid", true) as string;
+                this.servicePrincipalKey = getInput("serviceprincipalkey", true) as string;
+                this.environmentAuthorityUrl = getInput("environmentAuthorityUrl", true) as string;
+                this.tenantId = getInput("tenantid", true) as string;
+                this.url = getInput("connectedServiceNameUrl", true) as string;
             } else {
-                this.subscriptionId = task.getEndpointDataParameter(this.connectedServiceName, "subscriptionid", true);
-                this.subscriptionName = task.getEndpointDataParameter(
+                this.authScheme = getEndpointAuthorizationScheme(this.connectedServiceName, false);
+                this.subscriptionId = getEndpointDataParameter(this.connectedServiceName, "subscriptionid", true);
+                this.subscriptionName = getEndpointDataParameter(this.connectedServiceName, "subscriptionname", true);
+                this.servicePrincipalClientId = getEndpointAuthorizationParameter(
                     this.connectedServiceName,
-                    "subscriptionname",
+                    "serviceprincipalid",
                     true
-                );
-                this.servicePrincipalClientId = <string>(
-                    task.getEndpointAuthorizationParameter(this.connectedServiceName, "serviceprincipalid", true)
-                );
-                this.servicePrincipalKey = <string>(
-                    task.getEndpointAuthorizationParameter(this.connectedServiceName, "serviceprincipalkey", true)
-                );
-                this.environmentAuthorityUrl = task.getEndpointDataParameter(
+                ) as string;
+                this.servicePrincipalKey = getEndpointAuthorizationParameter(
+                    this.connectedServiceName,
+                    "serviceprincipalkey",
+                    true
+                ) as string;
+                this.environmentAuthorityUrl = getEndpointDataParameter(
                     this.connectedServiceName,
                     "environmentAuthorityUrl",
                     true
                 );
-                this.tenantId = <string>(
-                    task.getEndpointAuthorizationParameter(this.connectedServiceName, "tenantid", false)
-                );
-                this.url = task.getEndpointUrl(this.connectedServiceName, true);
+                this.tenantId = getEndpointAuthorizationParameter(
+                    this.connectedServiceName,
+                    "tenantid",
+                    false
+                ) as string;
+                this.url = getEndpointUrl(this.connectedServiceName, true);
             }
-        } catch (err) {
-            throw new Error(task.loc("AzureModels_ConstructorFailed", err.message));
+        } catch (err: unknown) {
+            throw new Error(loc("AzureModels_ConstructorFailed", (err as Error).message));
         }
     }
 
-    public getSubscriptionId(): string {
+    public get AuthScheme(): string {
+        return this.authScheme || "ServicePrincipal";
+    }
+
+    public get SubscriptionId(): string {
         return this.subscriptionId;
     }
 
-    public getSubscriptionName(): string {
+    public get SubscriptionName(): string {
         return this.subscriptionName;
     }
 
-    public getServicePrincipalClientId(): string {
+    public get ServicePrincipalClientId(): string {
         return this.servicePrincipalClientId;
     }
 
-    public getServicePrincipalKey(): string {
+    public get ServicePrincipalKey(): string {
         return this.servicePrincipalKey;
     }
 
-    public getEnvironmentAuthorityUrl(): string {
+    public get EnvironmentAuthorityUrl(): string {
         return this.environmentAuthorityUrl;
     }
 
-    public getTenantId(): string {
+    public get TenantId(): string {
         return this.tenantId;
     }
 
-    public getUrl(): string {
+    public get Url(): string {
         return this.url;
     }
 }

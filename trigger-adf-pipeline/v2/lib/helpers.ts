@@ -1,7 +1,7 @@
 /*
- * Azure Pipelines Azure Datafactory Deploy Task
+ * Azure Pipelines Azure Data Factory Trigger Pipeline Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -28,7 +28,7 @@
 
 "use strict";
 
-export function wildcardFilter(value: string, rule: string) {
+export function wildcardFilter(value: string, rule: string): boolean {
     if (RegExp(/\*$|\w\*.*/g).test(rule)) return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
     else return new RegExp(rule).test(value);
 }

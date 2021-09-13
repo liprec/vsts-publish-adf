@@ -1,7 +1,7 @@
 /*
- * Azure Pipelines Azure Datafactory Deploy Task
+ * Azure Pipelines Azure Data Factory Trigger Pipeline Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *

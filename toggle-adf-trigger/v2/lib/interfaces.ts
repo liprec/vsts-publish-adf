@@ -1,7 +1,7 @@
 /*
  * Azure Pipelines Azure Datafactory Deploy Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -28,9 +28,7 @@
 
 "use strict";
 
-import * as msRestAzure from "ms-rest-azure";
-
-import AzureServiceClient = msRestAzure.AzureServiceClient;
+import { AzureServiceClient } from "@azure/ms-rest-azure-js";
 
 import { DatafactoryToggle } from "./enums";
 

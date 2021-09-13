@@ -1,7 +1,7 @@
 /*
  * Azure Pipelines Azure Datafactory Delete Items Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -27,65 +27,86 @@
  */
 
 import throat from "throat";
-import {
-    error,
-    warning,
-    loc,
-    setResourcePath,
-    debug,
-    getVariable,
-    TaskResult,
-    setResult,
-} from "azure-pipelines-task-lib/task";
+import { error, warning, loc, setResourcePath, debug, TaskResult, setResult } from "azure-pipelines-task-lib/task";
 import { join } from "path";
-import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
-import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
+import {
+    loginWithServicePrincipalSecret,
+    loginWithAppServiceMSI,
+    ApplicationTokenCredentials,
+    MSIAppServiceTokenCredentials,
+} from "@azure/ms-rest-nodeauth";
+import { AzureServiceClient } from "@azure/ms-rest-azure-js";
+import { HttpOperationResponse, RequestPrepareOptions } from "@azure/ms-rest-js";
 
 import { TaskParameters } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
 import { addSummary, findDependency, splitBuckets } from "./lib/helpers";
-import { DatafactoryOptions, DatafactoryTaskOptions, DatafactoryTaskObject } from "./lib/interfaces";
+import {
+    DatafactoryOptions,
+    DatafactoryTaskOptions,
+    DatafactoryTaskObject,
+    ADFJson,
+    DeleteTask,
+} from "./lib/interfaces";
 import { DatafactoryTypes, SortingDirection } from "./lib/enums";
 import { wildcardFilter } from "./lib/helpers";
 
 setResourcePath(join(__dirname, "../task.json"));
 
-function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
+function loginAzure(clientId: string, key: string, tenantID: string, scheme: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
-            if (err) {
-                error(loc("Generic_LoginAzure", err.message));
-                reject(loc("Generic_LoginAzure", err.message));
-            }
-            resolve(new AzureServiceClient(credentials, {}));
-        });
+        if (scheme.toLocaleLowerCase() === "managedserviceidentity") {
+            loginWithAppServiceMSI()
+                .then((credentials: MSIAppServiceTokenCredentials) => {
+                    resolve(new AzureServiceClient(credentials, {}));
+                })
+                .catch((err: Error) => {
+                    if (err) {
+                        error(loc("Generic_LoginAzure", err.message));
+                        reject(loc("Generic_LoginAzure", err.message));
+                    }
+                });
+        } else {
+            loginWithServicePrincipalSecret(clientId, key, tenantID)
+                .then((credentials: ApplicationTokenCredentials) => {
+                    resolve(new AzureServiceClient(credentials, {}));
+                })
+                .catch((err: Error) => {
+                    if (err) {
+                        error(loc("Generic_LoginAzure", err.message));
+                        reject(loc("Generic_LoginAzure", err.message));
+                    }
+                });
+        }
     });
 }
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        const options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        const request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if (err) {
-                error(loc("Generic_CheckDataFactory", err));
-                reject(loc("Generic_CheckDataFactory", err));
-            }
-            if (response && response.statusCode !== 200) {
-                error(loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
-            } else {
-                resolve(true);
-            }
-        });
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                    reject(loc("Generic_CheckDataFactory2", dataFactoryName));
+                } else {
+                    resolve(true);
+                }
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("Generic_CheckDataFactory", err));
+                    reject(loc("Generic_CheckDataFactory", err));
+                }
+            });
     });
 }
 
@@ -96,7 +117,7 @@ function getObjects(
     filter: string
 ): Promise<DatafactoryTaskObject[]> {
     return new Promise<DatafactoryTaskObject[]>((resolve, reject) => {
-        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
@@ -118,83 +139,88 @@ function getObjects(
                 objectType = "linkedservices";
                 break;
         }
-        const options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        const request = azureClient.sendRequest(options, async (err, result, request, response) => {
-            if (err) {
-                error(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
-                reject(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
-            } else if (response && response.statusCode !== 200) {
-                debug(loc("DeleteAdfItems_GetObjects2", datafactoryType));
-                reject(loc("DeleteAdfItems_GetObjects2", datafactoryType));
-            } else {
-                let objects = JSON.parse(JSON.stringify(result));
-                let items = objects.value;
-                let nextLink = objects.nextLink;
-                while (nextLink !== undefined) {
-                    const result = await processNextLink(datafactoryOption, nextLink);
-                    objects = JSON.parse(JSON.stringify(result));
-                    items = items.concat(objects.value);
-                    nextLink = objects.nextLink;
+        azureClient
+            .sendRequest(options)
+            .then(async (result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    debug(loc("DeleteAdfItems_GetObjects2", datafactoryType));
+                    reject(loc("DeleteAdfItems_GetObjects2", datafactoryType));
+                } else {
+                    let objects = JSON.parse(JSON.stringify(result));
+                    let items = objects.value;
+                    let nextLink = objects.nextLink;
+                    while (nextLink !== undefined) {
+                        const result = await processNextLink(datafactoryOption, nextLink);
+                        objects = JSON.parse(JSON.stringify(result));
+                        items = items.concat(objects.value);
+                        nextLink = objects.nextLink;
+                    }
+                    if (filter)
+                        items = items.filter((item: ADFJson) => {
+                            return wildcardFilter(item.name, filter);
+                        });
+                    taskOptions.sorting === SortingDirection.Ascending
+                        ? items.sort(
+                              (item1: ADFJson, item2: ADFJson) =>
+                                  ((item1.name > item2.name) as unknown as number) -
+                                  ((item1.name < item2.name) as unknown as number)
+                          )
+                        : items.sort(
+                              (item1: ADFJson, item2: ADFJson) =>
+                                  ((item2.name > item1.name) as unknown as number) -
+                                  ((item2.name < item1.name) as unknown as number)
+                          );
+                    console.log(`Found ${items.length} ${datafactoryType}(s).`);
+                    resolve(
+                        items.map((item: ADFJson) => {
+                            let dependency: string[];
+                            switch (datafactoryType) {
+                                case DatafactoryTypes.LinkedService:
+                                    dependency = taskOptions.detectDependency
+                                        ? findDependency(item, "LinkedServiceReference")
+                                        : [];
+                                    break;
+                                case DatafactoryTypes.Pipeline:
+                                    dependency = taskOptions.detectDependency
+                                        ? findDependency(item, "PipelineReference")
+                                        : [];
+                                    break;
+                                default:
+                                    dependency = [];
+                                    break;
+                            }
+                            return {
+                                name: item.name,
+                                type: datafactoryType,
+                                dependency,
+                                bucket: dependency.length === 0 ? 0 : -1,
+                            };
+                        })
+                    );
                 }
-                if (filter)
-                    items = items.filter((item: any) => {
-                        return wildcardFilter(item.name, filter);
-                    });
-                taskOptions.sorting === SortingDirection.Ascending
-                    ? items.sort(
-                          (item1: any, item2: any) => <any>(item1.name > item2.name) - <any>(item1.name < item2.name)
-                      )
-                    : items.sort(
-                          (item1: any, item2: any) => <any>(item2.name > item1.name) - <any>(item2.name < item1.name)
-                      );
-                console.log(`Found ${items.length} ${datafactoryType}(s).`);
-                resolve(
-                    items.map((item: any) => {
-                        let dependency: string[];
-                        switch (datafactoryType) {
-                            case DatafactoryTypes.LinkedService:
-                                dependency = taskOptions.detectDependency
-                                    ? findDependency(item, "LinkedServiceReference")
-                                    : [];
-                                break;
-                            case DatafactoryTypes.Pipeline:
-                                dependency = taskOptions.detectDependency
-                                    ? findDependency(item, "PipelineReference")
-                                    : [];
-                                break;
-                            default:
-                                dependency = [];
-                                break;
-                        }
-                        return {
-                            name: item.name,
-                            type: datafactoryType,
-                            dependency,
-                            bucket: dependency.length === 0 ? 0 : -1,
-                        };
-                    })
-                );
-            }
-        });
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
+                    reject(loc("DeleteAdfItems_GetObjects", datafactoryType, err.message));
+                }
+            });
     });
 }
 
-function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
-    const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
-        options: UrlBasedRequestPrepareOptions = {
+function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<HttpOperationResponse> {
+    const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+        options: RequestPrepareOptions = {
             method: "GET",
             url: nextLink,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
     debug(`Following next link`);
-    return new Promise<any>((resolve, reject) => {
-        azureClient.sendRequest(options, (err, result, request, response) => {
+    return new Promise<HttpOperationResponse>((resolve) => {
+        azureClient.sendRequest(options).then((result: HttpOperationResponse) => {
             resolve(result);
         });
     });
@@ -206,7 +232,7 @@ function deleteItem(
     item: DatafactoryTaskObject
 ): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
@@ -229,34 +255,37 @@ function deleteItem(
                 objectType = "linkedservices";
                 break;
         }
-        const options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "DELETE",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        const request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if (err && !taskOptions.continue) {
-                error(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
-                reject(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
-            } else if (response && (response.statusCode === 400 || response.statusCode === 429)) {
-                if (taskOptions.continue) {
-                    warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
-                    resolve(false);
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && (result.status === 400 || result.status === 429)) {
+                    if (taskOptions.continue) {
+                        warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                        resolve(false);
+                    } else {
+                        error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                        reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    }
+                } else if (result && result.status === 204) {
+                    debug(`'${item.name}' not found.`);
+                    resolve(true);
+                } else if (result && result.status === 200) {
+                    console.log(`Deleted ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
+                    resolve(true);
                 } else {
-                    error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
-                    reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                    resolve(false);
                 }
-            } else if (response && response.statusCode === 204) {
-                debug(`'${item.name}' not found.`);
-                resolve(true);
-            } else if (response && response.statusCode === 200) {
-                console.log(`Deleted ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
-                resolve(true);
-            } else {
-                resolve(false);
-            }
-        });
+            })
+            .catch((err: Error) => {
+                if (err && !taskOptions.continue) {
+                    error(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
+                    reject(loc("DeleteAdfItems_DeleteItem", item.type, err.message));
+                }
+            });
     });
 }
 
@@ -298,7 +327,7 @@ function deleteItems(
                         reject(err);
                     })
                     .then((result: boolean | void) => {
-                        resolve(<boolean>result);
+                        resolve(result as boolean);
                     });
             })
             .catch((err) => {
@@ -328,7 +357,7 @@ function processItems(
             `Start deleting ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
         );
 
-        runs.reduce((promiseChain: Promise<any>, currentTask: DatafactoryTaskObject[]) => {
+        runs.reduce((promiseChain: Promise<unknown[]>, currentTask: DatafactoryTaskObject[]) => {
             return promiseChain.then((chainResults) =>
                 Promise.all(
                     currentTask.map(
@@ -345,7 +374,7 @@ function processItems(
                 hasError = true;
                 firstError = firstError || err;
             })
-            .then((arrayOfResults: any) => {
+            .then(() => {
                 const duration = Date.now() - start;
                 addSummary(totalItems, issues, datafactoryType, "deleted", undefined, duration);
                 if (hasError) {
@@ -362,14 +391,14 @@ function processItems(
 }
 
 async function main(): Promise<boolean> {
-    const promise = new Promise<boolean>(async (resolve, reject) => {
+    const promise = new Promise<boolean>((resolve, reject) => {
         let taskParameters: TaskParameters;
         let azureModels: AzureModels;
         let firstError: boolean;
 
         try {
-            const debugMode: string = <string>getVariable("System.Debug");
-            const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
+            // const debugMode: string = <string>getVariable("System.Debug");
+            // const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
             debug("Task execution started ...");
             taskParameters = new TaskParameters();
@@ -399,17 +428,18 @@ async function main(): Promise<boolean> {
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
+            const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID)
+            loginAzure(clientId, key, tenantID, scheme)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
                 })
-                .then((result) => {
+                .then(() => {
                     debug(`Datafactory '${dataFactoryName}' exist`);
-                    const deleteTasks = [];
+                    const deleteTasks: DeleteTask[] = [];
                     if (triggerFilter) {
                         deleteTasks.push({ filter: triggerFilter, type: DatafactoryTypes.Trigger });
                     }
@@ -427,7 +457,7 @@ async function main(): Promise<boolean> {
                     }
                     Promise.all(
                         deleteTasks.map(
-                            throat(1, (task) => {
+                            throat(1, (task: DeleteTask) => {
                                 return deleteItems(datafactoryOption, taskOptions, task.filter, task.type);
                             })
                         )
@@ -440,7 +470,7 @@ async function main(): Promise<boolean> {
                             if (hasError) {
                                 reject(firstError);
                             } else {
-                                const issues = (<boolean[]>results).filter((result: boolean) => {
+                                const issues = (results as boolean[]).filter((result: boolean) => {
                                     return !result;
                                 }).length;
                                 if (issues > 0) {

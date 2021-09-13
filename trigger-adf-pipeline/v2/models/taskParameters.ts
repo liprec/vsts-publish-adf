@@ -1,7 +1,7 @@
 /*
- * Azure Pipelines Azure Datafactory Pipeline Task
+ * Azure Pipelines Azure Data Factory Trigger Pipeline Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -51,13 +51,13 @@ export class TaskParameters {
         try {
             const rootPath = getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = <string>getInput("ConnectedServiceName", true);
-            this.resourceGroupName = <string>getInput("ResourceGroupName", true);
-            this.datafactoryName = <string>getInput("DatafactoryName", true);
+            this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
+            this.resourceGroupName = getInput("ResourceGroupName", true) as string;
+            this.datafactoryName = getInput("DatafactoryName", true) as string;
 
-            this.pipelineFilter = <string>getInput("PipelineFilter", false) || "";
-            this.pipelineParameter = <string>getInput("PipelineParameter", false);
-            const pipelineParameterType = <string>getInput("PipelineParameterType", false);
+            this.pipelineFilter = getInput("PipelineFilter", false) || "";
+            this.pipelineParameter = getInput("PipelineParameter", false) as string;
+            const pipelineParameterType = getInput("PipelineParameterType", false) as string;
             switch ((pipelineParameterType && pipelineParameterType).toLowerCase()) {
                 case "path":
                     this.pipelineParameterType = PipelineParameterType.Path;
@@ -67,21 +67,23 @@ export class TaskParameters {
                     this.pipelineParameterType = PipelineParameterType.Inline;
                     break;
             }
-            this.pipelineParameterPath = <string>(
-                getPathInput("PipelineParameterPath", false, (<string>pipelineParameterType).toLowerCase() === "path")
-            );
+            this.pipelineParameterPath = getPathInput(
+                "PipelineParameterPath",
+                false,
+                (pipelineParameterType as string).toLowerCase() === "path"
+            ) as string;
 
             this.continue = getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(<string>getInput("Throttle", false));
-            this.throttle = this.throttle === NaN ? 5 : this.throttle;
-            this.deploymentOutputs = <string>getInput("deploymentOutputs", false);
+            this.throttle = Number.parseInt(getInput("Throttle", false) as string);
+            this.throttle = isNaN(this.throttle) ? 5 : this.throttle;
+            this.deploymentOutputs = getInput("deploymentOutputs", false) as string;
 
             this.pipelineParameterPath =
                 (this.pipelineParameterPath && this.pipelineParameterPath).replace(rootPath, "") === ""
                     ? undefined
                     : this.pipelineParameterPath;
-        } catch (err) {
-            throw new Error(loc("TaskParameters_ConstructorFailed", err.message));
+        } catch (err: unknown) {
+            throw new Error(loc("TaskParameters_ConstructorFailed", (err as Error).message));
         }
     }
 

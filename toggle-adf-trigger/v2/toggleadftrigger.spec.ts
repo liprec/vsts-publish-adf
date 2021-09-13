@@ -28,8 +28,8 @@
 
 "use strict";
 
-import { strict as assert } from "assert";
+// import { strict as assert } from "assert";
 
-import * as ttm from "azure-pipelines-task-lib/mock-test";
+// import * as ttm from "azure-pipelines-task-lib/mock-test";
 
-describe("toggle-adf-trigger tests", function () {});
+// describe("toggle-adf-trigger tests", function () {});

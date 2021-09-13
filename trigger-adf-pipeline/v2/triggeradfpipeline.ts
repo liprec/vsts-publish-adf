@@ -1,7 +1,7 @@
 /*
- * Azure Pipelines Azure Datafactory Pipeline Task
+ * Azure Pipelines Azure Data Factory Trigger Pipeline Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -34,7 +34,6 @@ import {
     warning,
     debug,
     loc,
-    getVariable,
     setResourcePath,
     setVariable,
     setResult,
@@ -42,8 +41,14 @@ import {
 } from "azure-pipelines-task-lib/task";
 import { join } from "path";
 import { readFileSync } from "fs";
-import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
-import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
+import {
+    loginWithServicePrincipalSecret,
+    loginWithAppServiceMSI,
+    ApplicationTokenCredentials,
+    MSIAppServiceTokenCredentials,
+} from "@azure/ms-rest-nodeauth";
+import { AzureServiceClient } from "@azure/ms-rest-azure-js";
+import { HttpOperationResponse, RequestPrepareOptions } from "@azure/ms-rest-js";
 
 import {
     DataFactoryDeployOptions,
@@ -57,42 +62,64 @@ import { wildcardFilter } from "./lib/helpers";
 
 setResourcePath(join(__dirname, "../task.json"));
 
-function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
+type pipelineTriggerJson = {
+    name: string;
+};
+
+function loginAzure(clientId: string, key: string, tenantID: string, scheme: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
-            if (err) {
-                error(loc("Generic_LoginAzure", err.message));
-                reject(loc("Generic_LoginAzure", err.message));
-            }
-            resolve(new AzureServiceClient(credentials, {}));
-        });
+        if (scheme.toLocaleLowerCase() === "managedserviceidentity") {
+            loginWithAppServiceMSI()
+                .then((credentials: MSIAppServiceTokenCredentials) => {
+                    resolve(new AzureServiceClient(credentials, {}));
+                })
+                .catch((err: Error) => {
+                    if (err) {
+                        error(loc("Generic_LoginAzure", err.message));
+                        reject(loc("Generic_LoginAzure", err.message));
+                    }
+                });
+        } else {
+            loginWithServicePrincipalSecret(clientId, key, tenantID)
+                .then((credentials: ApplicationTokenCredentials) => {
+                    resolve(new AzureServiceClient(credentials, {}));
+                })
+                .catch((err: Error) => {
+                    if (err) {
+                        error(loc("Generic_LoginAzure", err.message));
+                        reject(loc("Generic_LoginAzure", err.message));
+                    }
+                });
+        }
     });
 }
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        let azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if (err) {
-                error(loc("Generic_CheckDataFactory", err));
-                reject(loc("Generic_CheckDataFactory", err));
-            }
-            if (response && response.statusCode !== 200) {
-                error(loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
-            } else {
-                resolve(true);
-            }
-        });
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                    reject(loc("Generic_CheckDataFactory2", dataFactoryName));
+                } else {
+                    resolve(true);
+                }
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("Generic_CheckDataFactory", err));
+                    reject(loc("Generic_CheckDataFactory", err));
+                }
+            });
     });
 }
 
@@ -102,58 +129,59 @@ function getPipelines(
     parameter: string
 ): Promise<DatafactoryPipelineObject[]> {
     return new Promise<DatafactoryPipelineObject[]>((resolve, reject) => {
-        let azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        let request = azureClient.sendRequest(options, async (err, result, request, response) => {
-            if (err) {
-                error(loc("TriggerAdfPipelines_GetPipelines", err.message));
-                reject(loc("TriggerAdfPipelines_GetPipelines", err.message));
-            } else if (response && response.statusCode !== 200) {
-                debug(loc("TriggerAdfPipelines_GetPipelines2"));
-                reject(loc("TriggerAdfPipelines_GetPipelines2"));
-            } else {
-                let objects = JSON.parse(JSON.stringify(result));
-                let items = objects.value;
-                let nextLink = objects.nextLink;
-                while (nextLink !== undefined) {
-                    let result = await processNextLink(datafactoryOption, nextLink);
-                    objects = JSON.parse(JSON.stringify(result));
-                    items = items.concat(objects.value);
-                    nextLink = objects.nextLink;
+        azureClient
+            .sendRequest(options)
+            .then(async (result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    debug(loc("TriggerAdfPipelines_GetPipelines2"));
+                    reject(loc("TriggerAdfPipelines_GetPipelines2"));
+                } else {
+                    let objects = JSON.parse(JSON.stringify(result.parsedBody));
+                    let items = objects.value;
+                    let nextLink = objects.nextLink;
+                    while (nextLink !== undefined) {
+                        const result = await processNextLink(datafactoryOption, nextLink);
+                        objects = JSON.parse(JSON.stringify(result.parsedBody));
+                        items = items.concat(objects.value);
+                        nextLink = objects.nextLink;
+                    }
+                    items = items.filter((item: pipelineTriggerJson) => {
+                        return wildcardFilter(item.name, filter);
+                    });
+                    console.log(`Found ${items.length} pipeline(s).`);
+                    resolve(
+                        items.map((item: pipelineTriggerJson) => {
+                            return { pipelineName: item.name, json: parameter };
+                        })
+                    );
                 }
-                items = items.filter((item: any) => {
-                    return wildcardFilter(item.name, filter);
-                });
-                console.log(`Found ${items.length} pipeline(s).`);
-                resolve(
-                    items.map((item: any) => {
-                        return { pipelineName: item.name, json: parameter };
-                    })
-                );
-            }
-        });
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("TriggerAdfPipelines_GetPipelines", err.message));
+                    reject(loc("TriggerAdfPipelines_GetPipelines", err.message));
+                }
+            });
     });
 }
 
-function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
-    const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
-        options: UrlBasedRequestPrepareOptions = {
+function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<HttpOperationResponse> {
+    const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+        options: RequestPrepareOptions = {
             method: "GET",
             url: nextLink,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
     debug(`Following next link`);
-    return new Promise<any>((resolve, reject) => {
-        azureClient.sendRequest(options, (err, result, request, response) => {
+    return new Promise<HttpOperationResponse>((resolve) => {
+        azureClient.sendRequest(options).then((result: HttpOperationResponse) => {
             resolve(result);
         });
     });
@@ -165,51 +193,54 @@ function triggerPipeline(
     pipeline: DatafactoryPipelineObject
 ): Promise<DataFactoryRunResult> {
     return new Promise<DataFactoryRunResult>((resolve, reject) => {
-        let azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        let pipelineName = pipeline.pipelineName;
-        let options: UrlBasedRequestPrepareOptions = {
+        const pipelineName = pipeline.pipelineName;
+        const options: RequestPrepareOptions = {
             method: "POST",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines/${pipelineName}/createRun?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
             headers: {
                 "Content-Type": "application/json",
             },
             body: pipeline.json,
             disableJsonStringifyOnBody: true,
         };
-        let request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if (err) {
-                if (deployOptions.continue) {
-                    warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && result.status !== 200 && result.status !== 204) {
+                    if (deployOptions.continue) {
+                        warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                        resolve(undefined);
+                    } else {
+                        error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                        reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                    }
+                } else if (result && result.status === 204) {
+                    warning(`'${pipelineName}' not found.`);
                     resolve(undefined);
                 } else {
-                    error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
-                    reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    const runId = result.parsedBody.runId;
+                    console.log(`Pipeline '${pipelineName}' triggered with run id: '${runId}'.`);
+                    resolve({
+                        pipeline: pipelineName,
+                        runId,
+                    });
                 }
-            } else if (response && response.statusCode !== 200 && response.statusCode !== 204) {
-                if (deployOptions.continue) {
-                    warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
-                    resolve(undefined);
-                } else {
-                    error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
-                    reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    if (deployOptions.continue) {
+                        warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                        resolve(undefined);
+                    } else {
+                        error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                        reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, err.message));
+                    }
                 }
-            } else if (response && response.statusCode === 204) {
-                warning(`'${pipelineName}' not found.`);
-                resolve(undefined);
-            } else {
-                const runId = (result as any).runId;
-                console.log(`Pipeline '${pipelineName}' triggered with run id: '${runId}'.`);
-                resolve({
-                    pipeline: pipelineName,
-                    runId,
-                });
-            }
-        });
+            });
     });
 }
 
@@ -227,7 +258,7 @@ function triggerPipelines(
                         reject(err);
                     })
                     .then((result: boolean | void) => {
-                        resolve(<boolean>result);
+                        resolve(result as boolean);
                     });
             })
             .catch((err) => {
@@ -244,12 +275,11 @@ function processPipelines(
 ): Promise<boolean> {
     let firstError: boolean;
     return new Promise<boolean>((resolve, reject) => {
-        let totalItems = pipelines.length;
+        const totalItems = pipelines.length;
 
-        let process = Promise.all(
+        Promise.all(
             pipelines.map(
                 throat(deployOptions.throttle, (pipeline) => {
-                    // console.log(`Trigger pipeline '${pipeline.pipelineName}'.`);
                     return triggerPipeline(datafactoryOption, deployOptions, pipeline);
                 })
             )
@@ -258,7 +288,7 @@ function processPipelines(
                 hasError = true;
                 firstError = firstError || err;
             })
-            .then((results: any) => {
+            .then((results: void | DataFactoryRunResult[]) => {
                 debug(`${totalItems} pipeline(s) triggered.`);
                 if (hasError) {
                     reject(firstError);
@@ -266,12 +296,14 @@ function processPipelines(
                     if (isNonEmpty(deployOptions.deploymentOutputs)) {
                         setVariable(
                             deployOptions.deploymentOutputs,
-                            JSON.stringify(results.filter((result: DataFactoryRunResult) => !!result))
+                            JSON.stringify(
+                                (results as DataFactoryRunResult[]).filter((result: DataFactoryRunResult) => !!result)
+                            )
                         );
                         console.log(loc("TriggerAdfPipelines_AddedOutputVariable", deployOptions.deploymentOutputs));
                     }
-                    let issues = results.filter((result: any) => {
-                        return result === "";
+                    const issues = (results as DataFactoryRunResult[]).filter((result: DataFactoryRunResult) => {
+                        return result === undefined;
                     }).length;
                     if (issues > 0) {
                         resolve(false);
@@ -284,21 +316,21 @@ function processPipelines(
 }
 
 async function main(): Promise<boolean> {
-    let promise = new Promise<boolean>(async (resolve, reject) => {
+    const promise = new Promise<boolean>((resolve, reject) => {
         let taskParameters: TaskParameters;
         let azureModels: AzureModels;
 
         try {
-            let debugMode: string = <string>getVariable("System.Debug");
-            let isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
+            // const debugMode: string = getVariable("System.Debug") as string;
+            // const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
             debug("Task execution started ...");
             taskParameters = new TaskParameters();
-            let connectedServiceName = taskParameters.ConnectedServiceName;
-            let resourceGroup = taskParameters.ResourceGroupName;
-            let dataFactoryName = taskParameters.DatafactoryName;
+            const connectedServiceName = taskParameters.ConnectedServiceName;
+            const resourceGroup = taskParameters.ResourceGroupName;
+            const dataFactoryName = taskParameters.DatafactoryName;
 
-            let pipelineFilter = taskParameters.PipelineFilter;
+            const pipelineFilter = taskParameters.PipelineFilter;
             let pipelineParameter = taskParameters.PipelineParameter;
 
             switch (taskParameters.PipelineParameterType) {
@@ -307,36 +339,36 @@ async function main(): Promise<boolean> {
                     pipelineParameter = taskParameters.PipelineParameter;
                     break;
                 case PipelineParameterType.Path:
-                    pipelineParameter = readFileSync(<string>taskParameters.PipelineParameterPath, "utf8");
+                    pipelineParameter = readFileSync(taskParameters.PipelineParameterPath as string, "utf8");
                     console.log(pipelineParameter);
                     break;
             }
 
-            let deployOptions = {
+            const deployOptions = {
                 continue: taskParameters.Continue,
                 throttle: taskParameters.Throttle,
                 deploymentOutputs: taskParameters.DeploymentOutputs,
             };
 
             azureModels = new AzureModels(connectedServiceName);
-            let clientId = azureModels.getServicePrincipalClientId();
-            let key = azureModels.getServicePrincipalKey();
-            let tenantID = azureModels.getTenantId();
-            let datafactoryOption: DatafactoryOptions = {
-                subscriptionId: azureModels.getSubscriptionId(),
+            const clientId = azureModels.ServicePrincipalClientId;
+            const key = azureModels.ServicePrincipalKey;
+            const tenantID = azureModels.TenantId;
+            const datafactoryOption: DatafactoryOptions = {
+                subscriptionId: azureModels.SubscriptionId,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
-            let firstError;
+            const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID)
+            loginAzure(clientId, key, tenantID, scheme)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
                 })
-                .then((result) => {
+                .then(() => {
                     debug(`Datafactory '${dataFactoryName}' exist`);
                     if (pipelineFilter !== null) {
                         triggerPipelines(datafactoryOption, deployOptions, pipelineFilter, pipelineParameter)
