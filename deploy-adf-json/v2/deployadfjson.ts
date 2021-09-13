@@ -215,12 +215,14 @@ function deployItem(
             .sendRequest(options)
             .then(async (result: HttpOperationResponse) => {
                 if (result && result.status !== 200) {
+                    const objects = JSON.parse(JSON.stringify(result));
+                    const error = objects.parsedBody.error;
                     if (taskOptions.continue) {
-                        warning(loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
+                        warning(loc("DeployAdfJson_DeployItems2", item.name, item.type, error.message));
                         resolve(false);
                     } else {
-                        error(loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
-                        reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, JSON.stringify(result)));
+                        error(loc("DeployAdfJson_DeployItems2", item.name, item.type, error.message));
+                        reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, error.message));
                     }
                 } else {
                     console.log(`Deployed ${item.type} '${item.name}' in chunk: ${item.bucket}.`);

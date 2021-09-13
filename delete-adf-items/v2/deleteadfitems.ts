@@ -151,18 +151,19 @@ function getObjects(
                     reject(loc("DeleteAdfItems_GetObjects2", datafactoryType));
                 } else {
                     let objects = JSON.parse(JSON.stringify(result));
-                    let items = objects.value;
-                    let nextLink = objects.nextLink;
+                    let items = objects.parsedBody.value;
+                    let nextLink = objects.parsedBody.nextLink;
                     while (nextLink !== undefined) {
                         const result = await processNextLink(datafactoryOption, nextLink);
                         objects = JSON.parse(JSON.stringify(result));
-                        items = items.concat(objects.value);
-                        nextLink = objects.nextLink;
+                        items = items.concat(objects.parsedBody.value);
+                        nextLink = objects.parsedBody.nextLink;
                     }
-                    if (filter)
+                    if (filter) {
                         items = items.filter((item: ADFJson) => {
                             return wildcardFilter(item.name, filter);
                         });
+                    }
                     taskOptions.sorting === SortingDirection.Ascending
                         ? items.sort(
                               (item1: ADFJson, item2: ADFJson) =>
@@ -263,12 +264,14 @@ function deleteItem(
             .sendRequest(options)
             .then((result: HttpOperationResponse) => {
                 if (result && (result.status === 400 || result.status === 429)) {
+                    const objects = JSON.parse(JSON.stringify(result));
+                    const error = objects.parsedBody.error;
                     if (taskOptions.continue) {
-                        warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                        warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, error.message));
                         resolve(false);
                     } else {
-                        error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
-                        reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, JSON.stringify(result)));
+                        error(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, error.message));
+                        reject(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, error.message));
                     }
                 } else if (result && result.status === 204) {
                     debug(`'${item.name}' not found.`);

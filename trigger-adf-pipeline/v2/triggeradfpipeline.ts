@@ -145,13 +145,13 @@ function getPipelines(
                     reject(loc("TriggerAdfPipelines_GetPipelines2"));
                 } else {
                     let objects = JSON.parse(JSON.stringify(result.parsedBody));
-                    let items = objects.value;
-                    let nextLink = objects.nextLink;
+                    let items = objects.parsedBody.value;
+                    let nextLink = objects.parsedBody.nextLink;
                     while (nextLink !== undefined) {
                         const result = await processNextLink(datafactoryOption, nextLink);
                         objects = JSON.parse(JSON.stringify(result.parsedBody));
-                        items = items.concat(objects.value);
-                        nextLink = objects.nextLink;
+                        items = items.concat(objects.parsedBody.value);
+                        nextLink = objects.parsedBody.nextLink;
                     }
                     items = items.filter((item: pipelineTriggerJson) => {
                         return wildcardFilter(item.name, filter);
