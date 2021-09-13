@@ -1,7 +1,7 @@
 /*
  * Azure Pipelines Azure Datafactory Deploy Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -29,7 +29,7 @@
 "use strict";
 
 import { DatafactoryTypes } from "./enums";
-import { DatafactoryTaskObject } from "./interfaces";
+import { ADFJson, DatafactoryTaskObject } from "./interfaces";
 
 export function addSummary(
     totalItems: number,
@@ -38,7 +38,7 @@ export function addSummary(
     action: string,
     size: number | undefined,
     duration: number
-) {
+): void {
     console.log(``);
     if (issues > 0) console.log(`${issues} ${datafactoryType}(s) failed`);
     console.log(`${totalItems - issues} ${datafactoryType}(s) ${action}.\n\nStats:`);
@@ -50,8 +50,8 @@ export function addSummary(
 }
 
 export function getReadableFileSize(fileSizeInBytes: number): string {
-    var i = 0;
-    var byteUnits = [" bytes", " kB", " MB", " GB", " TB", "PB", "EB", "ZB", "YB"];
+    let i = 0;
+    const byteUnits = [" bytes", " kB", " MB", " GB", " TB", "PB", "EB", "ZB", "YB"];
     while (fileSizeInBytes > 1024) {
         fileSizeInBytes = fileSizeInBytes / 1024;
         i++;
@@ -99,18 +99,18 @@ export function splitBuckets(detectDependency: boolean, items: DatafactoryTaskOb
     return numberOfBuckets;
 }
 
-export function findDependency(json: any, type: string): string[] {
+export function findDependency(json: ADFJson, type: string): string[] {
     let refs: string[] = [];
     if (json.referenceName && json.type === type) {
         return [json.referenceName];
     }
     for (const key in json) {
-        if (typeof json[key] === typeof [Object]) refs = refs.concat(findDependency(json[key], type));
+        if (typeof json[key] === typeof [Object]) refs = refs.concat(findDependency(json[key] as ADFJson, type));
     }
     return refs.filter((current: string, index: number, array: string[]) => array.indexOf(current) === index);
 }
 
-export function wildcardFilter(value: string, rule: string) {
+export function wildcardFilter(value: string, rule: string): boolean {
     if (RegExp(/\*$|\w\*.*/g).test(rule)) return new RegExp("^" + rule.split("*").join(".*") + "$").test(value);
     else return new RegExp(rule).test(value);
 }

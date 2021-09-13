@@ -1,12 +1,12 @@
 {
     "name": "vsts-publish-adf",
-    "version": "2.2.0",
+    "version": "2.4.0",
     "author": "Jan Pieter Posthuma",
     "license": "MIT",
     "repository": {},
-    "dependencies": {},
     "devDependencies": {
         "@types/mocha": "^8.0.3",
-        "@types/node": "^14.14.0"
+        "@types/node": "^14.14.0",
+        "tslib": "^2.2.0"
     }
 }

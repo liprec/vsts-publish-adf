@@ -27,19 +27,16 @@
  */
 
 import throat from "throat";
-import {
-    error,
-    warning,
-    loc,
-    setResourcePath,
-    debug,
-    getVariable,
-    TaskResult,
-    setResult,
-} from "azure-pipelines-task-lib/task";
+import { error, warning, loc, setResourcePath, debug, TaskResult, setResult } from "azure-pipelines-task-lib/task";
 import { join } from "path";
-import { AzureServiceClient, loginWithServicePrincipalSecret } from "ms-rest-azure";
-import { UrlBasedRequestPrepareOptions, Mapper } from "ms-rest";
+import {
+    loginWithServicePrincipalSecret,
+    loginWithAppServiceMSI,
+    ApplicationTokenCredentials,
+    MSIAppServiceTokenCredentials,
+} from "@azure/ms-rest-nodeauth";
+import { AzureServiceClient } from "@azure/ms-rest-azure-js";
+import { HttpOperationResponse, RequestPrepareOptions } from "@azure/ms-rest-js";
 
 import { DatafactoryToggle } from "./lib/enums";
 import { DataFactoryDeployOptions, DatafactoryOptions, DatafactoryTriggerObject } from "./lib/interfaces";
@@ -49,42 +46,64 @@ import { wildcardFilter } from "./lib/helpers";
 
 setResourcePath(join(__dirname, "../task.json"));
 
-function loginAzure(clientId: string, key: string, tenantID: string): Promise<AzureServiceClient> {
+type triggerJson = {
+    name: string;
+};
+
+function loginAzure(clientId: string, key: string, tenantID: string, scheme: string): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
-        loginWithServicePrincipalSecret(clientId, key, tenantID, (err, credentials) => {
-            if (err) {
-                error(loc("Generic_LoginAzure", err.message));
-                reject(loc("Generic_LoginAzure", err.message));
-            }
-            resolve(new AzureServiceClient(credentials, {}));
-        });
+        if (scheme.toLocaleLowerCase() === "managedserviceidentity") {
+            loginWithAppServiceMSI()
+                .then((credentials: MSIAppServiceTokenCredentials) => {
+                    resolve(new AzureServiceClient(credentials, {}));
+                })
+                .catch((err: Error) => {
+                    if (err) {
+                        error(loc("Generic_LoginAzure", err.message));
+                        reject(loc("Generic_LoginAzure", err.message));
+                    }
+                });
+        } else {
+            loginWithServicePrincipalSecret(clientId, key, tenantID)
+                .then((credentials: ApplicationTokenCredentials) => {
+                    resolve(new AzureServiceClient(credentials, {}));
+                })
+                .catch((err: Error) => {
+                    if (err) {
+                        error(loc("Generic_LoginAzure", err.message));
+                        reject(loc("Generic_LoginAzure", err.message));
+                    }
+                });
+        }
     });
 }
 
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        const options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        const request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if (err) {
-                error(loc("Generic_CheckDataFactory", err));
-                reject(loc("Generic_CheckDataFactory", err));
-            }
-            if (response && response.statusCode !== 200) {
-                error(loc("Generic_CheckDataFactory2", dataFactoryName));
-                reject(loc("Generic_CheckDataFactory2", dataFactoryName));
-            } else {
-                resolve(true);
-            }
-        });
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                    reject(loc("Generic_CheckDataFactory2", dataFactoryName));
+                } else {
+                    resolve(true);
+                }
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("Generic_CheckDataFactory", err));
+                    reject(loc("Generic_CheckDataFactory", err));
+                }
+            });
     });
 }
 
@@ -95,58 +114,59 @@ function getTriggers(
     toggle: DatafactoryToggle
 ): Promise<DatafactoryTriggerObject[]> {
     return new Promise<DatafactoryTriggerObject[]>((resolve, reject) => {
-        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
-        const options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "GET",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
-        const request = azureClient.sendRequest(options, async (err, result, request, response) => {
-            if (err) {
-                error(loc("ToggleAdfTrigger_GetTriggers", err.message));
-                reject(loc("ToggleAdfTrigger_GetTriggers", err.message));
-            } else if (response && response.statusCode !== 200) {
-                debug(loc("ToggleAdfTrigger_GetTriggers2"));
-                reject(loc("ToggleAdfTrigger_GetTriggers2"));
-            } else {
-                let objects = JSON.parse(JSON.stringify(result));
-                let items = objects.value;
-                let nextLink = objects.nextLink;
-                while (nextLink !== undefined) {
-                    const result = await processNextLink(datafactoryOption, nextLink);
-                    objects = JSON.parse(JSON.stringify(result));
-                    items = items.concat(objects.value);
-                    nextLink = objects.nextLink;
+        azureClient
+            .sendRequest(options)
+            .then(async (result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    debug(loc("ToggleAdfTrigger_GetTriggers2"));
+                    reject(loc("ToggleAdfTrigger_GetTriggers2"));
+                } else {
+                    let objects = JSON.parse(JSON.stringify(result));
+                    let items = objects.parsedBody.value;
+                    let nextLink = objects.parsedBody.nextLink;
+                    while (nextLink !== undefined) {
+                        const result = await processNextLink(datafactoryOption, nextLink);
+                        objects = JSON.parse(JSON.stringify(result));
+                        items = items.concat(objects.parsedBody.value);
+                        nextLink = objects.parsedBody.nextLink;
+                    }
+                    items = items.filter((item: triggerJson) => {
+                        return wildcardFilter(item.name, triggerFilter);
+                    });
+                    console.log(`Found ${items.length} trigger(s).`);
+                    resolve(
+                        items.map((item: triggerJson) => {
+                            return { triggerName: item.name, toggle: toggle };
+                        })
+                    );
                 }
-                items = items.filter((item: any) => {
-                    return wildcardFilter(item.name, triggerFilter);
-                });
-                console.log(`Found ${items.length} trigger(s).`);
-                resolve(
-                    items.map((item: any) => {
-                        return { triggerName: item.name, toggle: toggle };
-                    })
-                );
-            }
-        });
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("ToggleAdfTrigger_GetTriggers", err));
+                    reject(loc("ToggleAdfTrigger_GetTriggers", err));
+                }
+            });
     });
 }
 
-function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<any> {
-    const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
-        options: UrlBasedRequestPrepareOptions = {
+function processNextLink(datafactoryOption: DatafactoryOptions, nextLink: string): Promise<HttpOperationResponse> {
+    const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+        options: RequestPrepareOptions = {
             method: "GET",
             url: nextLink,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
         };
     debug(`Following next link`);
-    return new Promise<any>((resolve, reject) => {
-        azureClient.sendRequest(options, (err, result, request, response) => {
+    return new Promise<HttpOperationResponse>((resolve) => {
+        azureClient.sendRequest(options).then((result: HttpOperationResponse) => {
             resolve(result);
         });
     });
@@ -158,54 +178,67 @@ function toggleTrigger(
     trigger: DatafactoryTriggerObject
 ): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        const azureClient: AzureServiceClient = <AzureServiceClient>datafactoryOption.azureClient,
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const triggerName = trigger.triggerName;
         const triggerAction = trigger.toggle;
-        const options: UrlBasedRequestPrepareOptions = {
+        const options: RequestPrepareOptions = {
             method: "POST",
             url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers/${triggerName}/${triggerAction}?api-version=2018-06-01`,
-            serializationMapper: <Mapper>(<unknown>undefined),
-            deserializationMapper: <Mapper>(<unknown>undefined),
             headers: {
                 "Content-Type": "application/json",
             },
         };
-        const request = azureClient.sendRequest(options, (err, result, request, response) => {
-            if (err && !deployOptions.continue) {
-                error(
-                    loc("ToggleAdfTrigger_ToggleTrigger2", trigger.triggerName, trigger.toggle.toString(), err.message)
-                );
-                reject(
-                    loc("ToggleAdfTrigger_ToggleTrigger2", trigger.triggerName, trigger.toggle.toString(), err.message)
-                );
-            } else if (response && response.statusCode !== 200) {
-                if (deployOptions.continue) {
-                    warning(
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    if (deployOptions.continue) {
+                        warning(
+                            loc(
+                                "ToggleAdfTrigger_ToggleTrigger2",
+                                trigger.triggerName,
+                                trigger.toggle.toString(),
+                                JSON.stringify(result)
+                            )
+                        );
+                        resolve(false);
+                    } else {
+                        reject(
+                            loc(
+                                "ToggleAdfTrigger_ToggleTrigger2",
+                                trigger.triggerName,
+                                trigger.toggle.toString(),
+                                JSON.stringify(result)
+                            )
+                        );
+                    }
+                } else {
+                    resolve(true);
+                }
+            })
+            .catch((err: Error) => {
+                if (err && !deployOptions.continue) {
+                    error(
                         loc(
                             "ToggleAdfTrigger_ToggleTrigger2",
                             trigger.triggerName,
                             trigger.toggle.toString(),
-                            JSON.stringify(result)
+                            err.message
                         )
                     );
-                    resolve(false);
-                } else {
                     reject(
                         loc(
                             "ToggleAdfTrigger_ToggleTrigger2",
                             trigger.triggerName,
                             trigger.toggle.toString(),
-                            JSON.stringify(result)
+                            err.message
                         )
                     );
                 }
-            } else {
-                resolve(true);
-            }
-        });
+            });
     });
 }
 
@@ -223,7 +256,7 @@ function toggleTriggers(
                         reject(err);
                     })
                     .then((result: boolean | void) => {
-                        resolve(<boolean>result);
+                        resolve(result as boolean);
                     });
             })
             .catch((err) => {
@@ -242,7 +275,7 @@ function processItems(
     return new Promise<boolean>((resolve, reject) => {
         const totalItems = triggers.length;
 
-        const process = Promise.all(
+        Promise.all(
             triggers.map(
                 throat(deployOptions.throttle, (trigger) => {
                     console.log(`Toggle '${trigger.triggerName}' to '${trigger.toggle}'.`);
@@ -259,7 +292,7 @@ function processItems(
                 if (hasError) {
                     reject(firstError);
                 } else {
-                    const issues = (<boolean[]>results).filter((result: boolean) => {
+                    const issues = (results as boolean[]).filter((result: boolean) => {
                         return !result;
                     }).length;
                     if (issues > 0) {
@@ -273,47 +306,47 @@ function processItems(
 }
 
 async function main(): Promise<boolean> {
-    const promise = new Promise<boolean>(async (resolve, reject) => {
+    const promise = new Promise<boolean>((resolve, reject) => {
         let taskParameters: TaskParameters;
         let azureModels: AzureModels;
-        let firstError: boolean;
 
         try {
-            const debugMode: string = <string>getVariable("System.Debug");
-            const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
+            // const debugMode: string = <string>getVariable("System.Debug");
+            // const isVerbose: boolean = debugMode ? debugMode.toLowerCase() != "false" : false;
 
             debug("Task execution started ...");
             taskParameters = new TaskParameters();
-            const connectedServiceName = taskParameters.getConnectedServiceName();
-            const resourceGroup = taskParameters.getResourceGroupName();
-            const dataFactoryName = taskParameters.getDatafactoryName();
+            const connectedServiceName = taskParameters.ConnectedServiceName;
+            const resourceGroup = taskParameters.ResourceGroupName;
+            const dataFactoryName = taskParameters.DatafactoryName;
 
-            const triggerFilter = taskParameters.getTriggerFilter();
-            const triggerStatus = taskParameters.getTriggerStatus();
+            const triggerFilter = taskParameters.TriggerFilter;
+            const triggerStatus = taskParameters.TriggerStatus;
 
             const deployOptions = {
-                continue: taskParameters.getContinue(),
-                throttle: taskParameters.getThrottle(),
+                continue: taskParameters.Continue,
+                throttle: taskParameters.Throttle,
             };
 
             azureModels = new AzureModels(connectedServiceName);
-            const clientId = azureModels.getServicePrincipalClientId();
-            const key = azureModels.getServicePrincipalKey();
-            const tenantID = azureModels.getTenantId();
+            const clientId = azureModels.ServicePrincipalClientId;
+            const key = azureModels.ServicePrincipalKey;
+            const tenantID = azureModels.TenantId;
             const datafactoryOption: DatafactoryOptions = {
-                subscriptionId: azureModels.getSubscriptionId(),
+                subscriptionId: azureModels.SubscriptionId,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
+            const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID)
+            loginAzure(clientId, key, tenantID, scheme)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");
                     return checkDataFactory(datafactoryOption);
                 })
-                .then((result) => {
+                .then(() => {
                     debug(`Datafactory '${dataFactoryName}' exist`);
                     // Toggle Trigger logic
                     toggleTriggers(datafactoryOption, deployOptions, triggerFilter, triggerStatus)

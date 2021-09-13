@@ -1,7 +1,7 @@
 /*
  * Azure Pipelines Azure Datafactory Delete Items Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -26,8 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import * as task from "azure-pipelines-task-lib/task";
-import { exit } from "process";
+import { getBoolInput, getInput, loc } from "azure-pipelines-task-lib";
 
 import { SortingDirection } from "../lib/enums";
 
@@ -49,15 +48,15 @@ export class TaskParameters {
 
     constructor() {
         try {
-            this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
-            this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
-            this.datafactoryName = <string>task.getInput("DatafactoryName", true);
+            this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
+            this.resourceGroupName = getInput("ResourceGroupName", true) as string;
+            this.datafactoryName = getInput("DatafactoryName", true) as string;
 
-            this.serviceFilter = task.getInput("ServiceFilter", false);
-            this.pipelineFilter = task.getInput("PipelineFilter", false);
-            this.dataflowFilter = task.getInput("DataflowFilter", false);
-            this.datasetFilter = task.getInput("DatasetFilter", false);
-            this.triggerFilter = task.getInput("TriggerFilter", false);
+            this.serviceFilter = getInput("ServiceFilter", false);
+            this.pipelineFilter = getInput("PipelineFilter", false);
+            this.dataflowFilter = getInput("DataflowFilter", false);
+            this.datasetFilter = getInput("DatasetFilter", false);
+            this.triggerFilter = getInput("TriggerFilter", false);
 
             this.serviceFilter = this.serviceFilter === "" ? undefined : this.serviceFilter;
             this.pipelineFilter = this.pipelineFilter === "" ? undefined : this.pipelineFilter;
@@ -65,11 +64,11 @@ export class TaskParameters {
             this.datasetFilter = this.datasetFilter === "" ? undefined : this.datasetFilter;
             this.triggerFilter = this.triggerFilter === "" ? undefined : this.triggerFilter;
 
-            this.continue = task.getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
-            this.throttle = this.throttle === NaN ? 5 : this.throttle;
-            this.detectDependency = task.getBoolInput("detectDependency", false);
-            let sorting = <string>task.getInput("Sorting", true);
+            this.continue = getBoolInput("Continue", false) as boolean;
+            this.throttle = Number.parseInt(getInput("Throttle", false) as string);
+            this.throttle = isNaN(this.throttle) ? 5 : this.throttle;
+            this.detectDependency = getBoolInput("detectDependency", false);
+            const sorting = getInput("Sorting", true) as string;
             switch (sorting.toLowerCase()) {
                 case "ascending":
                     this.sorting = SortingDirection.Ascending;
@@ -78,8 +77,8 @@ export class TaskParameters {
                     this.sorting = SortingDirection.Descending;
                     break;
             }
-        } catch (err) {
-            throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
+        } catch (err: unknown) {
+            throw new Error(loc("TaskParameters_ConstructorFailed", (err as Error).message));
         }
     }
 

@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import * as task from "azure-pipelines-task-lib/task";
+import { getInput, getBoolInput, loc } from "azure-pipelines-task-lib/task";
 
 import { DatafactoryToggle } from "../lib/enums";
 
@@ -43,14 +43,12 @@ export class TaskParameters {
 
     constructor() {
         try {
-            let rootPath = task.getVariable("System.DefaultWorkingDirectory") || "C:\\";
+            this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
+            this.resourceGroupName = getInput("ResourceGroupName", true) as string;
+            this.datafactoryName = getInput("DatafactoryName", true) as string;
+            this.triggerFilter = getInput("TriggerFilter", false) || "";
 
-            this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
-            this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
-            this.datafactoryName = <string>task.getInput("DatafactoryName", true);
-            this.triggerFilter = task.getInput("TriggerFilter", false) || "";
-
-            let status = <string>task.getInput("TriggerStatus", true);
+            const status = getInput("TriggerStatus", true) as string;
             switch (status.toLowerCase()) {
                 case "start":
                     this.triggerStatus = DatafactoryToggle.Start;
@@ -61,39 +59,39 @@ export class TaskParameters {
                     break;
             }
 
-            this.continue = task.getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
-            this.throttle = this.throttle === NaN ? 5 : this.throttle;
-        } catch (err) {
-            throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
+            this.continue = getBoolInput("Continue", false);
+            this.throttle = Number.parseInt(getInput("Throttle", false) as string);
+            this.throttle = isNaN(this.throttle) ? 5 : this.throttle;
+        } catch (err: unknown) {
+            throw new Error(loc("TaskParameters_ConstructorFailed", (err as Error).message));
         }
     }
 
-    public getConnectedServiceName(): string {
+    public get ConnectedServiceName(): string {
         return this.connectedServiceName;
     }
 
-    public getResourceGroupName(): string {
+    public get ResourceGroupName(): string {
         return this.resourceGroupName;
     }
 
-    public getDatafactoryName(): string {
+    public get DatafactoryName(): string {
         return this.datafactoryName;
     }
 
-    public getTriggerFilter(): string {
+    public get TriggerFilter(): string {
         return this.triggerFilter;
     }
 
-    public getTriggerStatus(): DatafactoryToggle {
+    public get TriggerStatus(): DatafactoryToggle {
         return this.triggerStatus;
     }
 
-    public getContinue(): boolean {
+    public get Continue(): boolean {
         return this.continue;
     }
 
-    public getThrottle(): number {
+    public get Throttle(): number {
         return this.throttle;
     }
 }

@@ -1,25 +1,35 @@
 {
     "name": "delete-adf-items",
-    "version": "2.2.0",
+    "version": "2.4.0",
     "description": "Deletes ADFv2 items",
     "main": "tasks.js",
     "scripts": {
         "build": "tsc",
-        "test": "npm run build && mocha"
+        "test:lint": "eslint . --ext ts",
+        "test": "npm run build && npm run test:lint && mocha"
     },
     "author": "Jan Pieter Posthuma",
     "license": "MIT",
     "repository": {},
     "dependencies": {
+        "@azure/arm-authorization": "^8.3.3",
+        "@azure/ms-rest-azure-js": "^2.1.0",
+        "@azure/ms-rest-js": "^2.4.0",
+        "@azure/ms-rest-nodeauth": "^3.0.9",
         "azure-pipelines-task-lib": "^2.11.3",
-        "ms-rest-azure": "^3.0.0",
         "throat": "^5.0.0"
     },
     "devDependencies": {
         "@types/mocha": "^8.0.3",
         "@types/node": "^12.12.70",
         "@types/q": "^1.5.4",
+        "@typescript-eslint/eslint-plugin": "^4.31.0",
+        "@typescript-eslint/parser": "^4.31.0",
+        "eslint": "^7.32.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^4.0.0",
         "mocha": "^8.2.0",
+        "prettier": "^2.4.0",
         "sync-request": "^6.1.0",
         "ts-node": "^9.0.0",
         "typescript": "^4.0.3"

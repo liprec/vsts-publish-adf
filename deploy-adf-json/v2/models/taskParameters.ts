@@ -1,7 +1,7 @@
 /*
  * Azure Pipelines Azure Datafactory Deploy Task
  *
- * Copyright (c) 2020 Jan Pieter Posthuma / DataScenarios
+ * Copyright (c) 2021 Jan Pieter Posthuma / DataScenarios
  *
  * All rights reserved.
  *
@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-import * as task from "azure-pipelines-task-lib/task";
+import { getInput, getBoolInput, loc, getPathInput, getVariable } from "azure-pipelines-task-lib/task";
 
 import { SortingDirection } from "../lib/enums";
 
@@ -48,17 +48,17 @@ export class TaskParameters {
 
     constructor() {
         try {
-            let rootPath = task.getVariable("System.DefaultWorkingDirectory") || "C:\\";
+            const rootPath = getVariable("System.DefaultWorkingDirectory") || "C:\\";
 
-            this.connectedServiceName = <string>task.getInput("ConnectedServiceName", true);
-            this.resourceGroupName = <string>task.getInput("ResourceGroupName", true);
-            this.datafactoryName = <string>task.getInput("DatafactoryName", true);
+            this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
+            this.resourceGroupName = getInput("ResourceGroupName", true) as string;
+            this.datafactoryName = getInput("DatafactoryName", true) as string;
 
-            this.servicePath = <string>task.getPathInput("ServicePath", false, true);
-            this.pipelinePath = <string>task.getPathInput("PipelinePath", false, true);
-            this.datasetPath = <string>task.getPathInput("DatasetPath", false, true);
-            this.dataflowPath = <string>task.getPathInput("DataflowPath", false, true);
-            this.triggerPath = <string>task.getPathInput("TriggerPath", false, true);
+            this.servicePath = getPathInput("ServicePath", false, true);
+            this.pipelinePath = getPathInput("PipelinePath", false, true);
+            this.datasetPath = getPathInput("DatasetPath", false, true);
+            this.dataflowPath = getPathInput("DataflowPath", false, true);
+            this.triggerPath = getPathInput("TriggerPath", false, true);
 
             // Replace "" with undefined
             this.servicePath =
@@ -72,11 +72,11 @@ export class TaskParameters {
             this.triggerPath =
                 (this.triggerPath && this.triggerPath.replace(rootPath, "")) === "" ? undefined : this.triggerPath;
 
-            this.continue = task.getBoolInput("Continue", false);
-            this.throttle = Number.parseInt(<string>task.getInput("Throttle", false));
-            this.throttle = this.throttle === NaN ? 5 : this.throttle;
-            this.detectDependency = task.getBoolInput("detectDependency", false);
-            let sorting = <string>task.getInput("Sorting", true);
+            this.continue = getBoolInput("Continue", false);
+            this.throttle = Number.parseInt(getInput("Throttle", false) as string);
+            this.throttle = isNaN(this.throttle) ? 5 : this.throttle;
+            this.detectDependency = getBoolInput("detectDependency", false);
+            const sorting = getInput("Sorting", true) as string;
             switch (sorting.toLowerCase()) {
                 case "ascending":
                     this.sorting = SortingDirection.Ascending;
@@ -85,8 +85,8 @@ export class TaskParameters {
                     this.sorting = SortingDirection.Descending;
                     break;
             }
-        } catch (err) {
-            throw new Error(task.loc("TaskParameters_ConstructorFailed", err.message));
+        } catch (err: unknown) {
+            throw new Error(loc("TaskParameters_ConstructorFailed", (err as Error).message));
         }
     }
 
