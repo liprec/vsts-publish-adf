@@ -1,6 +1,6 @@
 {
     "name": "toggle-adf-trigger",
-    "version": "2.2.0",
+    "version": "2.4.0",
     "description": "Toggle ADFv2 trigger",
     "main": "tasks.js",
     "scripts": {
