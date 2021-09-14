@@ -145,13 +145,13 @@ function getPipelines(
                     reject(loc("TriggerAdfPipelines_GetPipelines2"));
                 } else {
                     let objects = JSON.parse(JSON.stringify(result.parsedBody));
-                    let items = objects.parsedBody.value;
-                    let nextLink = objects.parsedBody.nextLink;
+                    let items = objects.value;
+                    let nextLink = objects.nextLink;
                     while (nextLink !== undefined) {
                         const result = await processNextLink(datafactoryOption, nextLink);
                         objects = JSON.parse(JSON.stringify(result.parsedBody));
-                        items = items.concat(objects.parsedBody.value);
-                        nextLink = objects.parsedBody.nextLink;
+                        items = items.concat(objects.value);
+                        nextLink = objects.nextLink;
                     }
                     items = items.filter((item: pipelineTriggerJson) => {
                         return wildcardFilter(item.name, filter);
@@ -210,19 +210,21 @@ function triggerPipeline(
         azureClient
             .sendRequest(options)
             .then((result: HttpOperationResponse) => {
+                const objects = JSON.parse(JSON.stringify(result.parsedBody));
                 if (result && result.status !== 200 && result.status !== 204) {
+                    const cloudError = objects.error;
                     if (deployOptions.continue) {
-                        warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                        warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, cloudError.message));
                         resolve(undefined);
                     } else {
-                        error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
-                        reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, JSON.stringify(result)));
+                        error(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, cloudError.message));
+                        reject(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, cloudError.message));
                     }
                 } else if (result && result.status === 204) {
                     warning(`'${pipelineName}' not found.`);
                     resolve(undefined);
                 } else {
-                    const runId = result.parsedBody.runId;
+                    const runId = objects.runId;
                     console.log(`Pipeline '${pipelineName}' triggered with run id: '${runId}'.`);
                     resolve({
                         pipeline: pipelineName,

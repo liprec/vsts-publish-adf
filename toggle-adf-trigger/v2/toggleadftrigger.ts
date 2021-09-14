@@ -129,14 +129,14 @@ function getTriggers(
                     debug(loc("ToggleAdfTrigger_GetTriggers2"));
                     reject(loc("ToggleAdfTrigger_GetTriggers2"));
                 } else {
-                    let objects = JSON.parse(JSON.stringify(result));
-                    let items = objects.parsedBody.value;
-                    let nextLink = objects.parsedBody.nextLink;
+                    let objects = JSON.parse(JSON.stringify(result.parsedBody));
+                    let items = objects.value;
+                    let nextLink = objects.nextLink;
                     while (nextLink !== undefined) {
                         const result = await processNextLink(datafactoryOption, nextLink);
-                        objects = JSON.parse(JSON.stringify(result));
-                        items = items.concat(objects.parsedBody.value);
-                        nextLink = objects.parsedBody.nextLink;
+                        objects = JSON.parse(JSON.stringify(result.parsedBody));
+                        items = items.concat(objects.value);
+                        nextLink = objects.nextLink;
                     }
                     items = items.filter((item: triggerJson) => {
                         return wildcardFilter(item.name, triggerFilter);

@@ -1,6 +1,6 @@
 {
     "name": "trigger-adf-piepline",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "description": "Trigger ADFv2 items",
     "main": "tasks.js",
     "scripts": {

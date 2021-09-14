@@ -150,14 +150,14 @@ function getObjects(
                     debug(loc("DeleteAdfItems_GetObjects2", datafactoryType));
                     reject(loc("DeleteAdfItems_GetObjects2", datafactoryType));
                 } else {
-                    let objects = JSON.parse(JSON.stringify(result));
-                    let items = objects.parsedBody.value;
-                    let nextLink = objects.parsedBody.nextLink;
+                    let objects = JSON.parse(JSON.stringify(result.parsedBody));
+                    let items = objects.value;
+                    let nextLink = objects.nextLink;
                     while (nextLink !== undefined) {
                         const result = await processNextLink(datafactoryOption, nextLink);
-                        objects = JSON.parse(JSON.stringify(result));
-                        items = items.concat(objects.parsedBody.value);
-                        nextLink = objects.parsedBody.nextLink;
+                        objects = JSON.parse(JSON.stringify(result.parsedBody));
+                        items = items.concat(objects.value);
+                        nextLink = objects.nextLink;
                     }
                     if (filter) {
                         items = items.filter((item: ADFJson) => {
@@ -264,8 +264,8 @@ function deleteItem(
             .sendRequest(options)
             .then((result: HttpOperationResponse) => {
                 if (result && (result.status === 400 || result.status === 429)) {
-                    const objects = JSON.parse(JSON.stringify(result));
-                    const cloudError = objects.parsedBody.error;
+                    const objects = JSON.parse(JSON.stringify(result.parsedBody));
+                    const cloudError = objects.error;
                     if (taskOptions.continue) {
                         warning(loc("DeleteAdfItems_DeleteItem2", item.name, item.type, cloudError.message));
                         resolve(false);

@@ -215,8 +215,8 @@ function deployItem(
             .sendRequest(options)
             .then(async (result: HttpOperationResponse) => {
                 if (result && result.status !== 200) {
-                    const objects = JSON.parse(JSON.stringify(result));
-                    const cloudError = objects.parsedBody.error;
+                    const objects = JSON.parse(JSON.stringify(result.parsedBody));
+                    const cloudError = objects.error;
                     if (taskOptions.continue) {
                         warning(loc("DeployAdfJson_DeployItems2", item.name, item.type, cloudError.message));
                         resolve(false);
