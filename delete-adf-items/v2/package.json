@@ -1,6 +1,6 @@
 {
     "name": "delete-adf-items",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "description": "Deletes ADFv2 items",
     "main": "tasks.js",
     "scripts": {
