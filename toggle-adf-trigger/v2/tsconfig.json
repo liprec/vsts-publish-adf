@@ -3,6 +3,7 @@
         "alwaysStrict": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
+        "importHelpers": true,
         "module": "commonjs",
         "moduleResolution": "node",
         "noImplicitAny": true,
