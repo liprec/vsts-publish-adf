@@ -38,13 +38,13 @@ import {
 export class AzureModels {
     private authScheme?: string;
     private connectedServiceName: string;
-    private subscriptionId: string;
-    private subscriptionName: string;
+    private subscriptionId?: string;
+    private subscriptionName?: string;
     private servicePrincipalClientId: string;
     private servicePrincipalKey: string;
-    private environmentAuthorityUrl: string;
+    private environmentAuthorityUrl?: string;
     private tenantId: string;
-    private url: string;
+    private url?: string;
 
     constructor(connectedServiceName: string) {
         try {
@@ -94,11 +94,11 @@ export class AzureModels {
     }
 
     public get SubscriptionId(): string {
-        return this.subscriptionId;
+        return this.subscriptionId as string;
     }
 
     public get SubscriptionName(): string {
-        return this.subscriptionName;
+        return this.subscriptionName as string;
     }
 
     public get ServicePrincipalClientId(): string {
@@ -110,7 +110,7 @@ export class AzureModels {
     }
 
     public get EnvironmentAuthorityUrl(): string {
-        return this.environmentAuthorityUrl;
+        return this.environmentAuthorityUrl as string;
     }
 
     public get TenantId(): string {
@@ -118,6 +118,6 @@ export class AzureModels {
     }
 
     public get Url(): string {
-        return this.url;
+        return this.url as string;
     }
 }
