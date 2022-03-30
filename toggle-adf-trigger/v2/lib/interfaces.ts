@@ -34,6 +34,7 @@ import { DatafactoryToggle } from "./enums";
 
 export interface DatafactoryOptions {
     azureClient?: AzureServiceClient;
+    azureManagementUri: string;
     subscriptionId: string;
     resourceGroup: string;
     dataFactoryName: string;

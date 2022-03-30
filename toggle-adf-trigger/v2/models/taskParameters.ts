@@ -32,6 +32,7 @@ import { DatafactoryToggle } from "../lib/enums";
 
 export class TaskParameters {
     private connectedServiceName: string;
+    private azureManagementUri: string;
     private resourceGroupName: string;
     private datafactoryName: string;
 
@@ -44,6 +45,7 @@ export class TaskParameters {
     constructor() {
         try {
             this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
+            this.azureManagementUri = getInput("AzureManagementUri", true) as string;
             this.resourceGroupName = getInput("ResourceGroupName", true) as string;
             this.datafactoryName = getInput("DatafactoryName", true) as string;
             this.triggerFilter = getInput("TriggerFilter", false) || "";
@@ -69,6 +71,10 @@ export class TaskParameters {
 
     public get ConnectedServiceName(): string {
         return this.connectedServiceName;
+    }
+
+    public get AzureManagementUri(): string {
+        return this.azureManagementUri;
     }
 
     public get ResourceGroupName(): string {

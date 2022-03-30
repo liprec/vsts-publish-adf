@@ -82,11 +82,12 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -116,11 +117,12 @@ function getTriggers(
     return new Promise<DatafactoryTriggerObject[]>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -180,13 +182,14 @@ function toggleTrigger(
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const triggerName = trigger.triggerName;
         const triggerAction = trigger.toggle;
         const options: RequestPrepareOptions = {
             method: "POST",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers/${triggerName}/${triggerAction}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers/${triggerName}/${triggerAction}?api-version=2018-06-01`,
             headers: {
                 "Content-Type": "application/json",
             },
@@ -334,6 +337,7 @@ async function main(): Promise<boolean> {
             const tenantID = azureModels.TenantId;
             const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.SubscriptionId,
+                azureManagementUri: taskParameters.AzureManagementUri,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
