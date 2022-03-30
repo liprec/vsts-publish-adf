@@ -85,11 +85,12 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -119,6 +120,7 @@ function getObjects(
     return new Promise<DatafactoryTaskObject[]>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         let objectType;
@@ -141,7 +143,7 @@ function getObjects(
         }
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -166,15 +168,15 @@ function getObjects(
                     }
                     taskOptions.sorting === SortingDirection.Ascending
                         ? items.sort(
-                              (item1: ADFJson, item2: ADFJson) =>
-                                  ((item1.name > item2.name) as unknown as number) -
-                                  ((item1.name < item2.name) as unknown as number)
-                          )
+                            (item1: ADFJson, item2: ADFJson) =>
+                                ((item1.name > item2.name) as unknown as number) -
+                                ((item1.name < item2.name) as unknown as number)
+                        )
                         : items.sort(
-                              (item1: ADFJson, item2: ADFJson) =>
-                                  ((item2.name > item1.name) as unknown as number) -
-                                  ((item2.name < item1.name) as unknown as number)
-                          );
+                            (item1: ADFJson, item2: ADFJson) =>
+                                ((item2.name > item1.name) as unknown as number) -
+                                ((item2.name < item1.name) as unknown as number)
+                        );
                     console.log(`Found ${items.length} ${datafactoryType}(s).`);
                     resolve(
                         items.map((item: ADFJson) => {
@@ -235,6 +237,7 @@ function deleteItem(
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const objectName = item.name;
@@ -258,7 +261,7 @@ function deleteItem(
         }
         const options: RequestPrepareOptions = {
             method: "DELETE",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -428,6 +431,7 @@ async function main(): Promise<boolean> {
             const tenantID = azureModels.getTenantId();
             const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.getSubscriptionId(),
+                azureManagementUri: taskParameters.AzureManagementUri,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };

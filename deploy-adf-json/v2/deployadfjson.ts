@@ -90,12 +90,13 @@ function loginAzure(clientId: string, key: string, tenantID: string, scheme: str
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -128,15 +129,15 @@ function getObjects(
         if (matchedFiles.length > 0) {
             taskOptions.sorting === SortingDirection.Ascending
                 ? matchedFiles.sort(
-                      (item1, item2) =>
-                          ((basename(item1) > basename(item2)) as unknown as number) -
-                          ((basename(item1) < basename(item2)) as unknown as number)
-                  )
+                    (item1, item2) =>
+                        ((basename(item1) > basename(item2)) as unknown as number) -
+                        ((basename(item1) < basename(item2)) as unknown as number)
+                )
                 : matchedFiles.sort(
-                      (item1, item2) =>
-                          ((basename(item2) > basename(item1)) as unknown as number) -
-                          ((basename(item2) < basename(item1)) as unknown as number)
-                  );
+                    (item1, item2) =>
+                        ((basename(item2) > basename(item1)) as unknown as number) -
+                        ((basename(item2) < basename(item1)) as unknown as number)
+                );
             console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
             resolve(
                 matchedFiles.map((file: string) => {
@@ -180,6 +181,7 @@ function deployItem(
 ): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             subscriptionId: string = datafactoryOption.subscriptionId,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
@@ -204,7 +206,7 @@ function deployItem(
         }
         const options: RequestPrepareOptions = {
             method: "PUT",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
             headers: {
                 "Content-Type": "application/json",
             },
@@ -375,6 +377,7 @@ async function main(): Promise<boolean> {
             const tenantID = azureModels.getTenantId();
             const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.getSubscriptionId(),
+                azureManagementUri: taskParameters.AzureManagementUri,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
