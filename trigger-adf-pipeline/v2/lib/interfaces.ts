@@ -32,6 +32,7 @@ import { AzureServiceClient } from "@azure/ms-rest-azure-js";
 
 export interface DatafactoryOptions {
     azureClient?: AzureServiceClient;
+    azureManagementUri: string;
     subscriptionId: string;
     resourceGroup: string;
     dataFactoryName: string;

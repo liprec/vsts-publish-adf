@@ -98,11 +98,12 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -131,11 +132,12 @@ function getPipelines(
     return new Promise<DatafactoryPipelineObject[]>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -195,12 +197,13 @@ function triggerPipeline(
     return new Promise<DataFactoryRunResult>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
+            azureManagementUri: string = datafactoryOption.azureManagementUri,
             resourceGroup: string = datafactoryOption.resourceGroup,
             dataFactoryName: string = datafactoryOption.dataFactoryName;
         const pipelineName = pipeline.pipelineName;
         const options: RequestPrepareOptions = {
             method: "POST",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines/${pipelineName}/createRun?api-version=2018-06-01`,
+            url: `https://${azureManagementUri}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/pipelines/${pipelineName}/createRun?api-version=2018-06-01`,
             headers: {
                 "Content-Type": "application/json",
             },
@@ -358,6 +361,7 @@ async function main(): Promise<boolean> {
             const tenantID = azureModels.TenantId;
             const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.SubscriptionId,
+                azureManagementUri: taskParameters.AzureManagementUri,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
