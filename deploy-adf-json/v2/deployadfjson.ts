@@ -234,7 +234,7 @@ function deployItem(
         azureClient
             .sendRequest(options)
             .then(async (result: HttpOperationResponse) => {
-                if (result && result.status !== 200) {
+                if (result && result.status !== 200 && result.status !== 202) {
                     const objects = JSON.parse(JSON.stringify(result.parsedBody));
                     const cloudError = objects.error;
                     if (taskOptions.continue) {

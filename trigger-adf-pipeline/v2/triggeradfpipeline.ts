@@ -237,7 +237,7 @@ function triggerPipeline(
             .sendRequest(options)
             .then((result: HttpOperationResponse) => {
                 const objects = JSON.parse(JSON.stringify(result.parsedBody));
-                if (result && result.status !== 200 && result.status !== 204) {
+                if (result && result.status !== 200 && result.status !== 202 && result.status !== 204) {
                     const cloudError = objects.error;
                     if (deployOptions.continue) {
                         warning(loc("TriggerAdfPipelines_TriggerPipeline", pipelineName, cloudError.message));

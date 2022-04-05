@@ -302,7 +302,7 @@ function deleteItem(
                 } else if (result && result.status === 204) {
                     debug(`'${item.name}' not found.`);
                     resolve(true);
-                } else if (result && result.status === 200) {
+                } else if (result && (result.status === 200 || result.status === 202)) {
                     console.log(`Deleted ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
                     resolve(true);
                 } else {
