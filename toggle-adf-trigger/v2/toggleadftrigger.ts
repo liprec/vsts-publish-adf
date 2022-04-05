@@ -34,6 +34,7 @@ import {
     loginWithAppServiceMSI,
     ApplicationTokenCredentials,
     MSIAppServiceTokenCredentials,
+    AzureTokenCredentialsOptions,
 } from "@azure/ms-rest-nodeauth";
 import { AzureServiceClient } from "@azure/ms-rest-azure-js";
 import { HttpOperationResponse, RequestPrepareOptions } from "@azure/ms-rest-js";
@@ -50,7 +51,13 @@ type triggerJson = {
     name: string;
 };
 
-function loginAzure(clientId: string, key: string, tenantID: string, scheme: string): Promise<AzureServiceClient> {
+function loginAzure(
+    clientId: string,
+    key: string,
+    tenantID: string,
+    scheme: string,
+    audience?: string
+): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
         if (scheme.toLocaleLowerCase() === "managedserviceidentity") {
             loginWithAppServiceMSI()
@@ -64,7 +71,12 @@ function loginAzure(clientId: string, key: string, tenantID: string, scheme: str
                     }
                 });
         } else {
-            loginWithServicePrincipalSecret(clientId, key, tenantID)
+            const options: AzureTokenCredentialsOptions = audience
+                ? {
+                      tokenAudience: audience,
+                  }
+                : {};
+            loginWithServicePrincipalSecret(clientId, key, tenantID, options)
                 .then((credentials: ApplicationTokenCredentials) => {
                     resolve(new AzureServiceClient(credentials, {}));
                 })
@@ -81,12 +93,13 @@ function loginAzure(clientId: string, key: string, tenantID: string, scheme: str
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+            environmentUrl: string = datafactoryOption.environmentUrl,
             subscriptionId: string = datafactoryOption.subscriptionId,
-            resourceGroup: string = datafactoryOption.resourceGroup,
-            dataFactoryName: string = datafactoryOption.dataFactoryName;
+            resourceGroup: string | undefined = datafactoryOption.resourceGroup,
+            dataFactoryName: string | undefined = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
+            url: `https://${environmentUrl}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -95,6 +108,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
                     error(loc("Generic_CheckDataFactory2", dataFactoryName));
                     reject(loc("Generic_CheckDataFactory2", dataFactoryName));
                 } else {
+                    debug(`Datafactory '${dataFactoryName}' exist`);
                     resolve(true);
                 }
             })
@@ -115,19 +129,25 @@ function getTriggers(
 ): Promise<DatafactoryTriggerObject[]> {
     return new Promise<DatafactoryTriggerObject[]>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+            environmentUrl: string = datafactoryOption.environmentUrl,
             subscriptionId: string = datafactoryOption.subscriptionId,
-            resourceGroup: string = datafactoryOption.resourceGroup,
-            dataFactoryName: string = datafactoryOption.dataFactoryName;
+            workspaceUrl: string | undefined = datafactoryOption.workspaceUrl,
+            resourceGroup: string | undefined = datafactoryOption.resourceGroup,
+            dataFactoryName: string | undefined = datafactoryOption.dataFactoryName;
+        const endPoint = workspaceUrl
+            ? `https://${workspaceUrl}`
+            : `https://${environmentUrl}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}`;
+        const apiVersion = workspaceUrl ? "2020-12-01" : "2018-06-01";
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers?api-version=2018-06-01`,
+            url: `${endPoint}/triggers?api-version=${apiVersion}`,
         };
         azureClient
             .sendRequest(options)
             .then(async (result: HttpOperationResponse) => {
                 if (result && result.status !== 200) {
-                    debug(loc("ToggleAdfTrigger_GetTriggers2"));
-                    reject(loc("ToggleAdfTrigger_GetTriggers2"));
+                    error(loc("ToggleAdfTrigger_GetTriggers", result.bodyAsText));
+                    reject(loc("ToggleAdfTrigger_GetTriggers", result.bodyAsText));
                 } else {
                     let objects = JSON.parse(JSON.stringify(result.parsedBody));
                     let items = objects.value;
@@ -180,13 +200,19 @@ function toggleTrigger(
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
-            resourceGroup: string = datafactoryOption.resourceGroup,
-            dataFactoryName: string = datafactoryOption.dataFactoryName;
+            environmentUrl: string = datafactoryOption.environmentUrl,
+            workspaceUrl: string | undefined = datafactoryOption.workspaceUrl,
+            resourceGroup: string | undefined = datafactoryOption.resourceGroup,
+            dataFactoryName: string | undefined = datafactoryOption.dataFactoryName;
+        const endPoint = workspaceUrl
+            ? `https://${workspaceUrl}`
+            : `https://${environmentUrl}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}`;
+        const apiVersion = workspaceUrl ? "2020-12-01" : "2018-06-01";
         const triggerName = trigger.triggerName;
         const triggerAction = trigger.toggle;
         const options: RequestPrepareOptions = {
             method: "POST",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/triggers/${triggerName}/${triggerAction}?api-version=2018-06-01`,
+            url: `${endPoint}/triggers/${triggerName}/${triggerAction}?api-version=${apiVersion}`,
             headers: {
                 "Content-Type": "application/json",
             },
@@ -317,6 +343,7 @@ async function main(): Promise<boolean> {
             debug("Task execution started ...");
             taskParameters = new TaskParameters();
             const connectedServiceName = taskParameters.ConnectedServiceName;
+            const workspaceUrl = taskParameters.WorkspaceUrl;
             const resourceGroup = taskParameters.ResourceGroupName;
             const dataFactoryName = taskParameters.DatafactoryName;
 
@@ -334,6 +361,8 @@ async function main(): Promise<boolean> {
             const tenantID = azureModels.TenantId;
             const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.SubscriptionId,
+                environmentUrl: azureModels.EnvironmentUrl,
+                workspaceUrl: workspaceUrl,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
@@ -344,10 +373,13 @@ async function main(): Promise<boolean> {
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");
-                    return checkDataFactory(datafactoryOption);
+                    if (!datafactoryOption.workspaceUrl) {
+                        return checkDataFactory(datafactoryOption);
+                    } else {
+                        return true;
+                    }
                 })
                 .then(() => {
-                    debug(`Datafactory '${dataFactoryName}' exist`);
                     // Toggle Trigger logic
                     toggleTriggers(datafactoryOption, deployOptions, triggerFilter, triggerStatus)
                         .then((result: boolean) => {

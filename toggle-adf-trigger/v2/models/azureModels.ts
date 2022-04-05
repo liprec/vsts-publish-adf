@@ -43,6 +43,7 @@ export class AzureModels {
     private servicePrincipalClientId: string;
     private servicePrincipalKey: string;
     private environmentAuthorityUrl?: string;
+    private environmentUrl: string;
     private tenantId: string;
     private url?: string;
 
@@ -55,6 +56,7 @@ export class AzureModels {
                 this.subscriptionName = getInput("subscriptionname", true) as string;
                 this.servicePrincipalClientId = getInput("serviceprincipalid", true) as string;
                 this.servicePrincipalKey = getInput("serviceprincipalkey", true) as string;
+                this.environmentUrl = getInput("environmentUrl", true) as string;
                 this.environmentAuthorityUrl = getInput("environmentAuthorityUrl", true) as string;
                 this.tenantId = getInput("tenantid", true) as string;
                 this.url = getInput("connectedServiceNameUrl", true) as string;
@@ -70,6 +72,11 @@ export class AzureModels {
                 this.servicePrincipalKey = getEndpointAuthorizationParameter(
                     this.connectedServiceName,
                     "serviceprincipalkey",
+                    true
+                ) as string;
+                this.environmentUrl = getEndpointDataParameter(
+                    this.connectedServiceName,
+                    "environmentUrl",
                     true
                 ) as string;
                 this.environmentAuthorityUrl = getEndpointDataParameter(
@@ -109,6 +116,10 @@ export class AzureModels {
         return this.servicePrincipalKey;
     }
 
+    public get EnvironmentUrl(): string {
+        return new URL(this.environmentUrl).hostname as string;
+    }
+
     public get EnvironmentAuthorityUrl(): string {
         return this.environmentAuthorityUrl as string;
     }
@@ -117,7 +128,7 @@ export class AzureModels {
         return this.tenantId;
     }
 
-    public get Url(): string {
+    public getUrl(): string {
         return this.url as string;
     }
 }

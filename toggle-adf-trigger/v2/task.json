@@ -13,7 +13,7 @@
     "version": {
         "Major": "2",
         "Minor": "4",
-        "Patch": "2"
+        "Patch": "10"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -44,6 +44,18 @@
             "helpMarkDown": "This is needed to connect to your Azure account.<br>To configure new service connection, select the Azure subscription from the list and click 'Authorize'.<br>If your subscription is not listed or if you want to use an existing Service Principal, you can setup an Azure service connection using 'Add' or 'Manage' button."
         },
         {
+            "name": "DatafactoryType",
+            "type": "pickList",
+            "label": "Data Integration Capabilities",
+            "helpMarkDown": "Azure Data Factory or Azure Synapse Analytics",
+            "defaultValue": "adf",
+            "options": {
+                "adf": "Azure Data Factory",
+                "synapse": "Azure Synapse Analytics"
+            },
+            "groupname": "azure"
+        },
+        {
             "name": "ResourceGroupName",
             "type": "pickList",
             "label": "Resource group",
@@ -52,6 +64,7 @@
             "properties": {
                 "EditableOptions": "True"
             },
+            "visibleRule": "DatafactoryType = adf",
             "groupname": "azure"
         },
         {
@@ -61,6 +74,17 @@
             "defaultValue": "",
             "required": "true",
             "helpMarkDown": "Name of the Azure Data Factory.",
+            "visibleRule": "DatafactoryType = adf",
+            "groupname": "azure"
+        },
+        {
+            "name": "WorkspaceUrl",
+            "type": "string",
+            "label": "Synapse workspace development endpoint URL",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Name of the Synapse workspace development endpoint, eg. https://myworkspace.dev.azuresynapse.net",
+            "visibleRule": "DatafactoryType = synapse",
             "groupname": "azure"
         },
         {
@@ -116,6 +140,9 @@
     },
     "messages": {
         "TaskParameters_ConstructorFailed": "Task failed while initializing. Error: %s.",
+        "TaskParameters_MissingResourceGroup": "Missing required input 'ResourceGroupName', or define the input 'WorkspaceUrl'",
+        "TaskParameters_MissingDataFactoryName": "Missing required input 'DatafactoryName', or define the input 'WorkspaceUrl'",
+        "TaskParameters_IgnoredParameter": "Provided task parameter is ignored: %s",
         "AzureModels_ConstructorFailed": "Unable to retrieve endpoint details for Azure",
         "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
         "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",

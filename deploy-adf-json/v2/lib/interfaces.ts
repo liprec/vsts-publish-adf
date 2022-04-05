@@ -34,9 +34,11 @@ import { SortingDirection, DatafactoryTypes } from "./enums";
 
 export interface DatafactoryOptions {
     azureClient?: AzureServiceClient;
+    environmentUrl: string;
     subscriptionId: string;
-    resourceGroup: string;
-    dataFactoryName: string;
+    workspaceUrl?: string;
+    resourceGroup?: string;
+    dataFactoryName?: string;
 }
 
 export interface DatafactoryTaskOptions {
