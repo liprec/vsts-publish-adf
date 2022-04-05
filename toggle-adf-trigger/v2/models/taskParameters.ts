@@ -45,8 +45,8 @@ export class TaskParameters {
     constructor() {
         try {
             this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
-            this.resourceGroupName = getInput("ResourceGroupName", true) as string;
-            this.datafactoryName = getInput("DatafactoryName", true) as string;
+            this.resourceGroupName = getInput("ResourceGroupName", false) as string;
+            this.datafactoryName = getInput("DatafactoryName", false) as string;
             this.workspaceUrl = getInput("WorkspaceUrl", false) as string;
 
             if (!this.workspaceUrl) {
