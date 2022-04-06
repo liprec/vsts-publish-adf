@@ -26,14 +26,15 @@
  *  THE SOFTWARE.
  */
 
-import { getInput, getBoolInput, loc } from "azure-pipelines-task-lib/task";
+import { getInput, getBoolInput, loc, warning } from "azure-pipelines-task-lib/task";
 
 import { DatafactoryToggle } from "../lib/enums";
 
 export class TaskParameters {
     private connectedServiceName: string;
-    private resourceGroupName: string;
-    private datafactoryName: string;
+    private resourceGroupName?: string;
+    private datafactoryName?: string;
+    private workspaceUrl?: string;
 
     private triggerFilter: string;
     private triggerStatus: DatafactoryToggle = DatafactoryToggle.Stop;
@@ -44,10 +45,28 @@ export class TaskParameters {
     constructor() {
         try {
             this.connectedServiceName = getInput("ConnectedServiceName", true) as string;
-            this.resourceGroupName = getInput("ResourceGroupName", true) as string;
-            this.datafactoryName = getInput("DatafactoryName", true) as string;
-            this.triggerFilter = getInput("TriggerFilter", false) || "";
+            this.resourceGroupName = getInput("ResourceGroupName", false) as string;
+            this.datafactoryName = getInput("DatafactoryName", false) as string;
+            this.workspaceUrl = getInput("WorkspaceUrl", false) as string;
 
+            if (!this.workspaceUrl) {
+                if (!this.resourceGroupName) {
+                    throw new Error(loc("TaskParameters_MissingResourceGroup"));
+                }
+                if (!this.datafactoryName) {
+                    throw new Error(loc("TaskParameters_MissingDataFactoryName"));
+                }
+            }
+            if (this.workspaceUrl) {
+                if (this.resourceGroupName) {
+                    warning(loc("TaskParameters_IgnoredParameter", "ResourceGroupName"));
+                }
+                if (this.datafactoryName) {
+                    warning(loc("TaskParameters_IgnoredParameter", "DatafactoryName"));
+                }
+            }
+
+            this.triggerFilter = getInput("TriggerFilter", false) || "";
             const status = getInput("TriggerStatus", true) as string;
             switch (status.toLowerCase()) {
                 case "start":
@@ -71,12 +90,20 @@ export class TaskParameters {
         return this.connectedServiceName;
     }
 
-    public get ResourceGroupName(): string {
+    public get ResourceGroupName(): string | undefined {
         return this.resourceGroupName;
     }
 
-    public get DatafactoryName(): string {
+    public get DatafactoryName(): string | undefined {
         return this.datafactoryName;
+    }
+
+    public get WorkspaceUrl(): string | undefined {
+        if (this.workspaceUrl) return new URL(this.workspaceUrl as string).hostname;
+    }
+
+    public get Audience(): string | undefined {
+        if (this.workspaceUrl) return "https://dev.azuresynapse.net/";
     }
 
     public get TriggerFilter(): string {

@@ -47,6 +47,7 @@ import {
     loginWithAppServiceMSI,
     ApplicationTokenCredentials,
     MSIAppServiceTokenCredentials,
+    AzureTokenCredentialsOptions,
 } from "@azure/ms-rest-nodeauth";
 import { AzureServiceClient } from "@azure/ms-rest-azure-js";
 import { HttpOperationResponse, RequestPrepareOptions } from "@azure/ms-rest-js";
@@ -59,7 +60,13 @@ import { DatafactoryTaskObject, DatafactoryOptions, DatafactoryTaskOptions, Depl
 
 setResourcePath(join(__dirname, "../task.json"));
 
-function loginAzure(clientId: string, key: string, tenantID: string, scheme: string): Promise<AzureServiceClient> {
+function loginAzure(
+    clientId: string,
+    key: string,
+    tenantID: string,
+    scheme: string,
+    audience?: string
+): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
         if (scheme.toLocaleLowerCase() === "managedserviceidentity") {
             loginWithAppServiceMSI()
@@ -73,7 +80,12 @@ function loginAzure(clientId: string, key: string, tenantID: string, scheme: str
                     }
                 });
         } else {
-            loginWithServicePrincipalSecret(clientId, key, tenantID)
+            const options: AzureTokenCredentialsOptions = audience
+                ? {
+                      tokenAudience: audience,
+                  }
+                : {};
+            loginWithServicePrincipalSecret(clientId, key, tenantID, options)
                 .then((credentials: ApplicationTokenCredentials) => {
                     resolve(new AzureServiceClient(credentials, {}));
                 })
@@ -90,12 +102,13 @@ function loginAzure(clientId: string, key: string, tenantID: string, scheme: str
 function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+            environmentUrl: string = datafactoryOption.environmentUrl,
             subscriptionId: string = datafactoryOption.subscriptionId,
-            resourceGroup: string = datafactoryOption.resourceGroup,
-            dataFactoryName: string = datafactoryOption.dataFactoryName;
+            resourceGroup: string | undefined = datafactoryOption.resourceGroup,
+            dataFactoryName: string | undefined = datafactoryOption.dataFactoryName;
         const options: RequestPrepareOptions = {
             method: "GET",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
+            url: `https://${environmentUrl}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}?api-version=2018-06-01`,
         };
         azureClient
             .sendRequest(options)
@@ -104,6 +117,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
                     error(loc("Generic_CheckDataFactory2", dataFactoryName));
                     reject(loc("Generic_CheckDataFactory2", dataFactoryName));
                 } else {
+                    debug(`Datafactory '${dataFactoryName}' exist`);
                     resolve(true);
                 }
             })
@@ -137,7 +151,7 @@ function getObjects(
                           ((basename(item2) > basename(item1)) as unknown as number) -
                           ((basename(item2) < basename(item1)) as unknown as number)
                   );
-            console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
+            console.log(loc("DeployAdfJson_ArtifactNumber", matchedFiles.length, datafactoryType));
             resolve(
                 matchedFiles.map((file: string) => {
                     const data = readFileSync(file, "utf8");
@@ -181,8 +195,14 @@ function deployItem(
     return new Promise<boolean>((resolve, reject) => {
         const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
             subscriptionId: string = datafactoryOption.subscriptionId,
-            resourceGroup: string = datafactoryOption.resourceGroup,
-            dataFactoryName: string = datafactoryOption.dataFactoryName;
+            environmentUrl: string = datafactoryOption.environmentUrl,
+            workspaceUrl: string | undefined = datafactoryOption.workspaceUrl,
+            resourceGroup: string | undefined = datafactoryOption.resourceGroup,
+            dataFactoryName: string | undefined = datafactoryOption.dataFactoryName;
+        const endPoint = workspaceUrl
+            ? `https://${workspaceUrl}`
+            : `https://${environmentUrl}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}`;
+        const apiVersion = workspaceUrl ? "2020-12-01" : "2018-06-01";
         const objectName = item.name;
         let objectType;
         switch (item.type) {
@@ -204,7 +224,7 @@ function deployItem(
         }
         const options: RequestPrepareOptions = {
             method: "PUT",
-            url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.DataFactory/factories/${dataFactoryName}/${objectType}/${objectName}?api-version=2018-06-01`,
+            url: `${endPoint}/${objectType}/${objectName}?api-version=${apiVersion}`,
             headers: {
                 "Content-Type": "application/json",
             },
@@ -214,7 +234,7 @@ function deployItem(
         azureClient
             .sendRequest(options)
             .then(async (result: HttpOperationResponse) => {
-                if (result && result.status !== 200) {
+                if (result && result.status !== 200 && result.status !== 202) {
                     const objects = JSON.parse(JSON.stringify(result.parsedBody));
                     const cloudError = objects.error;
                     if (taskOptions.continue) {
@@ -225,7 +245,7 @@ function deployItem(
                         reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, cloudError.message));
                     }
                 } else {
-                    console.log(`Deployed ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
+                    console.log(loc("DeployAdfJson_DeployFinish", item.type, item.name, item.bucket));
                     resolve(true);
                 }
             })
@@ -304,7 +324,7 @@ function processItems(
             items.filter((item: DatafactoryTaskObject) => item.bucket === index)
         );
         console.log(
-            `Start deploying ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
+            loc("DeployAdfJson_ProcessItem", items.length, datafactoryType, numberOfBuckets, taskOptions.throttle)
         );
         runs.reduce(async (promiseChain: Promise<unknown[]>, currentTask: DatafactoryTaskObject[]) => {
             const chainResults = await promiseChain;
@@ -353,6 +373,7 @@ async function main(): Promise<boolean> {
             debug("Task execution started ...");
             taskParameters = new TaskParameters();
             const connectedServiceName = taskParameters.ConnectedServiceName;
+            const workspaceUrl = taskParameters.WorkspaceUrl;
             const resourceGroup = taskParameters.ResourceGroupName;
             const dataFactoryName = taskParameters.DatafactoryName;
 
@@ -370,25 +391,31 @@ async function main(): Promise<boolean> {
             };
 
             azureModels = new AzureModels(connectedServiceName);
-            const clientId = azureModels.getServicePrincipalClientId();
-            const key = azureModels.getServicePrincipalKey();
-            const tenantID = azureModels.getTenantId();
+            const clientId = azureModels.ServicePrincipalClientId;
+            const key = azureModels.ServicePrincipalKey;
+            const tenantID = azureModels.TenantId;
             const datafactoryOption: DatafactoryOptions = {
-                subscriptionId: azureModels.getSubscriptionId(),
+                subscriptionId: azureModels.SubscriptionId,
+                environmentUrl: azureModels.EnvironmentUrl,
+                workspaceUrl: workspaceUrl,
                 resourceGroup: resourceGroup,
                 dataFactoryName: dataFactoryName,
             };
             const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID, scheme)
+            loginAzure(clientId, key, tenantID, scheme, taskParameters.Audience)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");
-                    return checkDataFactory(datafactoryOption);
+                    if (!datafactoryOption.workspaceUrl) {
+                        return checkDataFactory(datafactoryOption);
+                    } else {
+                        console.log(loc("DeployAdfJson_SynapseWarning"));
+                        return true;
+                    }
                 })
                 .then(() => {
-                    debug(`Datafactory '${dataFactoryName}' exist`);
                     const deployTasks: DeployTask[] = [];
                     if (servicePath) {
                         deployTasks.push({ path: servicePath, type: DatafactoryTypes.LinkedService });
