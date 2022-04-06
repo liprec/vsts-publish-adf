@@ -151,7 +151,7 @@ function getObjects(
                           ((basename(item2) > basename(item1)) as unknown as number) -
                           ((basename(item2) < basename(item1)) as unknown as number)
                   );
-            console.log(`Found ${matchedFiles.length} ${datafactoryType}(s) definitions.`);
+            console.log(loc("DeployAdfJson_ArtifactNumber", matchedFiles.length, datafactoryType));
             resolve(
                 matchedFiles.map((file: string) => {
                     const data = readFileSync(file, "utf8");
@@ -245,7 +245,7 @@ function deployItem(
                         reject(loc("DeployAdfJson_DeployItems2", item.name, item.type, cloudError.message));
                     }
                 } else {
-                    console.log(`Deployed ${item.type} '${item.name}' in chunk: ${item.bucket}.`);
+                    console.log(loc("DeployAdfJson_DeployFinish", item.type, item.name, item.bucket));
                     resolve(true);
                 }
             })
@@ -324,7 +324,7 @@ function processItems(
             items.filter((item: DatafactoryTaskObject) => item.bucket === index)
         );
         console.log(
-            `Start deploying ${items.length} ${datafactoryType}(s) in ${numberOfBuckets} chunk(s) with ${taskOptions.throttle} thread(s).`
+            loc("DeployAdfJson_ProcessItem", items.length, datafactoryType, numberOfBuckets, taskOptions.throttle)
         );
         runs.reduce(async (promiseChain: Promise<unknown[]>, currentTask: DatafactoryTaskObject[]) => {
             const chainResults = await promiseChain;
@@ -411,6 +411,7 @@ async function main(): Promise<boolean> {
                     if (!datafactoryOption.workspaceUrl) {
                         return checkDataFactory(datafactoryOption);
                     } else {
+                        console.log(loc("DeployAdfJson_SynapseWarning"));
                         return true;
                     }
                 })

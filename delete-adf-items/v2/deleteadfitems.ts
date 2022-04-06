@@ -470,6 +470,7 @@ async function main(): Promise<boolean> {
                     if (!datafactoryOption.workspaceUrl) {
                         return checkDataFactory(datafactoryOption);
                     } else {
+                        console.log(loc("DeleteAdfJson_SynapseWarning"));
                         return true;
                     }
                 })

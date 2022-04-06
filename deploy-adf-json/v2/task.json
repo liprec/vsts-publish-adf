@@ -13,7 +13,7 @@
     "version": {
         "Major": "2",
         "Minor": "4",
-        "Patch": "13"
+        "Patch": "14"
     },
     "minimumAgentVersion": "1.100.0",
     "groups": [
@@ -185,6 +185,10 @@
         "Generic_LoginAzure": "Error login in to Azure. Please check the Service Configuration. Error: %s.",
         "Generic_CheckDataFactory": "Error calling DataFactory API. Error: %s.",
         "Generic_CheckDataFactory2": "Datafactory not found: %s.",
+        "DeployAdfJson_SynapseWarning": "Deploying artifact to Azure Synapse Analytics are asynchronous and uploaded without validation.",
+        "DeployAdfJson_ProcessItem": "Start deploying %s %s(s) in %s chunk(s) with %s thread(s).",
+        "DeployAdfJson_ArtifactNumber": "Found %s %s(s) definitions.`",
+        "DeployAdfJson_DeployFinish": "Deployed %s '%s' in chunk: %s.",
         "DeployAdfJson_Depencency": "Error detecting dependencies: circular reference in %s(s): %s.",
         "DeployAdfJson_Depencency2": "Found missing reference in %s(s).",
         "DeployAdfJson_DeployItems": "Error processing folder %s: Error: %s.",
