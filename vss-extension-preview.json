@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-publish-adf-preview",
-    "version": "2.4.12",
+    "version": "2.4.13",
     "name": "Azure Data Factory (Preview)",
     "publisher": "liprec",
     "public": false,
