@@ -393,7 +393,7 @@ async function main(): Promise<boolean> {
             const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID, scheme)
+            loginAzure(clientId, key, tenantID, scheme, taskParameters.Audience)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");
