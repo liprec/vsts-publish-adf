@@ -17,7 +17,7 @@
     },
     "screenshots": [{ "path": "images/screenshot-1.png" }],
     "categories": ["Build and release"],
-    "tags": ["azure", "deployment", "adf", "data factory"],
+    "tags": ["azure", "deployment", "adf", "data factory", "azure synapse", "synapse"],
     "scopes": ["vso.release"],
     "branding": {
         "color": "rgb(87, 32, 31)",

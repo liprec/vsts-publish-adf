@@ -6,13 +6,22 @@ Full documentation: https://azurebi-docs.jppp.org/vsts-extensions/azure-data-fac
 
 ## Release notes
 
+**2.5**
+
+-   Added support for Government Clouds, US, China, and Germany
+-   Added support for Azure Synapse Analytics
+
+**2.3**
+
+-   Changed filters to RegEx filters
+
 **2.2**
 
-- Added support for deleting data flow definitions
-- Added paging support to delete object with data factories with more than 50 objects
+-   Added support for deleting data flow definitions
+-   Added paging support to delete object with data factories with more than 50 objects
 
 **2.0**
 
-- Rewrite to platform independent version by using NodeJS and REST APIs
-- This version only support Azure Data Factory v2
-- Initial public release
+-   Rewrite to platform independent version by using NodeJS and REST APIs
+-   This version only support Azure Data Factory v2
+-   Initial public release

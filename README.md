@@ -15,6 +15,11 @@ See https://azurebi-docs.jppp.org/vsts-extensions/azure-data-factory.html for th
 
 ## Release notes
 
+### **2.5**
+
+-   Added support for Government Clouds, US, China, and Germany
+-   Added support for Azure Synapse Analytics
+
 **2.3**
 
 -   Added support for dependencies between pipelines and linked services
