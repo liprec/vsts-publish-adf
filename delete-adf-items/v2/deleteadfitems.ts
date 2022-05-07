@@ -29,15 +29,9 @@
 import throat from "throat";
 import { error, warning, loc, setResourcePath, debug, TaskResult, setResult } from "azure-pipelines-task-lib/task";
 import { join } from "path";
-import {
-    loginWithServicePrincipalSecret,
-    loginWithAppServiceMSI,
-    ApplicationTokenCredentials,
-    MSIAppServiceTokenCredentials,
-    AzureTokenCredentialsOptions,
-} from "@azure/ms-rest-nodeauth";
+import { AccessToken, ClientSecretCredential } from "@azure/identity";
 import { AzureServiceClient } from "@azure/ms-rest-azure-js";
-import { HttpOperationResponse, RequestPrepareOptions } from "@azure/ms-rest-js";
+import { HttpOperationResponse, RequestPrepareOptions, TokenCredentials } from "@azure/ms-rest-js";
 
 import { TaskParameters } from "./models/taskParameters";
 import { AzureModels } from "./models/azureModels";
@@ -58,30 +52,31 @@ function loginAzure(
     clientId: string,
     key: string,
     tenantID: string,
+    authorityHostUrl: string,
     scheme: string,
-    audience?: string
+    audience: string
 ): Promise<AzureServiceClient> {
     return new Promise<AzureServiceClient>((resolve, reject) => {
         if (scheme.toLocaleLowerCase() === "managedserviceidentity") {
-            loginWithAppServiceMSI()
-                .then((credentials: MSIAppServiceTokenCredentials) => {
-                    resolve(new AzureServiceClient(credentials, {}));
-                })
-                .catch((err: Error) => {
-                    if (err) {
-                        error(loc("Generic_LoginAzure", err.message));
-                        reject(loc("Generic_LoginAzure", err.message));
-                    }
-                });
+            // loginWithAppServiceMSI()
+            //     .then((credentials: MSIAppServiceTokenCredentials) => {
+            //         resolve(new AzureServiceClient(credentials, {}));
+            //     })
+            //     .catch((err: Error) => {
+            //         if (err) {
+            //             error(loc("Generic_LoginAzure", err.message));
+            //             reject(loc("Generic_LoginAzure", err.message));
+            //         }
+            //     });
         } else {
-            const options: AzureTokenCredentialsOptions = audience
-                ? {
-                      tokenAudience: audience,
-                  }
-                : {};
-            loginWithServicePrincipalSecret(clientId, key, tenantID, options)
-                .then((credentials: ApplicationTokenCredentials) => {
-                    resolve(new AzureServiceClient(credentials, {}));
+            const credential = new ClientSecretCredential(tenantID, clientId, key, {
+                authorityHost: authorityHostUrl,
+            });
+            credential
+                .getToken(audience)
+                .then((accessToken: AccessToken) => {
+                    const token = new TokenCredentials(accessToken.token);
+                    resolve(new AzureServiceClient(token));
                 })
                 .catch((err: Error) => {
                     if (err) {
@@ -453,6 +448,7 @@ async function main(): Promise<boolean> {
             const clientId = azureModels.ServicePrincipalClientId;
             const key = azureModels.ServicePrincipalKey;
             const tenantID = azureModels.TenantId;
+            const authorityHostUrl = azureModels.EnvironmentAuthorityUrl;
             const datafactoryOption: DatafactoryOptions = {
                 subscriptionId: azureModels.SubscriptionId,
                 environmentUrl: azureModels.EnvironmentUrl,
@@ -463,7 +459,7 @@ async function main(): Promise<boolean> {
             const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID, scheme, taskParameters.Audience)
+            loginAzure(clientId, key, tenantID, authorityHostUrl, scheme, taskParameters.Audience)
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");

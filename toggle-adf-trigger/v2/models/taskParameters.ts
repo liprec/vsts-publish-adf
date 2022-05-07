@@ -102,8 +102,9 @@ export class TaskParameters {
         if (this.workspaceUrl) return new URL(this.workspaceUrl as string).hostname;
     }
 
-    public get Audience(): string | undefined {
-        if (this.workspaceUrl) return "https://dev.azuresynapse.net/";
+    public get Audience(): string {
+        if (this.workspaceUrl) return "https://dev.azuresynapse.net/.default";
+        return "https://management.azure.com/.default";
     }
 
     public get TriggerFilter(): string {
