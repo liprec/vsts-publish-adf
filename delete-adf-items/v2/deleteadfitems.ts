@@ -119,6 +119,45 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
     });
 }
 
+function checkResourceGroupLock(datafactoryOption: DatafactoryOptions): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        const azureClient: AzureServiceClient = datafactoryOption.azureClient as AzureServiceClient,
+            environmentUrl: string = datafactoryOption.environmentUrl,
+            subscriptionId: string = datafactoryOption.subscriptionId,
+            resourceGroup: string | undefined = datafactoryOption.resourceGroup,
+            dataFactoryName: string | undefined = datafactoryOption.dataFactoryName;
+        const options: RequestPrepareOptions = {
+            method: "GET",
+            url: `https://${environmentUrl}/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Authorization/locks?api-version=2016-09-01`,
+        };
+
+        azureClient
+            .sendRequest(options)
+            .then((result: HttpOperationResponse) => {
+                if (result && result.status !== 200) {
+                    error(loc("ResourceGroup_NotFound", resourceGroup));
+                    reject(loc("ResourceGroup_NotFound", resourceGroup));
+                } else {
+                    let objects = JSON.parse(JSON.stringify(result.parsedBody));
+                    let numValues = objects.value.length;
+                    if (numValues > 0) {
+                        error(loc("ResourceGroup_Protected", resourceGroup, objects.value[0].properties.level, objects.value[0].properties.notes));
+                        reject(loc("ResourceGroup_Protected", resourceGroup, objects.value[0].properties.level, objects.value[0].properties.notes));
+                    } else {
+                        debug(`Resource Group '${resourceGroup}' has not locks.`);
+                        resolve(true)
+                    }
+                }
+            })
+            .catch((err: Error) => {
+                if (err) {
+                    error(loc("ResourceGroup_Protected", err));
+                    reject(loc("ResourceGroup_Protected", err));
+                }
+            });
+    });
+}
+
 function getObjects(
     datafactoryOption: DatafactoryOptions,
     taskOptions: DatafactoryTaskOptions,
@@ -181,15 +220,15 @@ function getObjects(
                     }
                     taskOptions.sorting === SortingDirection.Ascending
                         ? items.sort(
-                              (item1: ADFJson, item2: ADFJson) =>
-                                  ((item1.name > item2.name) as unknown as number) -
-                                  ((item1.name < item2.name) as unknown as number)
-                          )
+                            (item1: ADFJson, item2: ADFJson) =>
+                                ((item1.name > item2.name) as unknown as number) -
+                                ((item1.name < item2.name) as unknown as number)
+                        )
                         : items.sort(
-                              (item1: ADFJson, item2: ADFJson) =>
-                                  ((item2.name > item1.name) as unknown as number) -
-                                  ((item2.name < item1.name) as unknown as number)
-                          );
+                            (item1: ADFJson, item2: ADFJson) =>
+                                ((item2.name > item1.name) as unknown as number) -
+                                ((item2.name < item1.name) as unknown as number)
+                        );
                     console.log(`Found ${items.length} ${datafactoryType}(s).`);
                     resolve(
                         items.map((item: ADFJson) => {
@@ -385,7 +424,7 @@ function processItems(
             return promiseChain.then((chainResults) =>
                 Promise.all(
                     currentTask.map(
-                        throat(taskOptions.throttle, (item) => {
+                        throat(taskOptions.throttle, (item: DatafactoryTaskObject) => {
                             totalItems++;
                             return deleteItem(datafactoryOption, taskOptions, item);
                         })
@@ -471,6 +510,9 @@ async function main(): Promise<boolean> {
                     }
                 })
                 .then(() => {
+                    return checkResourceGroupLock(datafactoryOption);
+                })
+                .then(() => {
                     const deleteTasks: DeleteTask[] = [];
                     if (triggerFilter) {
                         deleteTasks.push({ filter: triggerFilter, type: DatafactoryTypes.Trigger });
@@ -498,7 +540,7 @@ async function main(): Promise<boolean> {
                             hasError = true;
                             firstError = firstError || err;
                         })
-                        .then((results: boolean[] | void) => {
+                        .then((results: any[] | void) => {
                             if (hasError) {
                                 reject(firstError);
                             } else {

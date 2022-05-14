@@ -7,8 +7,13 @@
     "helpMarkDown": "[More Information](https://github.com/liprec/vsts-publish-adf)",
     "category": "Deploy",
     "preview": false,
-    "visibility": ["Build", "Release"],
-    "runsOn": ["Agent"],
+    "visibility": [
+        "Build",
+        "Release"
+    ],
+    "runsOn": [
+        "Agent"
+    ],
     "demands": [],
     "version": {
         "Major": "2",
@@ -36,7 +41,9 @@
     "inputs": [
         {
             "name": "ConnectedServiceName",
-            "aliases": ["azureSubscription"],
+            "aliases": [
+                "azureSubscription"
+            ],
             "type": "connectedService:AzureRM",
             "label": "Azure Subscription",
             "defaultValue": "",
@@ -192,6 +199,8 @@
         "DeleteAdfItems_GetObjects2": "No %s found.",
         "DeleteAdfItems_DeleteItem": "Error calling DELETE DataFactory/%s API. Error: %s.",
         "DeleteAdfItems_DeleteItem2": "Error deleting '%s' %s : %s",
-        "DeleteAdfItems_DeleteItems": "Error retrieving %s: Error: %s."
+        "DeleteAdfItems_DeleteItems": "Error retrieving %s: Error: %s.",
+        "ResourceGroup_NotFound": "Resource Group not found: %s",
+        "ResourceGroup_Protected": "%s has a %s protection. Please remove the Lock before deploy. %s"
     }
 }
