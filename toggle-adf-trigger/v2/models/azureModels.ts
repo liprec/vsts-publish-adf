@@ -116,6 +116,10 @@ export class AzureModels {
         return this.servicePrincipalKey;
     }
 
+    public get Audience(): string {
+        return `https://${this.EnvironmentUrl}/.default`;
+    }
+
     public get EnvironmentUrl(): string {
         return new URL(this.environmentUrl).hostname as string;
     }

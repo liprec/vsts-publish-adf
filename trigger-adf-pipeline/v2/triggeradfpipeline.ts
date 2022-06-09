@@ -117,6 +117,7 @@ function checkDataFactory(datafactoryOption: DatafactoryOptions): Promise<boolea
             .then((result: HttpOperationResponse) => {
                 if (result && result.status !== 200) {
                     error(loc("Generic_CheckDataFactory2", dataFactoryName));
+                    debug(`Error: ${result && result.bodyAsText}`);
                     reject(loc("Generic_CheckDataFactory2", dataFactoryName));
                 } else {
                     debug(`Datafactory '${dataFactoryName}' exist`);
@@ -389,7 +390,14 @@ async function main(): Promise<boolean> {
             const scheme = azureModels.AuthScheme;
             debug("Parsed task inputs");
 
-            loginAzure(clientId, key, tenantID, authorityHostUrl, scheme, taskParameters.Audience)
+            loginAzure(
+                clientId,
+                key,
+                tenantID,
+                authorityHostUrl,
+                scheme,
+                taskParameters.Audience || azureModels.Audience
+            )
                 .then((azureClient: AzureServiceClient) => {
                     datafactoryOption.azureClient = azureClient;
                     debug("Azure client retrieved.");

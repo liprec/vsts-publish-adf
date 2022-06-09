@@ -92,7 +92,7 @@ export class TaskParameters {
                 (pipelineParameterType as string).toLowerCase() === "path"
             ) as string;
 
-            this.continue = getBoolInput("Continue", false);
+            this.continue = getBoolInput("Continue", false) as boolean;
             this.throttle = Number.parseInt(getInput("Throttle", false) as string);
             this.throttle = isNaN(this.throttle) ? 5 : this.throttle;
             this.deploymentOutputs = getInput("deploymentOutputs", false) as string;
@@ -122,9 +122,8 @@ export class TaskParameters {
         if (this.workspaceUrl) return new URL(this.workspaceUrl as string).hostname;
     }
 
-    public get Audience(): string {
+    public get Audience(): string | undefined {
         if (this.workspaceUrl) return "https://dev.azuresynapse.net/.default";
-        return "https://management.azure.com/.default";
     }
 
     public get PipelineFilter(): string {
